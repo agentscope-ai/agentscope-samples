@@ -9,14 +9,14 @@ NAME = "agentscope-samples"
 URL = "https://github.com/agentscope-ai/agentscope-samples"
 minimal_requires = []
 extra_requires = [
-    "agentscope[dev]>=1.0.5",
-    "agentscope_runtime>=0.1.5",
-    "pyyaml>=6.0.2",
-    "quart>=0.8.0",
-    "quart-cors>=0.8.0",
-    "flask_sqlalchemy>=3.1.1",
-    "flask>=3.1.2",
-    "flask_cors>=6.0.1",
+    "agentscope[dev]",
+    "agentscope_runtime",
+    "pyyaml",
+    "quart",
+    "quart-cors",
+    "flask_sqlalchemy",
+    "flask",
+    "flask_cors",
 ]
 dev_requires = [
     "pre-commit",
