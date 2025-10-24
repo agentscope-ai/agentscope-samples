@@ -27,7 +27,7 @@ Detailed error messages.
 
 **Environment (please complete the following information):**
 
-- AgentScope Version: [e.g. 1.0.0 via `print(agentscope.__version__)`]
+- AgentScope Version: [e.g. 1.0.0 via]
 - Python Version: [e.g. 3.10]
 - OS: [e.g. macos, windows]
 

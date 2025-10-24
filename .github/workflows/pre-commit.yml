@@ -13,15 +13,15 @@ jobs:
       OS: ${{ matrix.os }}
       PYTHON: '3.10'
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Setup Python
-      uses: actions/setup-python@master
+      uses: actions/setup-python@v3
       with:
         python-version: '3.10'
     - name: Update setuptools
       run: |
         pip install setuptools==68.2.2 wheel==0.41.2
-    - name: Install AgentScope
+    - name: Install AgentScope Samples
       run: |
         pip install -q -e .[dev]
     - name: Install pre-commit
