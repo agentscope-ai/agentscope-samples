@@ -86,7 +86,7 @@ It includes **context management** and **secure sandboxing**, and can be used wi
 
 ## 📌 Example List
 
-| Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
+| Category                | Example Folder                                        | Uses AgentScope | Uses Runtime | Description                                      |
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
@@ -135,12 +135,20 @@ We welcome contributions such as:
 - Documentation improvements
 - Code contributions
 
-**Contributing Guidelines**: [Coming Soon](https://github.com/agentscope-ai/agentscope-samples/blob/main/COMINGSOON.md) 🚀  
+See the [Contributing Guidelines](https://github.com/agentscope-ai/agentscope-samples/CONTRIBUTING_GUIDELINES.md) for details.
+
 ------
 
 ## 📄 License
 
-This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-runtime/blob/main/LICENSE) file for details.
+This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/LICENSE) file for details.
+
+------
+
+## ⚠️ Disclaimer
+
+- This is not an officially supported product.
+- For **demonstration purposes only** — not intended for production use.
 
 ------
 
