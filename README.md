@@ -121,7 +121,7 @@ If you:
 Please:
 
 1. Read the sample-specific `README.md`.
-2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/issues).
+2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/blob/main/issues).
 3. Join the community discussions.
 
 ------
@@ -135,13 +135,13 @@ We welcome contributions such as:
 - Documentation improvements
 - Code contributions
 
-See the [Contributing Guidelines](https://github.com/agentscope-ai/agentscope-samples/CONTRIBUTING_GUIDELINES.md) for details.
+See the [Contributing Guidelines](https://github.com/agentscope-ai/agentscope-samples/blob/main/CONTRIBUTING_GUIDELINES.md) for details.
 
 ------
 
 ## 📄 License
 
-This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/LICENSE) file for details.
+This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE) file for details.
 
 ------
 
