@@ -135,7 +135,7 @@ We welcome contributions such as:
 - Documentation improvements
 - Code contributions
 
-See the [Contributing Guidelines](https://github.com/agentscope-ai/agentscope-samples/blob/main/CONTRIBUTING_GUIDELINES.md) for details.
+See the [Contributing](https://github.com/agentscope-ai/agentscope-samples/blob/main/CONTRIBUTING.md) for details.
 
 ------
 
