@@ -32,14 +32,14 @@ agentscope-samples/
 # 📥 Submitting a Pull Request (PR)
 
 ### 1. **Directory Placement**
-- **Location**：  
-  Choose an existing subdirectory（e.g., `browser_use/`、`games/`），or create a new one（update the **Example List** table in the root `README.md`）。
-- **File Naming**：  
-  - Example files：`feature_description.py`（如 `chatbot_multi_turn.py`）  
-  - Test files：`test_feature_description.py`
+- **Location**:
+  Choose an existing subdirectory（e.g., `browser_use/`、`games/`), or create a new one (update the **Example List** table in the root `README.md`)
+- **File Naming**:  
+  - Example files: `feature_description.py`（如 `chatbot_multi_turn.py`）  
+  - Test files: `test_feature_description.py`
 
 ### 2. **Write a Detailed README**
-- **Subdirectory `README.md`**：  
+- **Subdirectory `README.md`**:  
   Include the following to ensure reproducibility:
   ```markdown
   ## Example Name (e.g., Multi-turn Chatbot)
@@ -58,7 +58,7 @@ python chatbot_multi_turn.py
 ```
 
 
-- **Root `README.md`**：  
+- **Root `README.md`**:  
 Update the **Example List** table with links to new examples.
 
 ### 3. **Dependency Management**
@@ -71,7 +71,7 @@ pandas==2.0.0
 ```
 
 ### 4. **Code Formatting**
-- **Install `pre-commit`**：  
+- **Install `pre-commit`**:  
 ```bash
 pip install pre-commit
 pre-commit install
