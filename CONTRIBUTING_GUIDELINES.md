@@ -89,11 +89,3 @@ pre-commit run --all-files
 - [ ] PR title is clear (e.g.,  `Add multi-turn chatbot example`）
 
 ---
-
-### **Key Design Notes**
-1. **Consistent Structure**  : Matches the project's existing directory layout.
-2. **Reproducibility**  : Clear `README`.md templates for subdirectories.
-3. **Dependency Isolation**  : Per-directory requirements.txt to avoid conflicts.
-4. **Code Standards** : Explicit pre-commit instructions for style consistency.
-5. **Test Requirements**  : Focus on parameterized tests and coverage.
-6. **Future Roadmap**  : Transparent "Coming Soon" table to engage contributors.
