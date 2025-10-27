@@ -86,27 +86,27 @@ It includes **context management** and **secure sandboxing**, and can be used wi
 
 ## 📌 Example List
 
-| Category                | Example Folder                                        | Uses AgentScope | Uses AgentScope Runtime | Description                                      |
-| ----------------------- |-------------------------------------------------------| --------------- |-------------------------|--------------------------------------------------|
-| **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌                       | Command-line browser automation using AgentScope |
-|                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅                       | Full-stack browser automation with UI & sandbox  |
-| **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌                       | Multi-agent research pipeline                    |
-|                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅                       | Full-stack deep research app                     |
-| **Games**               | games/game_werewolves                                 | ✅               | ❌                       | Multi-agent roleplay game                        |
-| **Conversational Apps** | conversational_agents/chatbot_fullstack_runtime       | ✅               | ✅                       | Chatbot application with frontend/backend        |
-|                         | conversational_agents/chatbot                         | ✅               | ❌                       |                                                  |
-|                         | conversational_agents/multiagent_conversation         | ✅               | ❌                       | Multi-agent dialogue scenario                    |
-|                         | conversational_agents/multiagent_debate               | ✅               | ❌                       | Agents engaging in debates                       |
-| **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌                       | Benchmarks with ACE Bench                        |
-| **Functionality Demos** | functionality/long_term_memory_mem0                   | ✅               | ❌                       | Long-term memory with mem0 support               |
-|                         | functionality/mcp                                     | ✅               | ❌                       | Memory/Context Protocol demo                     |
-|                         | functionality/session_with_sqlite                     | ✅               | ❌                       | Persistent context with SQLite                   |
-|                         | functionality/structured_output                       | ✅               | ❌                       | Structured data extraction and validation        |
-|                         | functionality/multiagent_concurrent                   | ✅               | ❌                       | Concurrent task execution by multiple agents     |
-|                         | functionality/meta_planner_agent                      | ✅               | ❌                       | Planning agent with tool orchestration           |
-|                         | functionality/plan                                    | ✅               | ❌                       | Task planning with ReAct agent                   |
-|                         | functionality/rag                                     | ✅               | ❌                       | Retrieval-Augmented Generation (RAG) integration |
-|                         | functionality/stream_printing_messages                | ✅               | ❌                       | Real-time message streaming and printing         |
+| Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
+| ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
+| **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
+|                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
+| **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
+|                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅            | Full-stack deep research app                     |
+| **Games**               | games/game_werewolves                                 | ✅               | ❌            | Multi-agent roleplay game                        |
+| **Conversational Apps** | conversational_agents/chatbot_fullstack_runtime       | ✅               | ✅            | Chatbot application with frontend/backend        |
+|                         | conversational_agents/chatbot                         | ✅               | ❌            |                                                  |
+|                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
+|                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
+| **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
+| **Functionality Demos** | functionality/long_term_memory_mem0                   | ✅               | ❌            | Long-term memory with mem0 support               |
+|                         | functionality/mcp                                     | ✅               | ❌            | Memory/Context Protocol demo                     |
+|                         | functionality/session_with_sqlite                     | ✅               | ❌            | Persistent context with SQLite                   |
+|                         | functionality/structured_output                       | ✅               | ❌            | Structured data extraction and validation        |
+|                         | functionality/multiagent_concurrent                   | ✅               | ❌            | Concurrent task execution by multiple agents     |
+|                         | functionality/meta_planner_agent                      | ✅               | ❌            | Planning agent with tool orchestration           |
+|                         | functionality/plan                                    | ✅               | ❌            | Task planning with ReAct agent                   |
+|                         | functionality/rag                                     | ✅               | ❌            | Retrieval-Augmented Generation (RAG) integration |
+|                         | functionality/stream_printing_messages                | ✅               | ❌            | Real-time message streaming and printing         |
 
 ------
 
@@ -121,8 +121,12 @@ If you:
 Please:
 
 1. Read the sample-specific `README.md`.
-2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/issues).
-3. Join the community discussions.
+2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/blob/main/issues).
+3. Join the community discussions:
+
+| [Discord](https://discord.gg/eYMpfnkG8h)                                                                                         | DingTalk                                                                                                                          |
+|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
 
 ------
 
@@ -135,13 +139,13 @@ We welcome contributions such as:
 - Documentation improvements
 - Code contributions
 
-See the [Contributing Guidelines](https://github.com/agentscope-ai/agentscope-samples/CONTRIBUTING.md) for details.
+See the [Contributing](https://github.com/agentscope-ai/agentscope-samples/blob/main/CONTRIBUTING.md) for details.
 
 ------
 
 ## 📄 License
 
-This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/LICENSE) file for details.
+This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE) file for details.
 
 ------
 
