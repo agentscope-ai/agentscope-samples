@@ -2,18 +2,6 @@
 
 感谢您对 AgentScope Samples 的关注！AgentScope Samples 提供基于 AgentScope 和 AgentScope Runtime 构建的即用型智能体示例。我们欢迎各种类型的贡献，从新的示例智能体应用到错误修复和文档改进。
 
-## 社区
-
-通过以下方式与我们联系：
-
-- **GitHub Discussions**：提问和分享经验（使用**英文**）
-- **Discord**：加入我们的 Discord 频道进行实时讨论
-- **钉钉**：中国用户可以加入我们的钉钉群
-
-| [Discord](https://discord.gg/eYMpfnkG8h)                                                                                         | DingTalk                                                                                                                          |
-|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
-
 ## 报告问题
 
 ### Bug
@@ -157,4 +145,12 @@ pre-commit run --all-files
 
 4. **代码审查**：处理维护者的反馈
 
-感谢您为 AgentScope Samples 做出贡献！
+感谢您为 AgentScope Samples 做出贡献！如有任何问题，欢迎通过以下方式与我们联系：
+
+- **GitHub Discussions**：提问和分享经验（使用**英文**）
+- **Discord**：加入我们的 Discord 频道进行实时讨论
+- **钉钉**：中国用户可以加入我们的钉钉群
+
+| [Discord](https://discord.gg/eYMpfnkG8h)                                                                                         | DingTalk                                                                                                                          |
+|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
