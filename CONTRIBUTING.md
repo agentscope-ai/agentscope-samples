@@ -46,6 +46,24 @@ If you'd like a feature or new type of example that doesn't exist in AgentScope 
 
 ### Creating New Examples
 
+#### Choose a Relevant Scenario
+
+We encourage examples across various domains including (but not limited to):
+
+| Domain | Example Ideas |
+|--------|---------------|
+| **Finance** | Robo-advisors, risk assessment, financial report analysis |
+| **Healthcare** | Symptom checker, medical record summarization, medication reminders |
+| **Education** | Personalized tutoring, auto-grading, Q&A knowledge retrieval |
+| **E-commerce / Retail** | Customer service, product recommendation, inventory management |
+| **Gaming / Entertainment** | NPC dialogue systems, dynamic story generators |
+| **Office Automation** | Meeting summarizers, auto-reply email agents, scheduling coordinators |
+| **Research** | Literature review assistants, data analysis agents |
+| **SRE / DevOps** | Alert triage, log anomaly detection, root cause analysis, automated remediation |
+| **General Utilities** | Multi-agent workflows, tool calling, memory management patterns |
+
+**Tip**: Pick a domain you know well or are passionate about—realistic use cases have the greatest impact!
+
 #### Directory Structure
 
 Choose an appropriate category (`browser_use/`, `conversational_agents/`, `deep_research/`, `evaluation/`, `functionality/`, `games/`) and create your example directory. If a suitable category doesn't exist, you can propose a new one in your pull request.
@@ -144,6 +162,12 @@ pre-commit run --all-files
    - References to related issues (e.g., "Closes #123")
 
 4. **Code Review**: Address feedback from maintainers
+
+### Recognition for Contributors
+
+- Your name will be added to the contributors list
+- Outstanding examples may be featured on the AgentScope website, documentation, or social media
+- You'll be part of a growing community shaping the future of agentic AI!
 
 Thank you for contributing to AgentScope Samples! If you have any questions, feel free to reach out through:
 
