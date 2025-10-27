@@ -4,6 +4,8 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, patch
 
+from agentscope.message import Msg
+
 # 设置环境变量
 os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 

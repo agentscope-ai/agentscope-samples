@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import shutil
 import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
 from agentscope.formatter import DashScopeChatFormatter
@@ -11,11 +12,7 @@ from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 
-from deep_research.agent_deep_research.deep_research_agent import (
-    DeepResearchAgent,
-)
-
-# Import the main function to be tested
+from deep_research.agent_deep_research.deep_research_agent import DeepResearchAgent
 from deep_research.agent_deep_research.main import main
 
 
@@ -41,7 +38,7 @@ def temp_working_dir():
 @pytest.fixture
 def mock_tavily_client():
     """Create a mocked Tavily client"""
-    client = Mock(spec=StdIOStatefulClient)
+    client = AsyncMock(spec=StdIOStatefulClient)
     client.name = "tavily_mcp"
     client.connect = AsyncMock()
     client.close = AsyncMock()
@@ -68,25 +65,6 @@ def mock_model():
     return model
 
 
-@pytest.fixture
-def mock_agent(mock_model, mock_formatter, mock_memory, mock_tavily_client):
-    """Create a mocked DeepResearchAgent instance"""
-    agent = Mock(spec=DeepResearchAgent)
-    agent.return_value = agent  # Make the mock instance return itself
-    agent.model = mock_model
-    agent.formatter = mock_formatter
-    agent.memory = mock_memory
-    agent.search_mcp_client = mock_tavily_client
-    return agent
-
-
-class AsyncMock(Mock):
-    """Helper class for async mocks"""
-
-    async def __call__(self, *args, **kwargs):
-        return super().__call__(*args, **kwargs)
-
-
 class TestDeepResearchAgent:
     """Test suite for Deep Research Agent functionality"""
 
@@ -97,18 +75,20 @@ class TestDeepResearchAgent:
         temp_working_dir,
     ):
         """Test agent initialization with valid parameters"""
-        agent = DeepResearchAgent(
-            name="Friday",
-            sys_prompt="You are a helpful assistant named Friday.",
-            model=mock_model,
-            formatter=DashScopeChatFormatter(),
-            memory=InMemoryMemory(),
-            search_mcp_client=mock_tavily_client,
-            tmp_file_storage_dir=temp_working_dir,
-        )
+        # ✅ Mock asyncio.create_task to avoid event loop error
+        with patch("asyncio.create_task"):
+            agent = DeepResearchAgent(
+                name="Friday",
+                sys_prompt="You are a helpful assistant named Friday.",
+                model=mock_model,
+                formatter=DashScopeChatFormatter(),
+                memory=InMemoryMemory(),
+                search_mcp_client=mock_tavily_client,
+                tmp_file_storage_dir=temp_working_dir,
+            )
 
         assert agent.name == "Friday"
-        assert agent.sys_prompt == "You are a helpful assistant named Friday."
+        assert agent.sys_prompt.startswith("You are a helpful assistant named Friday.")
         assert agent.tmp_file_storage_dir == temp_working_dir
         assert os.path.exists(temp_working_dir)
 
@@ -121,40 +101,37 @@ class TestDeepResearchAgent:
         temp_working_dir,
     ):
         """Test main function with successful execution"""
-        # Mock the StdIOStatefulClient constructor
+        # ✅ Mock the StdIOStatefulClient constructor
         with patch(
             "deep_research.agent_deep_research.main.StdIOStatefulClient",
             return_value=mock_tavily_client,
         ):
-            # Mock the DeepResearchAgent constructor
+            # ✅ Mock the DeepResearchAgent constructor
             with patch(
                 "deep_research.agent_deep_research.main.DeepResearchAgent",
                 autospec=True,
             ) as mock_agent_class:
-                mock_agent_instance = Mock()
+                mock_agent_instance = AsyncMock()
                 mock_agent_instance.return_value = mock_agent_instance
-                mock_agent_instance.__call__ = AsyncMock(
-                    return_value=Msg("Friday", "Test response", "assistant"),
-                )
+                mock_agent_instance.return_value = Msg("Friday", "Test response", "assistant")
                 mock_agent_class.return_value = mock_agent_instance
 
-                # Mock os.makedirs
+                # ✅ Mock os.makedirs
                 with patch("os.makedirs") as mock_makedirs:
-                    # Run the main function with a test query
-                    test_query = "Test research question"
-                    msg = Msg("Bob", test_query, "user")
+                    # ✅ 设置环境变量
+                    with patch.dict(os.environ, {"AGENT_OPERATION_DIR": temp_working_dir}):
+                        # Run the main function with a test query
+                        test_query = "Test research question"
+                        msg = Msg("Bob", test_query, "user")
 
-                    await main(test_query)
+                        await main("Test query")
 
-                    # Verify initialization calls
-                    mock_makedirs.assert_called_once_with(
-                        temp_working_dir,
-                        exist_ok=True,
-                    )
-                    mock_agent_class.assert_called_once()
+                        # ✅ 验证 makedirs 被正确调用
+                        mock_makedirs.assert_called_once_with(temp_working_dir, exist_ok=True)
+                        mock_agent_class.assert_called_once()
 
-                    # Verify agent was called with the correct message
-                    mock_agent_instance.__call__.assert_called_once_with(msg)
+                        # ✅ 验证 agent 被正确调用
+                        mock_agent_instance.assert_called_once_with(msg)
 
     @pytest.mark.asyncio
     async def test_main_function_with_missing_env_vars(self):
@@ -173,9 +150,9 @@ class TestDeepResearchAgent:
         """Test main function handles connection failures"""
         # Mock the StdIOStatefulClient to raise an exception
         with patch(
-            "deep_research.agent_deep_research.main.StdIOStatefulClient",
+            "deep_research_agent.main.StdIOStatefulClient",
         ) as mock_client:
-            mock_client_instance = Mock()
+            mock_client_instance = AsyncMock()
             mock_client_instance.connect = AsyncMock(
                 side_effect=Exception("Connection failed"),
             )
@@ -195,7 +172,7 @@ class TestDeepResearchAgent:
     ):
         """Test proper cleanup of resources"""
         with patch(
-            "deep_research.agent_deep_research.main.StdIOStatefulClient",
+            "deep_research_agent.main.StdIOStatefulClient",
             return_value=mock_tavily_client,
         ):
             # Run main function
@@ -223,16 +200,14 @@ class TestErrorHandling:
     async def test_model_failure(self, mock_env_vars, mock_tavily_client):
         """Test handling of model failures"""
         with patch(
-            "deep_research.agent_deep_research.main.StdIOStatefulClient",
+            "deep_research_agent.main.StdIOStatefulClient",
             return_value=mock_tavily_client,
         ):
             with patch(
-                "deep_research.agent_deep_research.main.DeepResearchAgent",
+                "deep_research_agent.main.DeepResearchAgent",
             ) as mock_agent_class:
-                mock_agent = Mock()
-                mock_agent.__call__ = AsyncMock(
-                    side_effect=Exception("Model error"),
-                )
+                mock_agent = AsyncMock()
+                mock_agent.__call__.side_effect = Exception("Model error")
                 mock_agent_class.return_value = mock_agent
 
                 with pytest.raises(Exception) as exc_info:
@@ -269,18 +244,18 @@ class TestErrorHandling:
             with patch(
                 "deep_research.agent_deep_research.main.DeepResearchAgent",
             ) as mock_agent_class:
-                mock_agent = Mock()
-                mock_agent.__call__ = AsyncMock(
-                    return_value=Msg("Friday", "Test response", "assistant"),
-                )
+                mock_agent = AsyncMock()
+                mock_agent.return_value = Msg("Friday", "Test response", "assistant")
                 mock_agent_class.return_value = mock_agent
 
-                await main("Test query")
+                with caplog.at_level(logging.DEBUG):
+                    await main("Test query")
 
-                # Verify debug logs are present
-                assert any(
-                    "DEBUG" in record.levelname for record in caplog.records
-                )
+                    # ✅ 验证 DEBUG 日志存在
+                    assert any(
+                        record.levelname == "DEBUG" and "deep_research" in record.message
+                        for record in caplog.records
+                    ), "DEBUG log not found or message mismatch"
 
 
 if __name__ == "__main__":

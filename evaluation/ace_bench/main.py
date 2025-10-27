@@ -129,4 +129,7 @@ async def main() -> None:
     await evaluator.run(react_agent_solution)
 
 
-asyncio.run(main())
+# asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(main())
