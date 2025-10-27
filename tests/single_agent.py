@@ -7,15 +7,15 @@ from unittest.mock import AsyncMock, patch
 os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 # 导入被测模块
-from ..functionality.stream_printing_messages import single_agent
-
+from functionality.stream_printing_messages import single_agent
+from agentscope.message import Msg
 @pytest.mark.asyncio
 async def test_toolkit_registration() -> None:
     """验证工具注册逻辑"""
     mock_toolkit = AsyncMock()
     mock_toolkit.register_tool_function = AsyncMock()
 
-    with patch("stream_printing_messages.Toolkit", return_value=mock_toolkit):
+    with patch("agentscope.tool.Toolkit", return_value=mock_toolkit):
         agent = await single_agent.main()
         mock_toolkit.register_tool_function.assert_any_call(
             single_agent.execute_shell_command
@@ -30,7 +30,7 @@ async def test_streaming_messages() -> None:
     mock_agent = AsyncMock()
     mock_agent.return_value = {"content": "Hello, World!"}
 
-    with patch("stream_printing_messages.ReActAgent", return_value=mock_agent):
+    with patch("agentscope.agent.ReActAgent", return_value=mock_agent):
         async for msg, last in single_agent.stream_printing_messages(
             agents=[mock_agent],
             coroutine_task=mock_agent(Msg("user", "Hi", "user")),

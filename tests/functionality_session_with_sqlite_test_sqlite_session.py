@@ -2,9 +2,8 @@
 import os
 import asyncio
 import pytest
-import aio_sqlite
+import sqlite3
 from unittest.mock import AsyncMock, patch
-
 from agentscope.message import Msg
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
@@ -14,7 +13,8 @@ from agentscope.model import DashScopeChatModel
 os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 # 导入被测模块
-import sqlite_session
+import session_with_sqlite.sqlite_session as sqlite_session
+from session_with_sqlite import main
 
 # 使用内存数据库替代文件数据库
 SQLITE_PATH = ":memory:"  # 使用内存数据库
@@ -133,6 +133,3 @@ async def test_consecutive_interactions() -> None:
     assert len(new_agent.memory) == 1
 
     await session.close()
-
-if __name__ == "__main__":
-    asyncio.run(pytest.main(["-v", __file__]))
