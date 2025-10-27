@@ -88,11 +88,6 @@ pre-commit run --all-files
 - [ ] Root `README.md` updated with the new example
 - [ ] PR title is clear (e.g.,  `Add multi-turn chatbot example`）
 
-# 🚧 Future Plans (Coming Soon)
-| Feature | Status | Target Version | Description |
-|-----|-----|-----|-----|
-|Automated test coverage report|	✅ Planned|	v0.2|	Integrate GitHub Action visualization|\
-|Performance benchmarking|	🟡 In Dev|	v0.4|	Compare performance across configurations|
 ---
 
 ### **Key Design Notes**
