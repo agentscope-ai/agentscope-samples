@@ -86,7 +86,7 @@ It includes **context management** and **secure sandboxing**, and can be used wi
 
 ## 📌 Example List
 
-| Category                | Example Folder                                        | Uses AgentScope | Uses Runtime | Description                                      |
+| Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
