@@ -33,6 +33,8 @@ If you'd like a feature or new type of example that doesn't exist in AgentScope 
 - How it should work
 - What problem it solves or what use case it demonstrates
 
+**Note**: If you want to contribute your own example, please also open an issue first to discuss your idea and avoid duplicate work.
+
 
 
 ## Contributing Code
