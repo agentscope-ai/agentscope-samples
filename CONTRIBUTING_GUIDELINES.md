@@ -33,9 +33,9 @@ agentscope-samples/
 
 ### 1. **Directory Placement**
 - **Location**:
-  Choose an existing subdirectory（e.g., `browser_use/`、`games/`), or create a new one (update the **Example List** table in the root `README.md`)
+  Choose an existing subdirectory (e.g., `browser_use/`、`games/`), or create a new one (update the **Example List** table in the root `README.md`)
 - **File Naming**:  
-  - Example files: `feature_description.py`（如 `chatbot_multi_turn.py`）  
+  - Example files: `feature_description.py`(如 `chatbot_multi_turn.py`)  
   - Test files: `test_feature_description.py`
 
 ### 2. **Write a Detailed README**
@@ -62,7 +62,7 @@ python chatbot_multi_turn.py
 Update the **Example List** table with links to new examples.
 
 ### 3. **Dependency Management**
-- **Each Subdirectory Requires `requirements.txt`**：  
+- **Each Subdirectory Requires `requirements.txt`**:  
 List only dependencies needed for that example:
 
 ```txt
@@ -81,11 +81,11 @@ pre-commit run --all-files
 
 
 ### PR Checklist
-- [ ] Example placed in the correct subdirectory (e.g., `browser_use/`、`games/`）
+- [ ] Example placed in the correct subdirectory (e.g., `browser_use/`、`games/`)
 - [ ] Subdirectory includes `README.md` and `requirements.txt`
 - [ ] Code formatted with `pre-commit`
 - [ ] New test cases cover core functionality
 - [ ] Root `README.md` updated with the new example
-- [ ] PR title is clear (e.g.,  `Add multi-turn chatbot example`）
+- [ ] PR title is clear (e.g.,  `Add multi-turn chatbot example`)
 
 ---
