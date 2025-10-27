@@ -147,12 +147,6 @@ See the [Contributing](https://github.com/agentscope-ai/agentscope-samples/blob/
 
 This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE) file for details.
 
-------
-
-## ⚠️ Disclaimer
-
-- This is not an officially supported product.
-- For **demonstration purposes only** — not intended for production use.
 
 ------
 
