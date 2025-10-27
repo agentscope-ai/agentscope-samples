@@ -88,7 +88,7 @@ Your README.md **must** include:
 2. **Project Structure** (mandatory): File tree with descriptions
    ```markdown
    ## 🌳 Project Structure
-   
+
    \`\`\`
    .
    ├── README.md                 # Documentation
