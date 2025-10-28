@@ -1,5 +1,13 @@
 # AgentScope Sample Agents
 
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
+[![Docs](https://img.shields.io/badge/docs-AgentScope-blue)](https://doc.agentscope.io/)
+[![Runtime Docs](https://img.shields.io/badge/docs-AgentScope%20Runtime-red)](https://runtime.agentscope.io/)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-samples)](https://github.com/agentscope-ai/agentscope-samples)
+
+[[中文README]](README_zh.md)
+
 Welcome to the **AgentScope Sample Agents** repository! 🎯
 This repository provides **ready-to-use Python sample agents** built on top of:
 
@@ -23,7 +31,7 @@ AgentScope Runtime is a **comprehensive runtime framework** that addresses two k
 1. **Effective Agent Deployment** – Scalable deployment and management of agents across environments.
 2. **Sandboxed Tool Execution** – Secure, isolated execution of tools and external actions.
 
-It includes **context management** and **secure sandboxing**, and can be used with **AgentScope** or other agent frameworks.
+It includes **agent deployment** and **secure sandboxed tool execution**, and can be used with **AgentScope** or other agent frameworks.
 
 ------
 
@@ -121,7 +129,7 @@ If you:
 Please:
 
 1. Read the sample-specific `README.md`.
-2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/blob/main/issues).
+2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/issues).
 3. Join the community discussions:
 
 | [Discord](https://discord.gg/eYMpfnkG8h)                                                                                         | DingTalk                                                                                                                          |
