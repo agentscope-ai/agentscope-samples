@@ -16,7 +16,8 @@ import functionality.plan.main_manual_plan as main_manual_plan
 async def test_plan_notebook_initialization() -> None:
     """验证 PlanNotebook 初始化"""
     with patch(
-        "functionality.plan.main_manual_plan.PlanNotebook", autospec=True
+        "functionality.plan.main_manual_plan.PlanNotebook",
+        autospec=True,
     ) as mock_notebook:
         await main_manual_plan.main()
         mock_notebook.assert_called_once()
@@ -37,7 +38,8 @@ async def test_subtasks_registration() -> None:
 async def test_manual_plan_execution() -> None:
     """验证手动计划执行"""
     with patch(
-        "functionality.plan.main_manual_plan.UserAgent", autospec=True
+        "functionality.plan.main_manual_plan.UserAgent",
+        autospec=True,
     ) as mock_user:
         mock_user.return_value.__call__.side_effect = lambda x: Msg(
             "user",

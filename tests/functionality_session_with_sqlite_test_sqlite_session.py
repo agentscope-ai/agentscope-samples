@@ -41,7 +41,9 @@ async def test_save_and_load_session() -> None:
     # 创建 Mock Agent
     mock_model = AsyncMock(spec=DashScopeChatModel)
     mock_model.get_response.return_value = Msg(
-        "assistant", "Washington D.C.", "friday"
+        "assistant",
+        "Washington D.C.",
+        "friday",
     )
 
     agent = ReActAgent(
@@ -63,7 +65,8 @@ async def test_save_and_load_session() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.load_session_state(
-        session_id="alice", friday_of_user=new_agent
+        session_id="alice",
+        friday_of_user=new_agent,
     )
 
     # 验证历史消息
@@ -85,7 +88,8 @@ async def test_user_isolation() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.save_session_state(
-        session_id="alice", friday_of_user=alice_agent
+        session_id="alice",
+        friday_of_user=alice_agent,
     )
 
     # Bob 的会话
@@ -96,7 +100,8 @@ async def test_user_isolation() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.save_session_state(
-        session_id="bob", friday_of_user=bob_agent
+        session_id="bob",
+        friday_of_user=bob_agent,
     )
 
     # 验证 Alice 的会话
@@ -107,7 +112,8 @@ async def test_user_isolation() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.load_session_state(
-        session_id="alice", friday_of_user=alice_new_agent
+        session_id="alice",
+        friday_of_user=alice_new_agent,
     )
     assert len(alice_new_agent.memory) == 1
 
@@ -119,7 +125,8 @@ async def test_user_isolation() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.load_session_state(
-        session_id="bob", friday_of_user=bob_new_agent
+        session_id="bob",
+        friday_of_user=bob_new_agent,
     )
     assert len(bob_new_agent.memory) == 1
 
@@ -148,7 +155,8 @@ async def test_consecutive_interactions() -> None:
         formatter=DashScopeChatFormatter(),
     )
     await session.load_session_state(
-        session_id="alice", friday_of_user=new_agent
+        session_id="alice",
+        friday_of_user=new_agent,
     )
     assert len(new_agent.memory) == 1
 

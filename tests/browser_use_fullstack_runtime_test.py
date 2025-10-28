@@ -35,14 +35,14 @@ async def agent_singleton():
     ) as MockMemoryService, patch(
         "browser_use.browser_use_fullstack_runtime.backend.agentscope_browseruse_agent.InMemorySessionHistoryService",
     ) as MockHistoryService, patch(
-        "agentscope_runtime.sandbox.manager.container_clients.docker_client.docker"
+        "agentscope_runtime.sandbox.manager.container_clients.docker_client.docker",
     ) as mock_docker, patch(
-        "agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager"
+        "agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager",
     ) as MockSandboxManager:
         # ✅ Completely mock Docker dependencies
         mock_api = MagicMock()
         mock_api.version.return_value = {
-            "ApiVersion": "1.0"
+            "ApiVersion": "1.0",
         }  # Avoid real API calls
 
         mock_client = MagicMock()
@@ -123,10 +123,10 @@ async def test_chat_method(agent_singleton):
                         "delta": {
                             "content": "Test response",
                             "cards": [
-                                {"type": "text", "text": "Test response"}
+                                {"type": "text", "text": "Test response"},
                             ],
                         },
-                    }
+                    },
                 ],
             }
 

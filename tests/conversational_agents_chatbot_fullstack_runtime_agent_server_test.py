@@ -27,13 +27,13 @@ async def test_local_deploy():
     ):
         # Mock 依赖
         with patch(
-            "conversational_agents.chatbot_fullstack_runtime.agent_server.LLMAgent"
+            "conversational_agents.chatbot_fullstack_runtime.agent_server.LLMAgent",
         ) as mock_agent:
             mock_agent_instance = MagicMock()
             mock_agent.return_value = mock_agent_instance
 
             with patch(
-                "conversational_agents.chatbot_fullstack_runtime.agent_server.Runner"
+                "conversational_agents.chatbot_fullstack_runtime.agent_server.Runner",
             ) as mock_runner:
                 mock_runner_instance = MagicMock()
                 mock_runner.return_value = mock_runner_instance
@@ -65,5 +65,6 @@ async def test_local_deploy():
                         mock_agent.assert_called_once()
                         mock_runner.assert_called_once()
                         mock_deploy.assert_called_once_with(
-                            host="localhost", port=8090
+                            host="localhost",
+                            port=8090,
                         )

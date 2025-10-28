@@ -121,13 +121,14 @@ def test_filter_execution_text(agent):
 @pytest.mark.asyncio
 async def test_memory_summarizing(agent):
     agent.memory.get_memory = AsyncMock(
-        return_value=[MagicMock(role="user", content="Original question")] * 25
+        return_value=[MagicMock(role="user", content="Original question")]
+        * 25,
     )
     agent.memory.size = AsyncMock(return_value=25)
 
     agent.model = AsyncMock()
     agent.model.return_value = MagicMock(
-        content=[MagicMock(text="Summary text")]
+        content=[MagicMock(text="Summary text")],
     )
 
     await agent._memory_summarizing()

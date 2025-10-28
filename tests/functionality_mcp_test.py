@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-
-"""This module contains utility functions for data processing."""
 from unittest.mock import AsyncMock, Mock, patch
-
 import pytest
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter

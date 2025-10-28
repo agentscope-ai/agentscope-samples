@@ -38,7 +38,7 @@ def mock_toolkit():
 def mock_model():
     """Create a mocked DashScopeChatModel"""
     with patch(
-        "conversational_agents.chatbot.main.DashScopeChatModel"
+        "conversational_agents.chatbot.main.DashScopeChatModel",
     ) as mock:
         mock_instance = MagicMock()
         mock.return_value = mock_instance
@@ -59,7 +59,7 @@ def mock_model():
 def mock_formatter():
     """Create a mocked formatter"""
     with patch(
-        "conversational_agents.chatbot.main.DashScopeChatFormatter"
+        "conversational_agents.chatbot.main.DashScopeChatFormatter",
     ) as mock:
         mock_instance = MagicMock()
         mock.return_value = mock_instance
@@ -87,7 +87,10 @@ def mock_memory():
 # Async tests
 @pytest.mark.asyncio
 async def test_agent_initialization(
-    mock_toolkit, mock_model, mock_formatter, mock_memory
+    mock_toolkit,
+    mock_model,
+    mock_formatter,
+    mock_memory,
 ):
     """Test ReAct agent initialization"""
     with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
@@ -177,7 +180,7 @@ async def test_tool_execution():
 
     # Test shell command
     with patch(
-        "conversational_agents.chatbot.main.execute_shell_command"
+        "conversational_agents.chatbot.main.execute_shell_command",
     ) as mock_shell:
         mock_shell.return_value = AsyncMock(return_value=MockToolResponse())
         result = await execute_shell_command("echo test")
@@ -185,7 +188,7 @@ async def test_tool_execution():
 
     # Test Python code execution
     with patch(
-        "conversational_agents.chatbot.main.execute_python_code"
+        "conversational_agents.chatbot.main.execute_python_code",
     ) as mock_python:
         mock_python.return_value = AsyncMock(return_value=MockToolResponse())
         result = await execute_python_code("print('test')", timeout=5)
@@ -193,7 +196,7 @@ async def test_tool_execution():
 
     # Test file reading
     with patch(
-        "conversational_agents.chatbot.main.view_text_file"
+        "conversational_agents.chatbot.main.view_text_file",
     ) as mock_file:
         mock_file.return_value = AsyncMock(return_value=MockToolResponse())
         result = await view_text_file("test.txt")
