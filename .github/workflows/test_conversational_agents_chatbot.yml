@@ -1,4 +1,3 @@
-# test_conversational_agents_chatbot.yml
 name: Conversational Agents Chatbot Test
 on:
   push:
@@ -28,7 +27,7 @@ jobs:
           cd conversational_agents/chatbot
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
-          pip install agentscope dashscope
+          pip install agentscope dashscope flask flask_sqlalchemy
 
       - name: Run tests
         env:

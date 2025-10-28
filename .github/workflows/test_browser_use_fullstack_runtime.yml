@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # ✅ Use correct relative path
+          # ✅ Use validated path from debug output
           cd browser_use_fullstack_runtime/backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -37,6 +37,6 @@ jobs:
 
       - name: Run tests
         run: |
-          # ✅ Use correct relative path
+          # ✅ Use validated path from debug output
           cd browser_use_fullstack_runtime
           python -m pytest tests/browser_use_fullstack_runtime_test.py -v
