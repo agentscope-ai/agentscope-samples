@@ -42,13 +42,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
           pip install -e .  # Install local package in development mode
+          pip install selenium playwright  # ✅ Add browser-related dependencies
 
       - name: Run Tests
         run: |
           # ✅ Ensure test-results directory exists
           mkdir -p test-results
           # ✅ Run tests with XML output
-          pytest tests/test_browser_agent.py -v --junitxml=test-results/results.xml
+          cd tests
+          python -m pytest test_browser_agent.py -v --junitxml=../test-results/results.xml
 
       - name: Upload Test Report
         if: always()

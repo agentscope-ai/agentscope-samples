@@ -27,4 +27,4 @@ jobs:
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
-          python3 -m pytest test/test_single_agent.py -v
+          python3 -m pytest tests/single_agent.py -v
