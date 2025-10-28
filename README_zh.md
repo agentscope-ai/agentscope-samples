@@ -1,5 +1,8 @@
 # AgentScope 示例 Agent
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-0-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
 [![Docs](https://img.shields.io/badge/docs-AgentScope-blue)](https://doc.agentscope.io/)
@@ -163,3 +166,16 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 - [AgentScope Runtime 文档](https://runtime.agentscope.io/)
 - [AgentScope GitHub 仓库](https://github.com/agentscope-ai/agentscope)
 - [AgentScope Runtime GitHub 仓库](https://github.com/agentscope-ai/agentscope-runtime)
+
+## 贡献者 ✨
+
+感谢这些优秀的贡献者们 ([表情符号说明](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+本项目遵循 [all-contributors](https://github.com/all-contributors/all-contributors) 规范。欢迎任何形式的贡献！
