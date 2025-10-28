@@ -1,6 +1,6 @@
 {
   "projectName": "agentscope-samples",
-  "projectOwner": "AgentScopeTeam",
+  "projectOwner": "agentscope-ai",
   "repoType": "github",
   "repoHost": "https://github.com",
   "files": [
@@ -10,7 +10,21 @@
   "imageSize": 100,
   "commit": true,
   "commitConvention": "angular",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "rayrayraykk",
+      "name": "Weirui Kuang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39145382?v=4",
+      "profile": "http://weiruikuang.com",
+      "contributions": [
+        "maintenance",
+        "code",
+        "review",
+        "doc"
+      ]
+    }
+  ],
   "contributorsPerLine": 7,
-  "linkToUsage": true
+  "linkToUsage": true,
+  "commitType": "docs"
 }
