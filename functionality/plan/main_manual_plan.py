@@ -97,5 +97,5 @@ async def main() -> None:
         if msg.get_text_content() == "exit":
             break
 
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -7,7 +7,7 @@ from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
-from sqlite_session import SqliteSession
+from functionality.session_with_sqlite.sqlite_session import SqliteSession
 
 SQLITE_PATH = "./session.db"
 

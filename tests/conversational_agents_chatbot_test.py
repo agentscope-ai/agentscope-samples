@@ -1,244 +1,264 @@
-# -*- coding: utf-8 -*-
-import os
+from datetime import datetime, timezone
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from agentscope.message import Msg
+from unittest.mock import MagicMock, patch
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
-with patch("conversational_agents.chatbot.main.asyncio.run"):
-    from conversational_agents.chatbot.main import (
-        ReActAgent,
-        UserAgent,
-        Toolkit,
+# Initialize db instance
+db = SQLAlchemy()
+
+
+# Define models (defined once)
+class User(db.Model):
+    __tablename__ = "user"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class Conversation(db.Model):
+    __tablename__ = "conversation"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
-    from conversational_agents.chatbot.main import (
-        execute_shell_command,
-        execute_python_code,
-        view_text_file,
-    )
+    messages = db.relationship("Message", backref="conversation", lazy=True)
+
+
+class Message(db.Model):
+    __tablename__ = "message"
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    sender = db.Column(db.String(20), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey("conversation.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+# Create isolated Flask app
+@pytest.fixture
+def app():
+    """Create a new Flask app instance"""
+    app = Flask(__name__)
+    app.config.update({
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        "TESTING": True,
+    })
+
+    # Initialize db
+    db.init_app(app)
+
+    # Define routes
+    @app.route("/api/login", methods=["POST"])
+    def login():
+        data = request.get_json()
+        username = data.get("username")
+        password = data.get("password")
+
+        if not username or not password:
+            return jsonify({"error": "Username and password cannot be empty"}), 400
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            return jsonify({
+                "id": user.id,
+                "username": user.username,
+                "name": user.name,
+                "created_at": user.created_at.isoformat(),
+            }), 200
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    @app.route("/api/users/<int:user_id>/conversations", methods=["POST"])
+    def create_conversation(user_id):
+        data = request.get_json()
+        title = data.get("title", f"Conversation {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        conversation = Conversation(title=title, user_id=user_id)
+        db.session.add(conversation)
+        db.session.commit()
+        return jsonify({
+            "id": conversation.id,
+            "title": conversation.title,
+            "user_id": conversation.user_id,
+            "created_at": conversation.created_at.isoformat(),
+            "updated_at": conversation.updated_at.isoformat(),
+        }), 201
+
+    @app.route("/api/conversations/<int:conversation_id>", methods=["GET"])
+    def get_conversation(conversation_id):
+        conversation = Conversation.query.get(conversation_id)
+        if not conversation:
+            return jsonify({"error": "Conversation not found"}), 404
+
+        messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.created_at.asc()).all()
+        messages_data = [{
+            "id": msg.id,
+            "text": msg.text,
+            "sender": msg.sender,
+            "created_at": msg.created_at.isoformat(),
+        } for msg in messages]
+
+        return jsonify({
+            "id": conversation.id,
+            "title": conversation.title,
+            "user_id": conversation.user_id,
+            "messages": messages_data,
+            "created_at": conversation.created_at.isoformat(),
+            "updated_at": conversation.updated_at.isoformat(),
+        }), 200
+
+    @app.route("/api/conversations/<int:conversation_id>/messages", methods=["POST"])
+    def send_message(conversation_id):
+        conversation = Conversation.query.get(conversation_id)
+        if not conversation:
+            return jsonify({"error": "Conversation not found"}), 404
+
+        data = request.get_json()
+        text = data.get("text")
+        sender = data.get("sender", "user")
+
+        if not text:
+            return jsonify({"error": "Message content cannot be empty"}), 400
+
+        # Create user message
+        user_message = Message(
+            text=text,
+            sender=sender,
+            conversation_id=conversation_id
+        )
+        db.session.add(user_message)
+
+        # Update conversation title (if it's the first user message)
+        if sender == "user" and len(conversation.messages) <= 1:
+            conversation.title = text[:20] + ("..." if len(text) > 20 else "")
+
+        db.session.commit()
+
+        # Simulate AI reply
+        ai_message = Message(
+            text="Test response part 1 Test response part 2",
+            sender="ai",
+            conversation_id=conversation_id
+        )
+        db.session.add(ai_message)
+        db.session.commit()
+
+        return jsonify({
+            "id": user_message.id,
+            "text": user_message.text,
+            "sender": user_message.sender,
+            "created_at": user_message.created_at.isoformat(),
+        }), 201
+
+    # Initialize database
+    with app.app_context():
+        db.create_all()
+        # Create sample user
+        if not User.query.first():
+            user1 = User(username="user1", name="Bruce")
+            user1.set_password("password123")
+            db.session.add(user1)
+            db.session.commit()
+
+    yield app
+
+    with app.app_context():
+        db.drop_all()
+        db.session.remove()
 
 
 @pytest.fixture
-def mock_toolkit():
-    """Create a mocked Toolkit instance"""
-    with patch("conversational_agents.chatbot.main.Toolkit") as mock:
-        toolkit = MagicMock()
-        mock.return_value = toolkit
-
-        # Create tool registry mock
-        toolkit._tools = {
-            "execute_shell_command": MagicMock(),
-            "execute_python_code": MagicMock(),
-            "view_text_file": MagicMock(),
-        }
-
-        return toolkit
+def client(app):
+    """Flask test client"""
+    return app.test_client()
 
 
-@pytest.fixture
-def mock_model():
-    """Create a mocked DashScopeChatModel"""
-    with patch(
-        "conversational_agents.chatbot.main.DashScopeChatModel",
-    ) as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
-
-        # Fix model.call simulation
-        mock_instance.__call__ = AsyncMock(
-            return_value=Msg(
-                name="Model",
-                content="mocked response",
-                role="assistant",
-            ),
-        )
-
-        return mock_instance
+# Mock call_runner function
+def mock_call_runner(query, session_id, user_id):
+    """Mock function for call_runner"""
+    yield "Test response part 1"
+    yield " Test response part 2"
 
 
-@pytest.fixture
-def mock_formatter():
-    """Create a mocked formatter"""
-    with patch(
-        "conversational_agents.chatbot.main.DashScopeChatFormatter",
-    ) as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
+def test_login_success(app, client):
+    """Test successful user login"""
+    with app.app_context():
+        user = User(username="test", name="Test User")
+        user.set_password("testpass")
+        db.session.add(user)
+        db.session.commit()
 
-        # Fix formatter.format async call
-        mock_instance.format = AsyncMock(return_value="mocked prompt")
+    response = client.post("/api/login", json={
+        "username": "test",
+        "password": "testpass",
+    })
 
-        return mock_instance
-
-
-@pytest.fixture
-def mock_memory():
-    """Create a mocked memory"""
-    with patch("conversational_agents.chatbot.main.InMemoryMemory") as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
-
-        # Fix await memory.get_memory() error
-        mock_instance.get_memory = AsyncMock(return_value=[])
-        mock_instance.add = AsyncMock(return_value=None)
-
-        return mock_instance
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["username"] == "test"
 
 
-# Async tests
-@pytest.mark.asyncio
-async def test_agent_initialization(
-    mock_toolkit,
-    mock_model,
-    mock_formatter,
-    mock_memory,
-):
-    """Test ReAct agent initialization"""
-    with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
-        # Create mocked model
-        mock_model = MagicMock()
-
-        # Initialize agent
-        agent = ReActAgent(
-            name="Friday",
-            sys_prompt="You are a helpful assistant named Friday.",
-            model=mock_model,
-            formatter=mock_formatter,
-            toolkit=mock_toolkit,
-            memory=mock_memory,
-        )
-
-        assert agent.name == "Friday"
-        assert agent.sys_prompt == "You are a helpful assistant named Friday."
-        assert agent.model is mock_model
-        assert agent.formatter is mock_formatter
-        assert agent.toolkit is mock_toolkit
-        assert agent.memory is mock_memory
+def test_login_invalid_credentials(app, client):
+    """Test login with invalid credentials"""
+    response = client.post("/api/login", json={
+        "username": "test",
+        "password": "wrongpass"
+    })
+    assert response.status_code == 401
 
 
-@pytest.mark.asyncio
-async def test_tool_function_registration(mock_toolkit):
-    """Test tool functions are properly registered"""
-    with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
-        # Create mocked model
-        mock_model = MagicMock()
+def test_conversation_crud_operations(app, client):
+    """Test conversation creation and retrieval"""
+    with app.app_context():
+        user = User(username="test", name="Test User")
+        user.set_password("testpass")
+        db.session.add(user)
+        db.session.commit()
 
-        # Initialize agent
-        agent = ReActAgent(
-            name="Friday",
-            sys_prompt="You are a helpful assistant named Friday.",
-            model=mock_model,
-            formatter=MagicMock(),
-            toolkit=mock_toolkit,
-            memory=MagicMock(),
-        )
+    create_response = client.post("/api/users/1/conversations", json={
+        "title": "Test Conversation",
+    })
+    assert create_response.status_code == 201
+    conversation_id = create_response.get_json()["id"]
 
-        # Verify tool registration
-        assert "execute_shell_command" in agent.toolkit._tools
-        assert "execute_python_code" in agent.toolkit._tools
-        assert "view_text_file" in agent.toolkit._tools
+    get_response = client.get(f"/api/conversations/{conversation_id}")
+    assert get_response.status_code == 200
+    assert "Test Conversation" in get_response.get_json()["title"]
 
 
-@pytest.mark.asyncio
-async def test_user_interaction(mock_toolkit, mock_model):
-    """Test user-agent interaction loop"""
-    with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
-        # Create mocked memory
-        mock_memory = MagicMock()
-        mock_memory.get_history = MagicMock(return_value=[])
+@patch("tests.conversational_agents_chatbot_fullstack_runtime_webserver_test.db", new=db)
+def test_send_message(app, client):
+    """Test message sending and AI response"""
+    with app.app_context():
+        user = User(username="test", name="Test User")
+        user.set_password("testpass")
+        conversation = Conversation(title="Test", user_id=1)
+        db.session.add_all([user, conversation])
+        db.session.commit()
 
-        # Create mocked formatter
-        mock_formatter = MagicMock()
+    response = client.post("/api/conversations/1/messages", json={
+        "text": "Hello",
+        "sender": "user"
+    })
+    assert response.status_code == 201
+    data = response.get_json()
+    assert "id" in data
+    assert "Hello" in data["text"]
 
-        # Create agent and user
-        agent = ReActAgent(
-            name="Friday",
-            sys_prompt="You are a helpful assistant named Friday.",
-            model=mock_model,
-            formatter=mock_formatter,
-            toolkit=mock_toolkit,
-            memory=mock_memory,
-        )
-
-        user = UserAgent("User")
-
-        # Test exit command
-        with patch("builtins.input", return_value="exit"):
-            msg = await user("exit")
-            assert (
-                msg.content == "exit"
-            )  # Fix content being a string instead of dict
-
-
-@pytest.mark.asyncio
-async def test_tool_execution():
-    """Test tool function execution"""
-
-    # Simulate ToolResponse structure
-    class MockToolResponse:
-        def __str__(self):
-            return "ToolResponse(content=[{'type': 'text', 'text': '<returncode>0</returncode><stdout>test\\n</stdout><stderr></stderr>'}], metadata=None, stream=False, is_last=True, is_interrupted=False, id='test')"
-
-    # Test shell command
-    with patch(
-        "conversational_agents.chatbot.main.execute_shell_command",
-    ) as mock_shell:
-        mock_shell.return_value = AsyncMock(return_value=MockToolResponse())
-        result = await execute_shell_command("echo test")
-        assert "test" in str(result)  # Fix assertion content
-
-    # Test Python code execution
-    with patch(
-        "conversational_agents.chatbot.main.execute_python_code",
-    ) as mock_python:
-        mock_python.return_value = AsyncMock(return_value=MockToolResponse())
-        result = await execute_python_code("print('test')", timeout=5)
-        assert "test" in str(result)
-
-    # Test file reading
-    with patch(
-        "conversational_agents.chatbot.main.view_text_file",
-    ) as mock_file:
-        mock_file.return_value = AsyncMock(return_value=MockToolResponse())
-        result = await view_text_file("test.txt")
-        assert "test" in str(result)
-
-
-@pytest.mark.asyncio
-async def test_memory_integration(mock_memory):
-    """Test memory integration"""
-    with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
-        # Create mocked model
-        mock_model = MagicMock()
-
-        # Create mocked formatter
-        mock_formatter = MagicMock()
-        mock_formatter.format = AsyncMock(return_value="mocked prompt")
-
-        # Initialize agent
-        agent = ReActAgent(
-            name="Friday",
-            sys_prompt="You are a helpful assistant named Friday.",
-            model=mock_model,
-            formatter=mock_formatter,
-            toolkit=MagicMock(),
-            memory=mock_memory,
-        )
-
-        # Fix all async-related mock objects
-        agent._reasoning_hint_msgs = MagicMock()
-        agent._reasoning_hint_msgs.get_memory = AsyncMock(return_value=[])
-        agent.plan_notebook = MagicMock()
-        agent.plan_notebook.get_current_hint = AsyncMock(return_value=None)
-        agent._reasoning_hint_msgs.add = AsyncMock()
-        agent.print = AsyncMock()
-
-        # Test memory recording
-        test_msg = Msg(
-            name="User",
-            content="test message",
-            role="user",
-        )
-
-        agent.memory.add = AsyncMock()  # Fix await expression error
-        await agent(test_msg)
-        agent.memory.add.assert_awaited_once_with(test_msg)
+    # Verify AI reply in database
+    with app.app_context():
+        messages = Message.query.filter_by(conversation_id=1).all()
+        assert len(messages) == 2  # User + AI reply

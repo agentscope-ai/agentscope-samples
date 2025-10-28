@@ -4,8 +4,8 @@
 import numpy as np
 from agentscope.agent import ReActAgent
 from agentscope.pipeline import MsgHub, fanout_pipeline, sequential_pipeline
-from prompt import EnglishPrompts as Prompts
-from utils import (
+from .prompt import EnglishPrompts as Prompts
+from .utils import (
     MAX_DISCUSSION_ROUND,
     MAX_GAME_ROUND,
     EchoAgent,

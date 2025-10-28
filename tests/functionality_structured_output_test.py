@@ -10,7 +10,7 @@ from agentscope.message import Msg
 os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 # 导入被测模块
-from structured_output import main
+from functionality.structured_output import main
 
 
 @pytest.mark.asyncio

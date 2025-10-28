@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 
-# 设置环境变量
+# Add root dir to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Set environment variables
 os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
-# 导入被测模块
-from ..functionality.stream_printing_messages import multi_agent
+# Import the module to test
+from functionality.stream_printing_messages import multi_agent
 
 
 @pytest.mark.asyncio
 async def test_agent_creation() -> None:
-    """验证代理创建逻辑"""
+    """Verify agent creation logic"""
     agent = multi_agent.create_agent("Alice")
     assert agent.name == "Alice"
     assert "Alice" in agent.sys_prompt
@@ -20,17 +24,26 @@ async def test_agent_creation() -> None:
 
 @pytest.mark.asyncio
 async def test_workflow_execution() -> None:
-    """验证多代理工作流执行"""
-    with patch("stream_printing_messages.MsgHub", AsyncMock()):
-        # 创建 Mock 代理
+    """Verify multi-agent workflow execution"""
+    # ✅ Create proper async context manager mock
+    mock_hub = AsyncMock()
+    mock_hub.__aenter__.return_value = mock_hub
+    mock_hub.__aexit__.return_value = AsyncMock()
+
+    # Patch the MsgHub to use our mock
+    with patch(
+        "functionality.stream_printing_messages.multi_agent.MsgHub",
+        return_value=mock_hub,
+    ):
+        # Create mock agents
         alice = AsyncMock()
         bob = AsyncMock()
         charlie = AsyncMock()
 
-        # 模拟工作流
+        # Run the workflow
         await multi_agent.workflow(alice, bob, charlie)
 
-        # 验证代理调用顺序
+        # Verify agents were called
         alice.assert_awaited()
         bob.assert_awaited()
         charlie.assert_awaited()

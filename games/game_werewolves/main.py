@@ -8,7 +8,7 @@ from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeMultiAgentFormatter
 from agentscope.model import DashScopeChatModel
 from agentscope.session import JSONSession
-from game import werewolves_game
+from games.game_werewolves.game import werewolves_game
 
 
 def get_official_agents(name: str) -> ReActAgent:
