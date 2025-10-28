@@ -1,3 +1,4 @@
+# test_conversational_agents_chatbot.yml
 name: Conversational Agents Chatbot Test
 on:
   push:
@@ -23,14 +24,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd /conversational_agents/chatbot
+          # ✅ Use correct relative path
+          cd conversational_agents/chatbot
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
           pip install agentscope dashscope
 
       - name: Run tests
         env:
-          DASHSCOPE_API_KEY: test_key  # 使用mock时实际不需要有效API key
+          DASHSCOPE_API_KEY: test_key
         run: |
-          cd /tests
+          # ✅ Use correct relative path
+          cd tests
           python -m pytest conversational_agents_chatbot_test.py -v
