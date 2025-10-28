@@ -9,12 +9,14 @@ os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 # 导入被测模块
 from ..functionality.stream_printing_messages import multi_agent
 
+
 @pytest.mark.asyncio
 async def test_agent_creation() -> None:
     """验证代理创建逻辑"""
     agent = multi_agent.create_agent("Alice")
     assert agent.name == "Alice"
     assert "Alice" in agent.sys_prompt
+
 
 @pytest.mark.asyncio
 async def test_workflow_execution() -> None:

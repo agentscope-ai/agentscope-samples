@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 import os
 import asyncio
 import pytest
 from typing import List, Dict
 from agentscope.message import Msg
-from functionality.long_term_memory_mem0.memory_example import Mem0LongTermMemory, ReActAgent
+from functionality.long_term_memory_mem0.memory_example import (
+    Mem0LongTermMemory,
+    ReActAgent,
+)
 
 # 跳过测试如果未配置 API 密钥
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
@@ -65,7 +69,7 @@ async def test_retrieve_memories() -> None:
                 role="user",
                 content="I prefer temperatures in Celsius",
                 name="user",
-            )
+            ),
         ],
     )
 
@@ -119,7 +123,10 @@ async def test_react_agent_with_long_term_memory() -> None:
     response = await agent(preference_msg)
 
     # 验证响应包含确认信息
-    assert "recorded" in response.get_text_content().lower() or "saved" in response.get_text_content().lower()
+    assert (
+        "recorded" in response.get_text_content().lower()
+        or "saved" in response.get_text_content().lower()
+    )
 
     # 查询用户偏好
     query_msg = Msg(

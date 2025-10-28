@@ -14,7 +14,7 @@ from agentscope.evaluate import Task, ACEPhone, SolutionOutput, ACEBenchmark
 from agentscope.tool import Toolkit
 
 # Import the main module from the correct path
-from ..evaluation.ace_bench import main as ace_main
+from evaluation.ace_bench import main as ace_main
 
 
 class TestReActAgentSolution:

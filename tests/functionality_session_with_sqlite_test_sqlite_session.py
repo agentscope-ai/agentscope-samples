@@ -19,10 +19,13 @@ from session_with_sqlite import main
 # 使用内存数据库替代文件数据库
 SQLITE_PATH = ":memory:"  # 使用内存数据库
 
+
 class MockSqliteSession(sqlite_session.SqliteSession):
     """使用内存数据库的 SqliteSession 子类"""
+
     def __init__(self) -> None:
         super().__init__(SQLITE_PATH)
+
 
 @pytest.mark.asyncio
 async def test_session_initialization() -> None:
@@ -31,12 +34,15 @@ async def test_session_initialization() -> None:
     assert session.db_path == SQLITE_PATH
     await session.close()
 
+
 @pytest.mark.asyncio
 async def test_save_and_load_session() -> None:
     """验证会话保存和加载功能"""
     # 创建 Mock Agent
     mock_model = AsyncMock(spec=DashScopeChatModel)
-    mock_model.get_response.return_value = Msg("assistant", "Washington D.C.", "friday")
+    mock_model.get_response.return_value = Msg(
+        "assistant", "Washington D.C.", "friday"
+    )
 
     agent = ReActAgent(
         name="friday",
@@ -56,12 +62,15 @@ async def test_save_and_load_session() -> None:
         model=mock_model,
         formatter=DashScopeChatFormatter(),
     )
-    await session.load_session_state(session_id="alice", friday_of_user=new_agent)
+    await session.load_session_state(
+        session_id="alice", friday_of_user=new_agent
+    )
 
     # 验证历史消息
     assert len(new_agent.memory) == 1
     assert new_agent.memory[0].content == "Washington D.C."
     await session.close()
+
 
 @pytest.mark.asyncio
 async def test_user_isolation() -> None:
@@ -75,7 +84,9 @@ async def test_user_isolation() -> None:
         model=AsyncMock(spec=DashScopeChatModel),
         formatter=DashScopeChatFormatter(),
     )
-    await session.save_session_state(session_id="alice", friday_of_user=alice_agent)
+    await session.save_session_state(
+        session_id="alice", friday_of_user=alice_agent
+    )
 
     # Bob 的会话
     bob_agent = ReActAgent(
@@ -84,7 +95,9 @@ async def test_user_isolation() -> None:
         model=AsyncMock(spec=DashScopeChatModel),
         formatter=DashScopeChatFormatter(),
     )
-    await session.save_session_state(session_id="bob", friday_of_user=bob_agent)
+    await session.save_session_state(
+        session_id="bob", friday_of_user=bob_agent
+    )
 
     # 验证 Alice 的会话
     alice_new_agent = ReActAgent(
@@ -93,7 +106,9 @@ async def test_user_isolation() -> None:
         model=AsyncMock(spec=DashScopeChatModel),
         formatter=DashScopeChatFormatter(),
     )
-    await session.load_session_state(session_id="alice", friday_of_user=alice_new_agent)
+    await session.load_session_state(
+        session_id="alice", friday_of_user=alice_new_agent
+    )
     assert len(alice_new_agent.memory) == 1
 
     # 验证 Bob 的会话
@@ -103,10 +118,13 @@ async def test_user_isolation() -> None:
         model=AsyncMock(spec=DashScopeChatModel),
         formatter=DashScopeChatFormatter(),
     )
-    await session.load_session_state(session_id="bob", friday_of_user=bob_new_agent)
+    await session.load_session_state(
+        session_id="bob", friday_of_user=bob_new_agent
+    )
     assert len(bob_new_agent.memory) == 1
 
     await session.close()
+
 
 @pytest.mark.asyncio
 async def test_consecutive_interactions() -> None:
@@ -129,7 +147,9 @@ async def test_consecutive_interactions() -> None:
         model=AsyncMock(spec=DashScopeChatModel),
         formatter=DashScopeChatFormatter(),
     )
-    await session.load_session_state(session_id="alice", friday_of_user=new_agent)
+    await session.load_session_state(
+        session_id="alice", friday_of_user=new_agent
+    )
     assert len(new_agent.memory) == 1
 
     await session.close()

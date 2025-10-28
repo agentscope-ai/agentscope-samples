@@ -18,20 +18,21 @@ async def test_toolkit_registration() -> None:
     mock_toolkit.register_tool_function = AsyncMock()
 
     # ✅ mock Toolkit 和 DashScopeChatModel
-    with patch("functionality.stream_printing_messages.single_agent.Toolkit", return_value=mock_toolkit), \
-         patch("agentscope.model.DashScopeChatModel") as mock_model:
-
+    with patch(
+        "functionality.stream_printing_messages.single_agent.Toolkit",
+        return_value=mock_toolkit,
+    ), patch("agentscope.model.DashScopeChatModel") as mock_model:
         # ✅ 模拟模型响应
         mock_model.return_value.get_response = AsyncMock(
-            return_value=Msg("assistant", "Test response", "assistant")
+            return_value=Msg("assistant", "Test response", "assistant"),
         )
 
         agent = await single_agent.main()
         mock_toolkit.register_tool_function.assert_any_call(
-            single_agent.execute_shell_command
+            single_agent.execute_shell_command,
         )
         mock_toolkit.register_tool_function.assert_any_call(
-            single_agent.execute_python_code
+            single_agent.execute_python_code,
         )
 
 
@@ -43,8 +44,8 @@ async def test_streaming_messages() -> None:
 
     with patch("agentscope.agent.ReActAgent", return_value=mock_agent):
         async for msg, last in single_agent.stream_printing_messages(
-                agents=[mock_agent],
-                coroutine_task=mock_agent(Msg("user", "Hi", "user")),
+            agents=[mock_agent],
+            coroutine_task=mock_agent(Msg("user", "Hi", "user")),
         ):
             assert msg == "Hello, World!"
             assert last == True

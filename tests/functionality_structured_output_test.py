@@ -12,6 +12,7 @@ os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 # 导入被测模块
 from structured_output import main
 
+
 @pytest.mark.asyncio
 async def test_table_model_output() -> None:
     """验证结构化输出符合 TableModel"""
@@ -26,7 +27,11 @@ async def test_table_model_output() -> None:
     # Patch DashScopeChatModel.get_response
     with patch(
         "structured_output.main.DashScopeChatModel.get_response",
-        AsyncMock(return_value=Msg("assistant", "", "Friday", metadata=mock_model_response)),
+        AsyncMock(
+            return_value=Msg(
+                "assistant", "", "Friday", metadata=mock_model_response
+            )
+        ),
     ):
         # 初始化 Agent
         toolkit = main.Toolkit()
@@ -67,7 +72,11 @@ async def test_choice_model_output() -> None:
     # Patch DashScopeChatModel.get_response
     with patch(
         "structured_output.main.DashScopeChatModel.get_response",
-        AsyncMock(return_value=Msg("assistant", "", "Friday", metadata=mock_model_response)),
+        AsyncMock(
+            return_value=Msg(
+                "assistant", "", "Friday", metadata=mock_model_response
+            )
+        ),
     ):
         # 初始化 Agent
         toolkit = main.Toolkit()

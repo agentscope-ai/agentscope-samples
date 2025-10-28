@@ -5,7 +5,7 @@ import logging
 import os
 import time
 
-from agentscope_browseruse_agent import AgentscopeBrowseruseAgent
+from .agentscope_browseruse_agent import AgentscopeBrowseruseAgent
 from agentscope_runtime.engine.schemas.agent_schemas import (
     DataContent,
     TextContent,

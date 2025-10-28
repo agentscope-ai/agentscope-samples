@@ -45,4 +45,5 @@ async def main() -> None:
         msg = await agent(msg)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

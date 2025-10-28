@@ -12,7 +12,9 @@ from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 
-from deep_research.agent_deep_research.deep_research_agent import DeepResearchAgent
+from deep_research.agent_deep_research.deep_research_agent import (
+    DeepResearchAgent,
+)
 from deep_research.agent_deep_research.main import main
 
 
@@ -88,7 +90,9 @@ class TestDeepResearchAgent:
             )
 
         assert agent.name == "Friday"
-        assert agent.sys_prompt.startswith("You are a helpful assistant named Friday.")
+        assert agent.sys_prompt.startswith(
+            "You are a helpful assistant named Friday."
+        )
         assert agent.tmp_file_storage_dir == temp_working_dir
         assert os.path.exists(temp_working_dir)
 
@@ -113,13 +117,17 @@ class TestDeepResearchAgent:
             ) as mock_agent_class:
                 mock_agent_instance = AsyncMock()
                 mock_agent_instance.return_value = mock_agent_instance
-                mock_agent_instance.return_value = Msg("Friday", "Test response", "assistant")
+                mock_agent_instance.return_value = Msg(
+                    "Friday", "Test response", "assistant"
+                )
                 mock_agent_class.return_value = mock_agent_instance
 
                 # ✅ Mock os.makedirs
                 with patch("os.makedirs") as mock_makedirs:
                     # ✅ 设置环境变量
-                    with patch.dict(os.environ, {"AGENT_OPERATION_DIR": temp_working_dir}):
+                    with patch.dict(
+                        os.environ, {"AGENT_OPERATION_DIR": temp_working_dir}
+                    ):
                         # Run the main function with a test query
                         test_query = "Test research question"
                         msg = Msg("Bob", test_query, "user")
@@ -127,7 +135,9 @@ class TestDeepResearchAgent:
                         await main("Test query")
 
                         # ✅ 验证 makedirs 被正确调用
-                        mock_makedirs.assert_called_once_with(temp_working_dir, exist_ok=True)
+                        mock_makedirs.assert_called_once_with(
+                            temp_working_dir, exist_ok=True
+                        )
                         mock_agent_class.assert_called_once()
 
                         # ✅ 验证 agent 被正确调用
@@ -245,7 +255,9 @@ class TestErrorHandling:
                 "deep_research.agent_deep_research.main.DeepResearchAgent",
             ) as mock_agent_class:
                 mock_agent = AsyncMock()
-                mock_agent.return_value = Msg("Friday", "Test response", "assistant")
+                mock_agent.return_value = Msg(
+                    "Friday", "Test response", "assistant"
+                )
                 mock_agent_class.return_value = mock_agent
 
                 with caplog.at_level(logging.DEBUG):
@@ -253,7 +265,8 @@ class TestErrorHandling:
 
                     # ✅ 验证 DEBUG 日志存在
                     assert any(
-                        record.levelname == "DEBUG" and "deep_research" in record.message
+                        record.levelname == "DEBUG"
+                        and "deep_research" in record.message
                         for record in caplog.records
                     ), "DEBUG log not found or message mismatch"
 
