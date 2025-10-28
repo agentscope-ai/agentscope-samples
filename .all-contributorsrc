@@ -52,6 +52,16 @@
       "contributions": [
         "maintenance"
       ]
+    },
+    {
+      "login": "411380764",
+      "name": "Lamont Huffman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61401544?v=4",
+      "profile": "https://github.com/411380764",
+      "contributions": [
+        "code",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7,
