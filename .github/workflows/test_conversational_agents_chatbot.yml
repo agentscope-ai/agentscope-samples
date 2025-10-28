@@ -31,5 +31,5 @@ jobs:
         env:
           DASHSCOPE_API_KEY: test_key  # 使用mock时实际不需要有效API key
         run: |
-          cd conversational_agents/chatbot/test
+          cd /tests
           python -m pytest conversational_agents_chatbot_test.py -v

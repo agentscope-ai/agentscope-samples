@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 import asyncio
+from typing import Dict, Any, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from agentscope.message import Msg
 from agentscope.tool import Toolkit
@@ -11,7 +12,7 @@ from browser_use.agent_browser.browser_agent import BrowserAgent
 
 
 @pytest.fixture
-def mock_dependencies():
+def mock_dependencies() -> Dict[str, MagicMock]:
     return {
         "model": MagicMock(spec=ChatModelBase),
         "formatter": MagicMock(spec=FormatterBase),
@@ -21,7 +22,7 @@ def mock_dependencies():
 
 
 @pytest.fixture
-def agent(mock_dependencies):
+def agent(mock_dependencies: Dict[str, MagicMock]) -> BrowserAgent:
     return BrowserAgent(
         name="TestBot",
         model=mock_dependencies["model"],
@@ -35,7 +36,7 @@ def agent(mock_dependencies):
 # -----------------------------
 # ✅ Hook registration verification (adapted for ReActAgentBase)
 # -----------------------------
-def test_hooks_registered(agent):
+def test_hooks_registered(agent: BrowserAgent) -> None:
     # Verify instance-level hooks
     assert hasattr(agent, "_instance_pre_reply_hooks")
     assert (
@@ -54,7 +55,7 @@ def test_hooks_registered(agent):
 # ✅ Navigation hook test (direct hook invocation)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_pre_reply_hook_navigation(agent):
+async def test_pre_reply_hook_navigation(agent: BrowserAgent) -> None:
     agent._has_initial_navigated = False
 
     # Get instance-level hook function
@@ -71,7 +72,7 @@ async def test_pre_reply_hook_navigation(agent):
 # ✅ Snapshot hook test (fix content attribute access issue)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_observe_pre_reasoning(agent):
+async def test_observe_pre_reasoning(agent: BrowserAgent) -> None:
     # Mock tool response (fix: use Msg object with content attribute)
     mock_response = AsyncMock()
     mock_response.__aiter__.return_value = [
@@ -80,7 +81,11 @@ async def test_observe_pre_reasoning(agent):
     agent.toolkit.call_tool_function = AsyncMock(return_value=mock_response)
 
     # Replace memory add method
-    with patch.object(agent.memory, "add", new_callable=AsyncMock) as mock_add:
+    with patch.object(
+        agent.memory,
+        "add",
+        new_callable=AsyncMock,
+    ) as mock_add:
         # Get instance-level hook function
         hook_func = agent._instance_pre_reasoning_hooks[
             "browser_agent_observe_pre_reasoning"
@@ -95,7 +100,7 @@ async def test_observe_pre_reasoning(agent):
 # -----------------------------
 # ✅ Text filtering test (improved regex)
 # -----------------------------
-def test_filter_execution_text(agent):
+def test_filter_execution_text(agent: BrowserAgent) -> None:
     text = """
     ### New console messages
     Some console output
@@ -119,7 +124,7 @@ def test_filter_execution_text(agent):
 # ✅ Memory summarization test (already passing)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_memory_summarizing(agent):
+async def test_memory_summarizing(agent: BrowserAgent) -> None:
     agent.memory.get_memory = AsyncMock(
         return_value=[MagicMock(role="user", content="Original question")]
         * 25,
