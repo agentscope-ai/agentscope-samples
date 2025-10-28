@@ -30,7 +30,7 @@ jobs:
           pip install agentscope dashscope  # ✅ Add missing dependencies
           pip install -e .  # Install local package in development mode
 
-      - name: Run test_game.py
+      - name: Run game_test.py
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |

@@ -13,6 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Debug directory structure
+        run: |
+          # ✅ Show actual directory structure
+          echo "Current directory: $(pwd)"
+          ls -la
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -21,10 +27,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pytest pytest-asyncio
-          pip install -e .
+          pip install agentscope dashscope  # ✅ Add missing dependencies
+          pip install -e .  # Install local package in development mode
 
-      - name: Run test_single_agent.py
+      - name: Run single_agent.py
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
-          python3 -m pytest tests/single_agent.py -v
+          # ✅ Ensure correct working directory
+          cd tests
+          python3 -m pytest single_agent.py -v
