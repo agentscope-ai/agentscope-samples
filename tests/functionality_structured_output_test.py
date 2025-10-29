@@ -26,9 +26,9 @@ async def test_table_model_output() -> None:
         "structured_output.main.DashScopeChatModel.get_response",
         AsyncMock(
             return_value=Msg(
-                "assistant",
-                "",
                 "Friday",
+                "",
+                "assistant",
                 metadata=mock_model_response,
             ),
         ),
@@ -74,9 +74,9 @@ async def test_choice_model_output() -> None:
         "structured_output.main.DashScopeChatModel.get_response",
         AsyncMock(
             return_value=Msg(
-                "assistant",
                 "",
                 "Friday",
+                "assistant",
                 metadata=mock_model_response,
             ),
         ),

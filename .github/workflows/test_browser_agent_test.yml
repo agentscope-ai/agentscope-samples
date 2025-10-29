@@ -39,6 +39,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          cd browser_agent/agent_browser
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
           pip install -e .  # Install local package in development mode
@@ -50,7 +51,7 @@ jobs:
           mkdir -p test-results
           # ✅ Run tests with XML output
           cd tests
-          python -m pytest test_browser_agent.py -v --junitxml=../test-results/results.xml
+          python -m pytest browser_agent_test.py -v --junitxml=../test-results/results.xml
 
       - name: Upload Test Report
         if: always()
