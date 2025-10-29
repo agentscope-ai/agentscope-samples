@@ -90,6 +90,8 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 │   ├── multiagent_concurrent/              # Concurrent multi-agent task execution
 │   └── meta_planner_agent/                 # Planning agent with tool orchestration
 │
+├── data_juicer_agent/                      # Data processing multi-agent system
+│
 ├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
@@ -119,6 +121,23 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | functionality/plan                                    | ✅               | ❌            | Task planning with ReAct agent                   |
 |                         | functionality/rag                                     | ✅               | ❌            | Retrieval-Augmented Generation (RAG) integration |
 |                         | functionality/stream_printing_messages                | ✅               | ❌            | Real-time message streaming and printing         |
+| **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
+
+------
+
+## 🌟 Featured Examples
+
+### DataJuicer Agent
+
+A powerful multi-agent data processing system that leverages Data-Juicer's 200+ operators for intelligent data processing:
+
+- **Intelligent Query**: Find suitable operators from 200+ data processing operators
+- **Automated Pipeline**: Generate Data-Juicer YAML configurations from natural language
+- **Custom Development**: Create domain-specific operators with AI assistance
+- **Multiple Retrieval Modes**: LLM-based and vector-based operator matching
+- **MCP Integration**: Native Model Context Protocol support
+
+📖 **Documentation**: [English](data_juicer_agent/README.md) | [中文](data_juicer_agent/README_ZH.md)
 
 ------
 
