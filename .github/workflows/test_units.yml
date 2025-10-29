@@ -32,6 +32,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run game_utils.py
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           # ✅ Ensure correct working directory
           cd test  # Or `cd tests` if directory name differs

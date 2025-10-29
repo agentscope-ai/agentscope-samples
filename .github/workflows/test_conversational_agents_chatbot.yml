@@ -32,7 +32,7 @@ jobs:
 
       - name: Run tests
         env:
-          DASHSCOPE_API_KEY: test_key
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           # ✅ Use correct relative path
           cd tests
