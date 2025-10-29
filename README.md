@@ -79,17 +79,6 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ├── evaluation/
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
-├── functionality/
-│   ├── long_term_memory_mem0/              # Long-term memory integration
-│   ├── mcp/                                # Memory/Context Protocol demo
-│   ├── plan/                               # Plan with ReAct Agent
-│   ├── rag/                                # RAG in AgentScope
-│   ├── session_with_sqlite/                # Persistent conversation with SQLite
-│   ├── stream_printing_messages/           # Streaming and printing messages
-│   ├── structured_output/                  # Structured output parsing and validation
-│   ├── multiagent_concurrent/              # Concurrent multi-agent task execution
-│   └── meta_planner_agent/                 # Planning agent with tool orchestration
-│
 ├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
@@ -110,15 +99,6 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
-| **Functionality Demos** | functionality/long_term_memory_mem0                   | ✅               | ❌            | Long-term memory with mem0 support               |
-|                         | functionality/mcp                                     | ✅               | ❌            | Memory/Context Protocol demo                     |
-|                         | functionality/session_with_sqlite                     | ✅               | ❌            | Persistent context with SQLite                   |
-|                         | functionality/structured_output                       | ✅               | ❌            | Structured data extraction and validation        |
-|                         | functionality/multiagent_concurrent                   | ✅               | ❌            | Concurrent task execution by multiple agents     |
-|                         | functionality/meta_planner_agent                      | ✅               | ❌            | Planning agent with tool orchestration           |
-|                         | functionality/plan                                    | ✅               | ❌            | Task planning with ReAct agent                   |
-|                         | functionality/rag                                     | ✅               | ❌            | Retrieval-Augmented Generation (RAG) integration |
-|                         | functionality/stream_printing_messages                | ✅               | ❌            | Real-time message streaming and printing         |
 
 ------
 

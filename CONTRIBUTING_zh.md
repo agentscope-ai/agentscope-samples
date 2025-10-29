@@ -34,12 +34,8 @@
 ### 设置
 
 1. **Fork 并克隆**仓库
-2. **安装 pre-commit**：
-   ```bash
-   pip install pre-commit
-   pre-commit install
-   ```
-3. **创建分支**：
+
+2. **创建分支**：
    ```bash
    git checkout -b feature/your-sample-name
    ```
@@ -125,24 +121,6 @@ your_sample_fullstack_runtime/
 #### 独立安装
 
 每个示例需包含独立的 `requirements.txt` 文件，列出所有必需的依赖项，以确保可独立安装和运行，不依赖其他示例。
-
-#### 代码质量
-
-我们使用 pre-commit hooks 强制执行：
-
-- **Black**：代码格式化（行长度 79）
-- **flake8** 和 **pylint**：代码检查
-- **mypy**：类型检查
-
-编写示例代码时：
-- 添加清晰的注释，遵循现有代码风格
-- 为函数签名添加类型提示
-- 保持代码简单，专注于演示特定功能
-
-确保通过所有检查：
-```bash
-pre-commit run --all-files
-```
 
 ### 提交您的贡献
 

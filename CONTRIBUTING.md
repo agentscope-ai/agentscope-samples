@@ -34,12 +34,8 @@ If you'd like a feature or new type of example that doesn't exist in AgentScope 
 ### Setup
 
 1. **Fork and clone** the repository
-2. **Install pre-commit**:
-   ```bash
-   pip install pre-commit
-   pre-commit install
-   ```
-3. **Create a branch**:
+
+2. **Create a branch**:
    ```bash
    git checkout -b feature/your-sample-name
    ```
@@ -126,23 +122,6 @@ Your README.md **must** include:
 
 Each example must include a standalone `requirements.txt` file listing all necessary dependencies to ensure it can be installed and run independently without relying on other examples.
 
-#### Code Quality
-
-We enforce the following using pre-commit hooks:
-
-- **Black**: Code formatting (line length 79)
-- **flake8** and **pylint**: Code linting
-- **mypy**: Type checking
-
-When writing example code:
-- Add clear comments and follow existing code style
-- Add type hints to function signatures
-- Keep code simple and focused on demonstrating specific features
-
-Ensure all checks pass:
-```bash
-pre-commit run --all-files
-```
 
 ### Submitting Your Contribution
 

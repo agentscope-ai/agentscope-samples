@@ -79,17 +79,6 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 ├── evaluation/
 │   └── ace_bench/                          # 基准测试与评估工具
 │
-├── functionality/
-│   ├── long_term_memory_mem0/              # 长期记忆集成
-│   ├── mcp/                                # Memory/Context 协议演示
-│   ├── plan/                               # ReAct Agent 任务计划
-│   ├── rag/                                # AgentScope 中的 RAG
-│   ├── session_with_sqlite/                # 基于 SQLite 的持久对话
-│   ├── stream_printing_messages/           # 信息流式输出与打印
-│   ├── structured_output/                  # 结构化输出解析与验证
-│   ├── multiagent_concurrent/              # 多 Agent 并发任务执行
-│   └── meta_planner_agent/                 # 带工具编排的计划 Agent
-│
 ├── sample_template/                        # 新样例贡献模板
 └── README.md
 ```
@@ -110,15 +99,6 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 |                         | conversational_agents/multiagent_conversation       | ✅               | ❌                       | 多 Agent 对话场景 |
 |                         | conversational_agents/multiagent_debate             | ✅               | ❌                       | Agent 辩论 |
 | **评估**                | evaluation/ace_bench                                | ✅               | ❌                       | ACE Bench 基准测试 |
-| **功能演示**            | functionality/long_term_memory_mem0                 | ✅               | ❌                       | 长期记忆（mem0 支持） |
-|                         | functionality/mcp                                   | ✅               | ❌                       | Memory/Context 协议 Demo |
-|                         | functionality/session_with_sqlite                   | ✅               | ❌                       | 基于 SQLite 的持久上下文 |
-|                         | functionality/structured_output                     | ✅               | ❌                       | 结构化数据提取与验证 |
-|                         | functionality/multiagent_concurrent                 | ✅               | ❌                       | 多 Agent 并发任务执行 |
-|                         | functionality/meta_planner_agent                    | ✅               | ❌                       | 带工具编排的计划 Agent |
-|                         | functionality/plan                                  | ✅               | ❌                       | 使用 ReAct Agent 规划任务 |
-|                         | functionality/rag                                   | ✅               | ❌                       | 检索增强生成 (RAG) 集成 |
-|                         | functionality/stream_printing_messages              | ✅               | ❌                       | 实时信息流输出与打印 |
 
 ---
 
