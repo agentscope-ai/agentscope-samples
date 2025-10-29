@@ -28,7 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
           pip install -r requirements.txt
-          pip install dashscope flask_sqlalchemy
+          pip install flask_sqlalchemy
 
       - name: Run tests
         env:

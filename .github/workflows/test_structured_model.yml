@@ -28,7 +28,6 @@ jobs:
         run: |
           cd games/game_werewolves
           pip install pytest pytest-asyncio  # ✅ Add pytest-asyncio for async tests
-          pip install dashscope  # ✅ Add missing dependencies
           pip install -r requirements.txt
 
       - name: Run game_structured_model.py

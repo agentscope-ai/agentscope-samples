@@ -28,7 +28,6 @@ jobs:
         run: |
           cd functionality/stream_printing_messages
           pip install pytest pytest-asyncio
-          pip install dashscope  # ✅ Add missing dependencies
           pip install -r requirements.txt
 
       - name: Run multi_agent.py
