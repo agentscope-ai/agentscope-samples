@@ -42,7 +42,7 @@ jobs:
           cd browser_agent/agent_browser
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
-          pip install -e .  # Install local package in development mode
+          pip install -r requirements.txt
           pip install selenium playwright  # ✅ Add browser-related dependencies
 
       - name: Run Tests

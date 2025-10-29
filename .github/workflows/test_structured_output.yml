@@ -26,8 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd functionality/structured_output
           pip install pytest pytest-asyncio
-          pip install agentscope dashscope  # ✅ Add missing dependencies
+          pip install dashscope  # ✅ Add missing dependencies
           pip install -r requirements.txt
 
       - name: Run functionality_structured_output_test.py

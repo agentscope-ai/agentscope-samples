@@ -26,6 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd games/game_werewolves
           pip install pytest pytest-asyncio
           pip install agentscope dashscope  # ✅ Add missing dependencies
           pip install -r requirements.txt
