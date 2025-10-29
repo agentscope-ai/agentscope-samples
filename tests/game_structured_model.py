@@ -1,4 +1,3 @@
-# tests/game_structured_model.py
 # -*- coding: utf-8 -*-
 from games.game_werewolves import structured_model
 from agentscope.agent import ReActAgent

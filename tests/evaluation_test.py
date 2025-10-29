@@ -1,15 +1,11 @@
 # tests/evaluation_test.py
 import asyncio
 import os
-from unittest.mock import Mock, MagicMock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from typing import List, Dict, Any, Tuple, Callable
 
 import pytest
-from agentscope.message import Msg
-from agentscope.model import DashScopeChatModel
-from agentscope.agent import ReActAgent
-from agentscope.evaluate import Task, ACEPhone, SolutionOutput, ACEBenchmark
-from agentscope.tool import Toolkit
+from agentscope.evaluate import Task, ACEPhone, ACEBenchmark
 
 # Import the main module from the correct path
 from evaluation.ace_bench import main as ace_main

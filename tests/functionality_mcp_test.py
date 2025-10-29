@@ -1,4 +1,3 @@
-# tests/functionality_mcp_test.py
 # -*- coding: utf-8 -*-
 import os
 import pytest

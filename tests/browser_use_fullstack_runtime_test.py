@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# tests/browser_use_fullstack_runtime_test.py
-# -*- coding: utf-8 -*-
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -43,7 +41,7 @@ async def agent_singleton():
     ) as mock_docker, patch(
         "agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager",
     ) as MockSandboxManager:
-        # ✅ 完全模拟 Docker 依赖
+        # ✅ Fully mock Docker dependencies
         mock_api = MagicMock()
         mock_api.version.return_value = {"ApiVersion": "1.0"}
 
@@ -52,24 +50,24 @@ async def agent_singleton():
         mock_client.from_env.return_value = mock_client
         mock_client.__enter__.return_value = mock_client
 
-        # ✅ 完全模拟 APIClient
+        # ✅ Fully mock APIClient
         mock_docker.APIClient = MagicMock()
         mock_docker.from_env.return_value = mock_client
 
-        # ✅ 完全模拟 SandboxManager
+        # ✅ Fully mock SandboxManager
         MockSandboxManager.return_value = MagicMock()
 
-        # 配置 InMemorySessionHistoryService
+        # Configure InMemorySessionHistoryService
         mock_session = MagicMock()
         mock_session.create_session = AsyncMock()
         MockHistoryService.return_value = mock_session
 
-        # 配置 InMemoryMemoryService
+        # Configure InMemoryMemoryService
         mock_memory = MagicMock()
         mock_memory.start = AsyncMock()
         MockMemoryService.return_value = mock_memory
 
-        # 配置 SandboxService
+        # Configure SandboxService
         mock_sandbox = MagicMock()
         mock_sandbox.start = AsyncMock()
         MockSandboxService.return_value = mock_sandbox
@@ -81,17 +79,17 @@ async def agent_singleton():
 
 @pytest.fixture(scope="session")
 async def test_app():
-    """创建 Quart 应用测试客户端"""
+    """Create Quart application test client"""
     async with QuartClient(app) as client:
         yield client
 
 
 # -----------------------------
-# ✅ AgentscopeBrowseruseAgent 单例测试
+# ✅ AgentscopeBrowseruseAgent Singleton Tests
 # -----------------------------
 @pytest.mark.asyncio
 async def test_agent_singleton_initialization(agent_singleton):
-    """测试代理单例初始化"""
+    """Test agent singleton initialization"""
     agent = agent_singleton
     assert isinstance(agent, AgentscopeBrowseruseAgent)
     assert hasattr(agent, "agent")
@@ -100,14 +98,14 @@ async def test_agent_singleton_initialization(agent_singleton):
 
 @pytest.mark.asyncio
 async def test_chat_method(agent_singleton):
-    """测试 chat 方法处理消息"""
+    """Test chat method handles messages"""
     mock_request = {
         "messages": [
             {"role": "user", "content": "Hello"},
         ],
     }
 
-    # ✅ 创建具有 object/status 属性的模拟对象
+    # ✅ Create mock object with object/status properties
     mock_event = SimpleNamespace(
         object="message",
         status=RunStatus.Completed,
@@ -115,7 +113,7 @@ async def test_chat_method(agent_singleton):
     )
 
     with patch.object(agent_singleton.runner, "stream_query") as mock_stream:
-        # ✅ 返回具有属性的对象
+        # ✅ Return object with properties
         async def mock_stream_query(*args, **kwargs):
             yield mock_event
 
@@ -126,4 +124,4 @@ async def test_chat_method(agent_singleton):
             responses.append(response)
 
         assert len(responses) == 1
-        assert responses[0][0]["text"] == "Test response"  # ✅ 修复属性访问
+        assert responses[0][0]["text"] == "Test response"  # ✅ Fix property access

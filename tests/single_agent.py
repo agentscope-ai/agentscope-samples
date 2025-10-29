@@ -9,16 +9,16 @@ from agentscope.message import Msg
 
 @pytest.mark.asyncio
 async def test_toolkit_registration() -> None:
-    """验证工具注册逻辑"""
+    """Verify tool registration logic"""
     mock_toolkit = AsyncMock()
     mock_toolkit.register_tool_function = AsyncMock()
 
-    # ✅ mock Toolkit 和 DashScopeChatModel
+    # ✅ Mock Toolkit and DashScopeChatModel
     with patch(
         "functionality.stream_printing_messages.single_agent.Toolkit",
         return_value=mock_toolkit,
     ), patch("agentscope.model.DashScopeChatModel") as mock_model:
-        # ✅ 模拟模型响应
+        # ✅ Mock model response
         mock_model.return_value.get_response = AsyncMock(
             return_value=Msg("assistant", "Test response", "assistant"),
         )
@@ -34,7 +34,7 @@ async def test_toolkit_registration() -> None:
 
 @pytest.mark.asyncio
 async def test_streaming_messages() -> None:
-    """验证流式消息处理"""
+    """Verify streaming message handling"""
     mock_agent = AsyncMock()
     mock_agent.return_value = {"content": "Hello, World!"}
 

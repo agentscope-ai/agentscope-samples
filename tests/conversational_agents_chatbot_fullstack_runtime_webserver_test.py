@@ -5,11 +5,11 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# 初始化 db 实例
+# Initialize db instance
 db = SQLAlchemy()
 
 
-# 定义模型类（只定义一次）
+# Define model classes (defined once)
 class User(db.Model):
     __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
@@ -48,10 +48,10 @@ class Message(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-# 彻底隔离的测试 Flask 应用
+# Thoroughly isolated test Flask application
 @pytest.fixture
 def app():
-    """创建全新的 Flask 应用实例"""
+    """Create a fresh Flask application instance"""
     app = Flask(__name__)
     app.config.update({
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
@@ -59,10 +59,10 @@ def app():
         "TESTING": True,
     })
 
-    # 初始化 db
+    # Initialize db
     db.init_app(app)
 
-    # 定义路由
+    # Define routes
     @app.route("/api/login", methods=["POST"])
     def login():
         data = request.get_json()
@@ -133,7 +133,7 @@ def app():
         if not text:
             return jsonify({"error": "Message content cannot be empty"}), 400
 
-        # 创建用户消息
+        # Create user message
         user_message = Message(
             text=text,
             sender=sender,
@@ -141,13 +141,13 @@ def app():
         )
         db.session.add(user_message)
 
-        # 更新对话标题（如果是第一条用户消息）
+        # Update conversation title (if this is the first user message)
         if sender == "user" and len(conversation.messages) <= 1:
             conversation.title = text[:20] + ("..." if len(text) > 20 else "")
 
         db.session.commit()
 
-        # 模拟 AI 回复
+        # Simulate AI response
         ai_message = Message(
             text="Test response part 1 Test response part 2",
             sender="ai",
@@ -163,10 +163,10 @@ def app():
             "created_at": user_message.created_at.isoformat(),
         }), 201
 
-    # 初始化数据库
+    # Initialize database
     with app.app_context():
         db.create_all()
-        # 创建示例用户
+        # Create example users
         if not User.query.first():
             user1 = User(username="user1", name="Bruce")
             user1.set_password("password123")
@@ -186,7 +186,7 @@ def client(app):
     return app.test_client()
 
 
-# 模拟 call_runner 函数
+# Mock call_runner function
 def mock_call_runner(query, session_id, user_id):
     """Mock function for call_runner"""
     yield "Test response part 1"
@@ -258,7 +258,7 @@ def test_send_message(app, client):
     assert "id" in data
     assert "Hello" in data["text"]
 
-    # ✅ 将查询移入应用上下文
+    # ✅ Move the query into the application context
     with app.app_context():
         messages = Message.query.filter_by(conversation_id=1).all()
-        assert len(messages) == 2  # 用户 + AI 回复
+        assert len(messages) == 2  # User + AI response
