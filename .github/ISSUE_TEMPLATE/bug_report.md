@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**<u>AgentScope is an open-source project. To involve a broader community, we recommend asking your questions in English.</u>**
+**<u>AgentScope-Samples is an open-source project. To involve a broader community, we recommend asking your questions in English.</u>**
 
 **Describe the bug**
 A clear and concise description of what the bug is.
@@ -27,7 +27,7 @@ Detailed error messages.
 
 **Environment (please complete the following information):**
 
-- AgentScope Version: [e.g. 1.0.0 via]
+- AgentScope-Samples Version: [e.g. 1.0.0 via]
 - Python Version: [e.g. 3.10]
 - OS: [e.g. macos, windows]
 
