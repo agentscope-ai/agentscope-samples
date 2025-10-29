@@ -88,8 +88,9 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 │   ├── stream_printing_messages/           # Streaming and printing messages
 │   ├── structured_output/                  # Structured output parsing and validation
 │   ├── multiagent_concurrent/              # Concurrent multi-agent task execution
-│   └── meta_planner_agent/                  # Planning agent with tool orchestration
+│   └── meta_planner_agent/                 # Planning agent with tool orchestration
 │
+├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
 

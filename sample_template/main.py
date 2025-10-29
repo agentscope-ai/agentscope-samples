@@ -1,5 +1,5 @@
 """
-[Your Project Name] - Entry Point
+[Your Sample Name] - Entry Point
 
 This example demonstrates [brief description].
 """

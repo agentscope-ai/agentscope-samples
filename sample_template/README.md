@@ -1,8 +1,8 @@
-# [Your Project Name]
+# [Your Sample Name]
 
-[Brief description of what this project demonstrates]
+[Brief description of what this sample demonstrates]
 
-## 🌳 Project Structure
+## 🌳 Sample Structure
 
 ### Python Only
 
@@ -34,7 +34,7 @@
 
 ## 📖 Overview
 
-[Detailed description of the project, what it demonstrates, and key features]
+[Detailed description of the sample, what it demonstrates, and key features]
 
 ## 🚀 Getting Started
 
