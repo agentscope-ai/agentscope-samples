@@ -36,4 +36,4 @@ jobs:
         run: |
           # ✅ Ensure correct working directory
           cd tests
-          python3 -m pytest game_structured_model.py -v
+          python -m pytest game_structured_model.py -v

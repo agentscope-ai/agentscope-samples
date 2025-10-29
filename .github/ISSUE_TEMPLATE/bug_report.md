@@ -27,7 +27,7 @@ Detailed error messages.
 
 **Environment (please complete the following information):**
 
-- AgentScope-Samples Version: [e.g. 1.0.0 via]
+- AgentScope-Samples
 - Python Version: [e.g. 3.10]
 - OS: [e.g. macos, windows]
 

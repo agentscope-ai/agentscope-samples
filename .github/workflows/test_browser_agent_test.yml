@@ -37,9 +37,7 @@ jobs:
         run: |
           cd browser_agent/agent_browser
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio
           pip install -r requirements.txt
-          pip install selenium playwright  # ✅ Add browser-related dependencies
 
       - name: Run Tests
         env:
@@ -49,11 +47,4 @@ jobs:
           mkdir -p test-results
           # ✅ Run tests with XML output
           cd tests
-          python -m pytest browser_agent_test.py -v --junitxml=../test-results/results.xml
-
-      - name: Upload Test Report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-reports
-          path: test-results/
+          python -m pytest browser_agent_test.py -v
