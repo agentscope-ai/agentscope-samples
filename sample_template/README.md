@@ -21,7 +21,7 @@
 ├── README.md                        # Documentation
 ├── backend/                         # Backend source code
 │   ├── main.py                      # Backend entry point
-│   ├── requirements.text            # Dependencies
+│   ├── requirements.txt             # Dependencies
 │   └── ...                          # Other files
 │
 ├── frontend/                        # Frontend source code
