@@ -88,8 +88,9 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 │   ├── stream_printing_messages/           # 信息流式输出与打印
 │   ├── structured_output/                  # 结构化输出解析与验证
 │   ├── multiagent_concurrent/              # 多 Agent 并发任务执行
-│   └── meta_planner_agent/                  # 带工具编排的计划 Agent
+│   └── meta_planner_agent/                 # 带工具编排的计划 Agent
 │
+├── sample_template/                        # 新样例贡献模板
 └── README.md
 ```
 
