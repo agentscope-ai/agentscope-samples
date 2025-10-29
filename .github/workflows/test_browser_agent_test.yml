@@ -2,9 +2,9 @@ name: BrowserAgent Tests
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main"]
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -15,11 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.8"
-          - "3.9"
           - "3.10"
-          - "3.11"
-          - "3.12"
 
     steps:
       - name: Checkout Repository
