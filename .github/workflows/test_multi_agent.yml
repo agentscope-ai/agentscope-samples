@@ -28,7 +28,7 @@ jobs:
         run: |
           pip install pytest pytest-asyncio
           pip install agentscope dashscope  # ✅ Add missing dependencies
-          pip install -e .  # Install local package in development mode
+          pip install -r requirements.txt
 
       - name: Run multi_agent.py
         env:

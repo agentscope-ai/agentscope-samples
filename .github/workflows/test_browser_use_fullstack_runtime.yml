@@ -1,7 +1,7 @@
 name: browser_use_fullstack_runtime_test
 on:
   push:
-    branches: [ main, lfh_samples2 ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main ]
 

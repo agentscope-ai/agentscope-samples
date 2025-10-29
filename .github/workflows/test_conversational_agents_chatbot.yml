@@ -1,7 +1,7 @@
 name: Conversational Agents Chatbot Test
 on:
   push:
-    branches: [ main, lfh_samples2 ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main ]
 
@@ -27,6 +27,7 @@ jobs:
           cd conversational_agents/chatbot
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio
+          pip install -r requirements.txt
           pip install agentscope dashscope flask flask_sqlalchemy
 
       - name: Run tests
