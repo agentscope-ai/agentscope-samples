@@ -3,10 +3,6 @@ import os
 import pytest
 from unittest.mock import AsyncMock, patch
 
-# 设置环境变量
-os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
-
-# 导入被测模块
 from functionality.stream_printing_messages import single_agent
 from agentscope.message import Msg
 

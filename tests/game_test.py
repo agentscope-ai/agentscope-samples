@@ -5,8 +5,6 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, patch
 
-# Set environment variables
-os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 # Import the module to test
 from games.game_werewolves import game

@@ -7,9 +7,6 @@ from unittest.mock import AsyncMock, patch, MagicMock
 # Add root dir to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set environment variables
-os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
-
 # Import the module to test
 from functionality.stream_printing_messages import multi_agent
 

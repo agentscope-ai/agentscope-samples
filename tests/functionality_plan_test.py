@@ -7,8 +7,6 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from agentscope.message import Msg
 from typing import AsyncGenerator, Any
 
-# Set environment variable
-os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 # Import the script to be tested
 import functionality.plan.main_manual_plan as main_manual_plan

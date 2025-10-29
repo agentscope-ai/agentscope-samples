@@ -12,8 +12,6 @@ sys.path.append(PROJECT_ROOT)
 
 from agentscope.message import Msg
 
-# 设置环境变量
-os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
 
 
 # Use correct module path (replace with your actual module path)
