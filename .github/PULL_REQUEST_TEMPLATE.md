@@ -11,9 +11,9 @@
 ## 📚 Description
 
 [Please briefly describe the background, changes, and purpose of this PR. For example:
-- Added `sample3.py` to demonstrate XYZ functionality in `agentscope`.
-- Fixed test failures in `test_sample2.py` caused by `agentscope` interface changes.
-- Updated dependency installation instructions in `README.md`.]
+- Added `game_werewolves` to demonstrate XYZ functionality in `agentscope`.
+- Fixed test failures in `game_test.py` caused by `agentscope` interface changes.
+- Updated dependency installation instructions in `README.md` of `agentscope-samples`.]
 
 ---
 
@@ -34,5 +34,4 @@ Please complete the following checks before submitting the PR:
 - [ ] All new/modified test cases have passed (run `pytest tests/`)
 - [ ] Test coverage has not decreased (if applicable)
 - [ ] Sample code follows `agentscope` best practices (e.g., config management, logging)
-- [ ] Related documentation has been updated (e.g., `README.md`)
-- [ ] PR title is clear (e.g., `Fix test failure in sample2.py` instead of `Update file`)
+- [ ] Related documentation in `agentscope-samples` has been updated (e.g., `README.md`)
