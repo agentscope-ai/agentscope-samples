@@ -1,1 +1,0 @@
-agentscope[full]>=1.0.5
