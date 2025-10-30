@@ -4,8 +4,8 @@
 import numpy as np
 from agentscope.agent import ReActAgent
 from agentscope.pipeline import MsgHub, fanout_pipeline, sequential_pipeline
-from .prompt import EnglishPrompts as Prompts
-from .utils import (
+from games.game_werewolves.prompt import EnglishPrompts as Prompts
+from games.game_werewolves.utils import (
     MAX_DISCUSSION_ROUND,
     MAX_GAME_ROUND,
     EchoAgent,
@@ -14,7 +14,7 @@ from .utils import (
     names_to_str,
 )
 
-from .structured_model import (
+from games.game_werewolves.structured_model import (
     DiscussionModel,
     WitchResurrectModel,
     get_hunter_model,
