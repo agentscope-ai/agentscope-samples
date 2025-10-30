@@ -33,8 +33,5 @@ jobs:
           pip install pytest pytest-asyncio pytest-mock
 
       - name: Run tests
-        env:
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           python -m pytest tests/agent_deep_research_test.py -v
