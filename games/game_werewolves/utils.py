@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 from agentscope.agent import AgentBase, ReActAgent
 from agentscope.message import Msg
-from games.game_werewolves.prompt import EnglishPrompts as Prompts
+from prompt import EnglishPrompts as Prompts
 
 MAX_GAME_ROUND = 30
 MAX_DISCUSSION_ROUND = 3
