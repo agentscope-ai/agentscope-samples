@@ -71,7 +71,7 @@ def test_players_role_mapping() -> None:
     mock_agent.name = "Player1"
 
     players.add_player(mock_agent, "werewolf")
-    assert players.name_to_role["Player1"] == "werewolf"  # ✅ 修复等号
+    assert players.name_to_role["Player1"] == "werewolf"
     assert len(players.werewolves) == 1
 
 
