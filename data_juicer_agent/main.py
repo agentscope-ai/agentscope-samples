@@ -7,11 +7,16 @@ from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.memory import InMemoryMemory
 from agentscope.agent import UserAgent
-from agentscope.tool import Toolkit
 
-from agent_factory import create_agent
-from prompts import DJ_SYS_PROMPT, DJ_DEV_SYS_PROMPT, ROUTER_SYS_PROMPT, MCP_SYS_PROMPT
-from tools import dj_toolkit, dj_dev_toolkit, mcp_tools, get_mcp_toolkit, agents2toolkit
+from .agent_factory import create_agent
+from .prompts import DJ_SYS_PROMPT, DJ_DEV_SYS_PROMPT, ROUTER_SYS_PROMPT, MCP_SYS_PROMPT
+from .tools import (
+    dj_toolkit,
+    dj_dev_toolkit,
+    mcp_tools,
+    get_mcp_toolkit,
+    agents2toolkit,
+)
 
 # Create shared configuration
 model = DashScopeChatModel(
@@ -145,10 +150,14 @@ async def main(
 if __name__ == "__main__":
     # Example tasks
     # project_root = os.path.abspath(os.path.dirname(__file__))
-    # task = f"数据存储在{project_root}/data/demo-dataset-images.jsonl，筛选掉样本中，文本字段长度小于5的样本，以及图片size小于100Kb的样本。并将输出结果保存到./outputs路径下。"
+    # task = (
+    #     f"The data is stored in {project_root}/data/demo-dataset-images.jsonl. "
+    #     "Among the samples, the text field length is less than 5 "
+    #     "and the image size is less than 100Kb. "
+    #     "And save the output results to the ./outputs path."
+    # )
     #
     # DJ Development example task:
-    # task = "我想开发一个新的DataJuicer过滤算子，用于过滤掉没有人声的音频文件"
+    # task = "I want to develop a new DataJuicer filter operator to filter out audio files without vocals"
     #
-    # MCP Agent will be automatically selected for advanced processing tasks
     fire.Fire(main)

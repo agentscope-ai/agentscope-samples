@@ -4,31 +4,32 @@ A multi-agent data processing system built on [AgentScope](https://github.com/mo
 
 ## 📋 Table of Contents
 
-- [📋 Table of Contents](#-table-of-contents)
-- [What Does This Agent Do?](#what-does-this-agent-do)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-  - [System Requirements](#system-requirements)
-  - [Installation](#installation)
-  - [Configuration](#configuration)
-  - [Usage](#usage)
-- [Agent Introduction](#agent-introduction)
-  - [Data Processing Agent](#data-processing-agent)
-  - [Code Development Agent (DJ Dev Agent)](#code-development-agent-dj-dev-agent)
-- [Advanced Features](#advanced-features)
-  - [Operator Retrieval](#operator-retrieval)
-    - [Retrieval Modes](#retrieval-modes)
-    - [Usage](#usage-1)
-  - [MCP Agent](#mcp-agent)
-    - [MCP Server Types](#mcp-server-types)
-    - [Configuration](#configuration-1)
-    - [Usage Methods](#usage-methods)
-- [Feature Preview](#feature-preview)
-  - [Data-Juicer Q\&A Agent (Demo Available)](#data-juicer-qa-agent-demo-available)
-  - [Data Analysis and Visualization Agent (In Development)](#data-analysis-and-visualization-agent-in-development)
-- [Troubleshooting](#troubleshooting)
-  - [Common Issues](#common-issues)
-  - [Optimization Recommendations](#optimization-recommendations)
+- [DataJuicer Agent](#datajuicer-agent)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [What Does This Agent Do?](#what-does-this-agent-do)
+  - [Architecture](#architecture)
+  - [Quick Start](#quick-start)
+    - [System Requirements](#system-requirements)
+    - [Installation](#installation)
+    - [Configuration](#configuration)
+    - [Usage](#usage)
+  - [Agent Introduction](#agent-introduction)
+    - [Data Processing Agent](#data-processing-agent)
+    - [Code Development Agent (DJ Dev Agent)](#code-development-agent-dj-dev-agent)
+  - [Advanced Features](#advanced-features)
+    - [Operator Retrieval](#operator-retrieval)
+      - [Retrieval Modes](#retrieval-modes)
+      - [Usage](#usage-1)
+    - [MCP Agent](#mcp-agent)
+      - [MCP Server Types](#mcp-server-types)
+      - [Configuration](#configuration-1)
+      - [Usage Methods](#usage-methods)
+  - [Feature Preview](#feature-preview)
+    - [Data-Juicer Q\&A Agent (Demo Available)](#data-juicer-qa-agent-demo-available)
+    - [Data Analysis and Visualization Agent (In Development)](#data-analysis-and-visualization-agent-in-development)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+    - [Optimization Recommendations](#optimization-recommendations)
 
 ## What Does This Agent Do?
 
@@ -68,7 +69,14 @@ Router Agent ──┐
 ### Installation
 
 ```bash
-uv pip install -e .
+# Recommended to use uv
+uv pip install -r requirements.txt
+```
+
+or
+
+```bash
+pip install -r requirements.txt
 ```
 
 ### Configuration
