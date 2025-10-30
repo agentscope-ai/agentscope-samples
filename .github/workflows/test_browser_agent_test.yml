@@ -46,5 +46,4 @@ jobs:
           # ✅ Ensure test-results directory exists
           mkdir -p test-results
           # ✅ Run tests with XML output
-          cd tests
-          python -m pytest browser_agent_test.py -v
+          python -m pytest tests/pytest browser_agent_test.py -v

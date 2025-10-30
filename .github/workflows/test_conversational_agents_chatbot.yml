@@ -33,5 +33,4 @@ jobs:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           # ✅ Use correct relative path
-          cd tests
-          python -m pytest conversational_agents_chatbot_test.py -v
+          python -m pytest tests/conversational_agents_chatbot_test.py -v

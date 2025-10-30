@@ -35,5 +35,4 @@ jobs:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           # ✅ Ensure correct working directory
-          cd tests
-          python3 -m pytest game_test.py -v
+          python -m pytest tests/game_test.py -v
