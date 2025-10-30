@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+src/alias/agent/agents/log/
+sessions_mount_dir/
+
+# Python
+*.py[cod]
+*$py.class
+
+# Package
+alias.egg-info/
+
