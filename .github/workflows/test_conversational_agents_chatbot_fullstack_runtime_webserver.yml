@@ -30,6 +30,7 @@ jobs:
           cd conversational_agents/chatbot_fullstack_runtime/backend
           pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest pytest-asyncio
 
       - name: Run tests
         run: |
