@@ -34,17 +34,31 @@ If you'd like a feature or new type of example that doesn't exist in AgentScope 
 ### Setup
 
 1. **Fork and clone** the repository
-2. **Install pre-commit**:
-   ```bash
-   pip install pre-commit
-   pre-commit install
-   ```
-3. **Create a branch**:
+
+2. **Create a branch**:
    ```bash
    git checkout -b feature/your-sample-name
    ```
 
 ### Creating New Examples
+
+#### Choose a Relevant Scenario
+
+We encourage examples across various domains including (but not limited to):
+
+| Domain | Example Ideas |
+|--------|---------------|
+| **Finance** | Robo-advisors, risk assessment, financial report analysis |
+| **Healthcare** | Symptom checker, medical record summarization, medication reminders |
+| **Education** | Personalized tutoring, auto-grading, Q&A knowledge retrieval |
+| **E-commerce / Retail** | Customer service, product recommendation, inventory management |
+| **Gaming / Entertainment** | NPC dialogue systems, dynamic story generators |
+| **Office Automation** | Meeting summarizers, auto-reply email agents, scheduling coordinators |
+| **Research** | Literature review assistants, data analysis agents |
+| **SRE / DevOps** | Alert triage, log anomaly detection, root cause analysis, automated remediation |
+| **General Utilities** | Multi-agent workflows, tool calling, memory management patterns |
+
+**Tip**: Pick a domain you know well or are passionate about—realistic use cases have the greatest impact!
 
 #### Directory Structure
 
@@ -108,23 +122,6 @@ Your README.md **must** include:
 
 Each example must include a standalone `requirements.txt` file listing all necessary dependencies to ensure it can be installed and run independently without relying on other examples.
 
-#### Code Quality
-
-We enforce the following using pre-commit hooks:
-
-- **Black**: Code formatting (line length 79)
-- **flake8** and **pylint**: Code linting
-- **mypy**: Type checking
-
-When writing example code:
-- Add clear comments and follow existing code style
-- Add type hints to function signatures
-- Keep code simple and focused on demonstrating specific features
-
-Ensure all checks pass:
-```bash
-pre-commit run --all-files
-```
 
 ### Submitting Your Contribution
 
@@ -144,6 +141,12 @@ pre-commit run --all-files
    - References to related issues (e.g., "Closes #123")
 
 4. **Code Review**: Address feedback from maintainers
+
+### Recognition for Contributors
+
+- Your name will be added to the contributors list
+- Outstanding examples may be featured on the AgentScope website, documentation, or social media
+- You'll be part of a growing community shaping the future of agentic AI!
 
 Thank you for contributing to AgentScope Samples! If you have any questions, feel free to reach out through:
 

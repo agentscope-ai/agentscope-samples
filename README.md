@@ -1,5 +1,16 @@
 # AgentScope Sample Agents
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
+[![Docs](https://img.shields.io/badge/docs-AgentScope-blue)](https://doc.agentscope.io/)
+[![Runtime Docs](https://img.shields.io/badge/docs-AgentScope%20Runtime-red)](https://runtime.agentscope.io/)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-samples)](https://github.com/agentscope-ai/agentscope-samples)
+
+[[中文README]](README_zh.md)
+
 Welcome to the **AgentScope Sample Agents** repository! 🎯
 This repository provides **ready-to-use Python sample agents** built on top of:
 
@@ -23,7 +34,7 @@ AgentScope Runtime is a **comprehensive runtime framework** that addresses two k
 1. **Effective Agent Deployment** – Scalable deployment and management of agents across environments.
 2. **Sandboxed Tool Execution** – Secure, isolated execution of tools and external actions.
 
-It includes **context management** and **secure sandboxing**, and can be used with **AgentScope** or other agent frameworks.
+It includes **agent deployment** and **secure sandboxed tool execution**, and can be used with **AgentScope** or other agent frameworks.
 
 ------
 
@@ -68,17 +79,7 @@ It includes **context management** and **secure sandboxing**, and can be used wi
 ├── evaluation/
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
-├── functionality/
-│   ├── long_term_memory_mem0/              # Long-term memory integration
-│   ├── mcp/                                # Memory/Context Protocol demo
-│   ├── plan/                               # Plan with ReAct Agent
-│   ├── rag/                                # RAG in AgentScope
-│   ├── session_with_sqlite/                # Persistent conversation with SQLite
-│   ├── stream_printing_messages/           # Streaming and printing messages
-│   ├── structured_output/                  # Structured output parsing and validation
-│   ├── multiagent_concurrent/              # Concurrent multi-agent task execution
-│   └── meta_planner_agent/                  # Planning agent with tool orchestration
-│
+├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
 
@@ -98,15 +99,6 @@ It includes **context management** and **secure sandboxing**, and can be used wi
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
-| **Functionality Demos** | functionality/long_term_memory_mem0                   | ✅               | ❌            | Long-term memory with mem0 support               |
-|                         | functionality/mcp                                     | ✅               | ❌            | Memory/Context Protocol demo                     |
-|                         | functionality/session_with_sqlite                     | ✅               | ❌            | Persistent context with SQLite                   |
-|                         | functionality/structured_output                       | ✅               | ❌            | Structured data extraction and validation        |
-|                         | functionality/multiagent_concurrent                   | ✅               | ❌            | Concurrent task execution by multiple agents     |
-|                         | functionality/meta_planner_agent                      | ✅               | ❌            | Planning agent with tool orchestration           |
-|                         | functionality/plan                                    | ✅               | ❌            | Task planning with ReAct agent                   |
-|                         | functionality/rag                                     | ✅               | ❌            | Retrieval-Augmented Generation (RAG) integration |
-|                         | functionality/stream_printing_messages                | ✅               | ❌            | Real-time message streaming and printing         |
 
 ------
 
@@ -121,7 +113,7 @@ If you:
 Please:
 
 1. Read the sample-specific `README.md`.
-2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/blob/main/issues).
+2. File a [GitHub Issue](https://github.com/agentscope-ai/agentscope-samples/issues).
 3. Join the community discussions:
 
 | [Discord](https://discord.gg/eYMpfnkG8h)                                                                                         | DingTalk                                                                                                                          |
@@ -147,12 +139,6 @@ See the [Contributing](https://github.com/agentscope-ai/agentscope-samples/blob/
 
 This project is licensed under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE) file for details.
 
-------
-
-## ⚠️ Disclaimer
-
-- This is not an officially supported product.
-- For **demonstration purposes only** — not intended for production use.
 
 ------
 
@@ -162,3 +148,38 @@ This project is licensed under the **Apache 2.0 License** – see the [LICENSE](
 - [AgentScope Runtime Documentation](https://runtime.agentscope.io/)
 - [AgentScope GitHub Repository](https://github.com/agentscope-ai/agentscope)
 - [AgentScope Runtime GitHub Repository](https://github.com/agentscope-ai/agentscope-runtime)
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="http://weiruikuang.com"><img src="https://avatars.githubusercontent.com/u/39145382?v=4?s=100" width="100px;" alt="Weirui Kuang"/><br /><sub><b>Weirui Kuang</b></sub></a><br /><a href="#maintenance-rayrayraykk" title="Maintenance">🚧</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=rayrayraykk" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-samples/pulls?q=is%3Apr+reviewed-by%3Arayrayraykk" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=rayrayraykk" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Osier-Yi"><img src="https://avatars.githubusercontent.com/u/8287381?v=4?s=100" width="100px;" alt="Osier-Yi"/><br /><sub><b>Osier-Yi</b></sub></a><br /><a href="#maintenance-Osier-Yi" title="Maintenance">🚧</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=Osier-Yi" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-samples/pulls?q=is%3Apr+reviewed-by%3AOsier-Yi" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=Osier-Yi" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://davdgao.github.io/"><img src="https://avatars.githubusercontent.com/u/102287034?v=4?s=100" width="100px;" alt="DavdGao"/><br /><sub><b>DavdGao</b></sub></a><br /><a href="#maintenance-DavdGao" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/qbc2016"><img src="https://avatars.githubusercontent.com/u/22984042?v=4?s=100" width="100px;" alt="qbc"/><br /><sub><b>qbc</b></sub></a><br /><a href="#maintenance-qbc2016" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/411380764"><img src="https://avatars.githubusercontent.com/u/61401544?v=4?s=100" width="100px;" alt="Lamont Huffman"/><br /><sub><b>Lamont Huffman</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=411380764" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=411380764" title="Tests">⚠️</a></td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td align="center" size="13px" colspan="7">
+        <img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
+          <a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
+        </img>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
