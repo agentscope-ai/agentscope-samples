@@ -1,10 +1,9 @@
 name: Run test_structured_model.py
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  schedule:
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
 
 jobs:
   test:
