@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
-import asyncio
-import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
+import pytest
 from agentscope.agent import ReActAgent
 from agentscope.model import ChatModelBase
 from agentscope.formatter import FormatterBase
@@ -47,9 +45,12 @@ async def test_witch_resurrect() -> None:
     async def mock_model(**kwargs):
         return {"resurrect": kwargs.get("resurrect", False)}
 
-    with patch("games.game_werewolves.game.WitchResurrectModel", side_effect=mock_model):
+    with patch(
+        "games.game_werewolves.game.WitchResurrectModel",
+        side_effect=mock_model,
+    ):
         result = await game.WitchResurrectModel(**{"resurrect": True})
-        assert result["resurrect"] == True
+        assert result["resurrect"] is True
 
 
 # -----------------------------
@@ -84,8 +85,9 @@ def test_vote_model_generation() -> None:
             name=f"Player{i}",
             sys_prompt=f"Vote system prompt {i}",
             model=mock_model,
-            formatter=mock_formatter
-        ) for i in range(3)
+            formatter=mock_formatter,
+        )
+        for i in range(3)
     ]
 
     VoteModel = structured_model.get_vote_model(agents)
@@ -105,8 +107,8 @@ def test_witch_poison_model_fields() -> None:
             name="Player1",
             sys_prompt="Poison system prompt",
             model=mock_model,
-            formatter=mock_formatter
-        )
+            formatter=mock_formatter,
+        ),
     ]
 
     PoisonModel = structured_model.get_poison_model(agents)

@@ -20,7 +20,7 @@ class SubtasksDecomposition(BaseModel):
     working_plan: str = Field(
         description=(
             "A logically ordered step-by-step working "
-            "meta_planner_agent (3-5 steps), each step starting with "
+            "plan (3-5 steps), each step starting with "
             "its number (1., 2., etc), including both "
             "core and expansion steps. Expanded steps "
             "should be clearly marked with (EXPANSION) "
@@ -85,7 +85,7 @@ class ReflectFailure(BaseModel):
             "subtask needs to be rephrased due "
             "to a design flaw or misunderstanding. "
             "If rephrasing is needed, provide the "
-            "modified working meta_planner_agent with only the "
+            "modified working plan with only the "
             "inappropriate subtask replaced by its "
             "improved version."
         ),
@@ -101,7 +101,7 @@ class ReflectFailure(BaseModel):
                     },
                     "rephrased_plan": {
                         "type": "string",
-                        "description": "The modified working meta_planner_agent "
+                        "description": "The modified working plan "
                         "with only the inappropriate "
                         "subtask replaced by its improved version. If no "
                         "rephrasing is needed, provide an empty string.",

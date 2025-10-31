@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import time
-from datetime import datetime
 from typing import Any, Dict, List
+from datetime import datetime
+from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
 
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 
-
-def get_current_date() -> str:
+def get_current_date():
     return datetime.now().strftime("%B %d, %Y")
 
 
@@ -39,7 +38,7 @@ def get_research_topic(messages: List[AnyMessage]) -> str:
     return research_topic
 
 
-def insert_citation_markers(text: str, citations_list: List[Dict]) -> str:
+def insert_citation_markers(text, citations_list):
     """
     Inserts citation markers into a text string based on start and end indices.
 

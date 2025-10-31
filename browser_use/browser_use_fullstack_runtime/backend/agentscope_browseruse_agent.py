@@ -49,7 +49,7 @@ from agentscope_runtime.sandbox.tools.browser import (
     run_shell_command,
 )
 
-from .prompts import SYSTEM_PROMPT
+from prompts import SYSTEM_PROMPT
 
 if os.path.exists(".env"):
     from dotenv import load_dotenv
