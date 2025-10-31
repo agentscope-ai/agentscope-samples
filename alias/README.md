@@ -80,11 +80,10 @@ alias_agent run --task "Your task description here"
 alias_agent run --task "Analyze Meta stock performance in Q1 2025"
 ```
 
-[//]: # (#### Run with only browser agent:)
+#### Run with only browser agent:
 
-[//]: # (```bash)
-
-[//]: # (alias_agent run --mode browser --task "Search five latest research papers about browser-use agent")
+```bash
+alias_agent run --mode browser --task "Search five latest research papers about browser-use agent"
 ```
 
 #### Upload files to sandbox workspace:
