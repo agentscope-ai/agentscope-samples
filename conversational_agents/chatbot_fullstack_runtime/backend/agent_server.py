@@ -3,8 +3,8 @@ import asyncio
 import os
 
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine import LocalDeployManager, Runner
 from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine import LocalDeployManager, Runner
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.services.context_manager import ContextManager
 

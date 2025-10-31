@@ -4,20 +4,24 @@
 
 import re
 import uuid
-from typing import Any, Optional
+from typing import Optional, Any
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase
-from agentscope.message import Msg, TextBlock, ToolUseBlock
+from agentscope.message import (
+    Msg,
+    ToolUseBlock,
+    TextBlock,
+)
 from agentscope.model import ChatModelBase
-from agentscope.token import OpenAITokenCounter, TokenCounterBase
 from agentscope.tool import Toolkit
+from agentscope.token import TokenCounterBase, OpenAITokenCounter
 
 _BROWSER_AGENT_DEFAULT_SYS_PROMPT = (
     "You are a helpful browser automation assistant. "
     "You can navigate websites, take screenshots, and interact with web pages."
-    "Always describe what you see and meta_planner_agent your next steps clearly. "
+    "Always describe what you see and plan your next steps clearly. "
     "When taking actions, explain what you're doing and why."
 )
 _BROWSER_AGENT_REASONING_PROMPT = (
@@ -25,7 +29,7 @@ _BROWSER_AGENT_REASONING_PROMPT = (
     "The snapshot (and screenshot) of the current webpage is (are) given "
     "below. Since you can only view the latest webpage, "
     "you must promptly summarize current status, record required data, "
-    "and meta_planner_agent your next steps."
+    "and plan your next steps."
 )
 
 
@@ -318,7 +322,7 @@ class BrowserAgent(ReActAgent):
         )
 
         # Format the prompt for the model
-        prompt = self.formatter.format(
+        prompt = await self.formatter.format(
             msgs=[
                 Msg("system", self.sys_prompt, "system"),
                 *memory_msgs,

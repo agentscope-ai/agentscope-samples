@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# tests/evaluation_test.py
-import asyncio
 import os
 from unittest.mock import Mock, AsyncMock, patch
 from typing import List, Dict, Any, Tuple, Callable
@@ -30,7 +28,7 @@ class TestReActAgentSolution:
     def mock_pre_hook(self) -> Mock:
         """Create a mock pre-hook function that returns None"""
 
-        def pre_hook_return(*args, **kwargs):
+        def pre_hook_return():
             """Mock function that returns None (no modifications)"""
             return None
 
@@ -44,7 +42,7 @@ class TestReActAgentSolution:
     def _create_mock_tools(self) -> List[Tuple[Callable, Dict[str, Any]]]:
         """Create mock tool functions with schemas"""
 
-        def mock_tool(*args, **kwargs):
+        def mock_tool():
             return "tool_response"
 
         tool_schema = {
@@ -114,10 +112,12 @@ class TestMainFunction:
 
                 # ✅ Simulate _download_data and _load_data
                 with patch(
-                    "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data",
+                    "agentscope.evaluate._ace_benchmark.\
+                    _ace_benchmark.ACEBenchmark._download_data",
                 ):
                     with patch(
-                        "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data",
+                        "agentscope.evaluate._ace_benchmark.\
+                        _ace_benchmark.ACEBenchmark._load_data",
                         return_value=[],
                     ):
                         # Run main function
@@ -146,10 +146,12 @@ class TestMainFunction:
 
                 # ✅ Simulate _download_data and _load_data
                 with patch(
-                    "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data",
+                    "agentscope.evaluate._ace_benchmark._ace_benchmark.\
+                    ACEBenchmark._download_data",
                 ):
                     with patch(
-                        "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data",
+                        "agentscope.evaluate._ace_benchmark.\
+                        _ace_benchmark.ACEBenchmark._load_data",
                         return_value=[],
                     ):
                         # Run main function

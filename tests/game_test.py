@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
-import asyncio
-import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
+import pytest
 from agentscope.agent import ReActAgent
 from agentscope.model import ChatModelBase
 from agentscope.formatter import FormatterBase
@@ -52,7 +50,7 @@ async def test_witch_resurrect() -> None:
         side_effect=mock_model,
     ):
         result = await game.WitchResurrectModel(**{"resurrect": True})
-        assert result["resurrect"] == True
+        assert result["resurrect"] is True
 
 
 # -----------------------------

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import pytest
 from unittest.mock import AsyncMock
+import pytest
 from agentscope.message import Msg
 from agentscope.agent import ReActAgent
 from agentscope.tool import Toolkit
@@ -12,9 +12,10 @@ class TestReActAgent:
 
     @pytest.fixture
     def test_agent(self):
-        """Fixture to create a test ReAct agent with fully mocked dependencies"""
+        """Fixture to create a test ReAct
+        agent with fully mocked dependencies"""
 
-        async def model_response(*args, **kwargs):
+        async def model_response():
             yield Msg(
                 name="Friday",
                 content="Mocked model response",
@@ -39,7 +40,9 @@ class TestReActAgent:
             memory=mock_memory,
         )
 
+        # pylint: disable=protected-access
         agent._reasoning_hint_msgs = AsyncMock()
+        # pylint: disable=protected-access
         agent._reasoning_hint_msgs.get_memory = AsyncMock(return_value=[])
 
         return agent
@@ -47,7 +50,7 @@ class TestReActAgent:
     async def test_exit_command(self, test_agent, monkeypatch):
         """Test exit command handling"""
 
-        async def exit_model_response(*args, **kwargs):
+        async def exit_model_response():
             yield Msg(
                 name="Friday",
                 content="exit",
@@ -66,10 +69,12 @@ class TestReActAgent:
     async def test_conversation_flow(self, monkeypatch):
         """Test full conversation flow"""
 
-        async def model_response(*args, **kwargs):
+        async def model_response():
             yield Msg(
                 name="Friday",
-                content="Thought: I need to use a tool\nAction: execute_shell_command\nAction Input: echo 'Hello World'",
+                content="Thought: I need to use a tool\n"
+                "Action: execute_shell_command\n"
+                "Action Input: echo 'Hello World'",
                 role="assistant",
             )
 
