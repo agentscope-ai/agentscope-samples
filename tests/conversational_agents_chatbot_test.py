@@ -18,7 +18,7 @@ class TestReActAgent:
             yield Msg(
                 name="Friday",
                 content="Mocked model response",
-                role="assistant"
+                role="assistant",
             )
 
         mock_model = AsyncMock()
@@ -36,7 +36,7 @@ class TestReActAgent:
             model=mock_model,
             formatter=mock_formatter,
             toolkit=Toolkit(),
-            memory=mock_memory
+            memory=mock_memory,
         )
 
         agent._reasoning_hint_msgs = AsyncMock()
@@ -51,12 +51,12 @@ class TestReActAgent:
             yield Msg(
                 name="Friday",
                 content="exit",
-                role="assistant"
+                role="assistant",
             )
 
         test_agent.model.side_effect = exit_model_response
 
-        monkeypatch.setattr('builtins.input', lambda _: "exit")
+        monkeypatch.setattr("builtins.input", lambda _: "exit")
 
         msg = Msg(name="User", content="exit", role="user")
         response = await test_agent(msg)
@@ -70,7 +70,7 @@ class TestReActAgent:
             yield Msg(
                 name="Friday",
                 content="Thought: I need to use a tool\nAction: execute_shell_command\nAction Input: echo 'Hello World'",
-                role="assistant"
+                role="assistant",
             )
 
         mock_model = AsyncMock()
@@ -88,10 +88,10 @@ class TestReActAgent:
             model=mock_model,
             formatter=mock_formatter,
             toolkit=Toolkit(),
-            memory=mock_memory
+            memory=mock_memory,
         )
 
-        monkeypatch.setattr('builtins.input', lambda _: "Test command")
+        monkeypatch.setattr("builtins.input", lambda _: "Test command")
 
         msg = Msg(name="User", content="Test command", role="user")
         response = await agent(msg)

@@ -124,4 +124,6 @@ async def test_chat_method(agent_singleton):
             responses.append(response)
 
         assert len(responses) == 1
-        assert responses[0][0]["text"] == "Test response"  # ✅ Fix property access
+        assert (
+            responses[0][0]["text"] == "Test response"
+        )  # ✅ Fix property access

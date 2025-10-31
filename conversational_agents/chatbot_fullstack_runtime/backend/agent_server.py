@@ -23,12 +23,13 @@ async def _local_deploy():
     model = DashScopeChatModel(
         model_name="qwen-turbo",
         api_key=os.getenv("DASHSCOPE_API_KEY"),
-
     )
     agent = AgentScopeAgent(
         name="Friday",
         model=model,
-        agent_config={"sys_prompt": "A simple LLM agent to generate a short response"},
+        agent_config={
+            "sys_prompt": "A simple LLM agent to generate a short response",
+        },
         agent_builder=ReActAgent,
     )
 

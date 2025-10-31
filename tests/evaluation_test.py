@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # tests/evaluation_test.py
 import asyncio
 import os
@@ -35,7 +36,9 @@ class TestReActAgentSolution:
 
         mock = Mock()
         mock.__name__ = "save_logging"
-        mock.side_effect = pre_hook_return  # ✅ Return None to avoid parameter pollution
+        mock.side_effect = (
+            pre_hook_return  # ✅ Return None to avoid parameter pollution
+        )
         return mock
 
     def _create_mock_tools(self) -> List[Tuple[Callable, Dict[str, Any]]]:
@@ -110,8 +113,13 @@ class TestMainFunction:
                 mock_evaluator_class.return_value = mock_evaluator
 
                 # ✅ Simulate _download_data and _load_data
-                with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data"):
-                    with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data", return_value=[]):
+                with patch(
+                    "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data",
+                ):
+                    with patch(
+                        "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data",
+                        return_value=[],
+                    ):
                         # Run main function
                         await ace_main.main()
 
@@ -137,8 +145,13 @@ class TestMainFunction:
                 mock_evaluator_class.return_value = mock_evaluator
 
                 # ✅ Simulate _download_data and _load_data
-                with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data"):
-                    with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data", return_value=[]):
+                with patch(
+                    "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data",
+                ):
+                    with patch(
+                        "agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data",
+                        return_value=[],
+                    ):
                         # Run main function
                         await ace_main.main()
 

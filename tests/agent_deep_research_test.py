@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # tests/agent_deep_research_test.py
 import logging
 import os
@@ -12,7 +13,9 @@ from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 
-from deep_research.agent_deep_research.deep_research_agent import DeepResearchAgent
+from deep_research.agent_deep_research.deep_research_agent import (
+    DeepResearchAgent,
+)
 from deep_research.agent_deep_research.main import main
 
 
@@ -87,7 +90,9 @@ class TestDeepResearchAgent:
             )
 
         assert agent.name == "Friday"
-        assert agent.sys_prompt.startswith("You are a helpful assistant named Friday.")
+        assert agent.sys_prompt.startswith(
+            "You are a helpful assistant named Friday.",
+        )
         assert agent.tmp_file_storage_dir == temp_working_dir
         assert os.path.exists(temp_working_dir)
 
@@ -109,17 +114,27 @@ class TestDeepResearchAgent:
                 autospec=True,
             ) as mock_agent_class:
                 mock_agent = AsyncMock()
-                mock_agent.return_value = Msg("Friday", "Test response", "assistant")
+                mock_agent.return_value = Msg(
+                    "Friday",
+                    "Test response",
+                    "assistant",
+                )
                 mock_agent_class.return_value = mock_agent
 
                 with patch("os.makedirs") as mock_makedirs:
-                    with patch.dict(os.environ, {"AGENT_OPERATION_DIR": temp_working_dir}):
+                    with patch.dict(
+                        os.environ,
+                        {"AGENT_OPERATION_DIR": temp_working_dir},
+                    ):
                         test_query = "Test research question"
                         msg = Msg("Bob", test_query, "user")
 
                         await main(test_query)
 
-                        mock_makedirs.assert_called_once_with(temp_working_dir, exist_ok=True)
+                        mock_makedirs.assert_called_once_with(
+                            temp_working_dir,
+                            exist_ok=True,
+                        )
                         mock_agent_class.assert_called_once()
 
                         # ✅ Use assert_called_once() + manual argument check
@@ -161,17 +176,25 @@ class TestDeepResearchAgent:
 
 class TestErrorHandling:
     """Test suite for error handling scenarios"""
+
     @pytest.mark.asyncio
     async def test_filesystem_errors(self, mock_env_vars, mock_tavily_client):
         """Test handling of filesystem errors"""
         with patch(
-                "deep_research.agent_deep_research.main.StdIOStatefulClient",
-                return_value=mock_tavily_client,
+            "deep_research.agent_deep_research.main.StdIOStatefulClient",
+            return_value=mock_tavily_client,
         ):
-            with patch.dict(os.environ, {"AGENT_OPERATION_DIR": "/invalid/path"}):
-                with patch("os.makedirs", side_effect=PermissionError("Permission denied")):
+            with patch.dict(
+                os.environ,
+                {"AGENT_OPERATION_DIR": "/invalid/path"},
+            ):
+                with patch(
+                    "os.makedirs",
+                    side_effect=PermissionError("Permission denied"),
+                ):
                     with pytest.raises(PermissionError):
                         await main("Test query")
+
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
