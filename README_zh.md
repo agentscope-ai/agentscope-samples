@@ -59,6 +59,7 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 ## 🌳 仓库结构
 
 ```bash
+├── alias/                                  # 解决现实问题的智能体程序
 ├── browser_use/
 │   ├── agent_browser/                      # 纯 Python 浏览器 Agent
 │   └── browser_use_fullstack_runtime/      # 全栈运行时版本（前端+后端）
@@ -87,18 +88,19 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 
 ## 📌 示例列表
 
-| 分类                    | 示例文件夹                                           | 使用 AgentScope | 使用 AgentScope Runtime | 描述 |
-| ----------------------- |-----------------------------------------------------| --------------- | ----------------------- |------|
-| **浏览器相关**          | browser_use/agent_browser                           | ✅               | ❌                       | 基于 AgentScope 的命令行浏览器自动化 |
-|                         | browser_use/browser_use_fullstack_runtime           | ✅               | ✅                       | 带 UI 和沙盒环境的全栈浏览器自动化 |
-| **深度研究**            | deep_research/agent_deep_research                   | ✅               | ❌                       | 多 Agent 研究流程 |
-|                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅                       | 全栈运行时深度研究应用 |
-| **游戏**                | games/game_werewolves                               | ✅               | ❌                       | 多 Agent 角色扮演推理游戏 |
-| **对话应用**            | conversational_agents/chatbot_fullstack_runtime     | ✅               | ✅                       | 带前端/后端的聊天机器人 |
-|                         | conversational_agents/chatbot                       | ✅               | ❌                       | 聊天机器人 |
-|                         | conversational_agents/multiagent_conversation       | ✅               | ❌                       | 多 Agent 对话场景 |
-|                         | conversational_agents/multiagent_debate             | ✅               | ❌                       | Agent 辩论 |
-| **评估**                | evaluation/ace_bench                                | ✅               | ❌                       | ACE Bench 基准测试 |
+| 分类        | 示例文件夹                                                 | 使用 AgentScope | 使用 AgentScope Runtime | 描述                      |
+|-----------|-------------------------------------------------------|---------------|-----------------------|-------------------------|
+| **浏览器相关** | browser_use/agent_browser                             | ✅             | ❌                     | 基于 AgentScope 的命令行浏览器自动化 |
+|           | browser_use/browser_use_fullstack_runtime             | ✅             | ✅                     | 带 UI 和沙盒环境的全栈浏览器自动化     |
+| **深度研究**  | deep_research/agent_deep_research                     | ✅             | ❌                     | 多 Agent 研究流程            |
+|           | deep_research/qwen_langgraph_search_fullstack_runtime | ❌             | ✅                     | 全栈运行时深度研究应用             |
+| **游戏**    | games/game_werewolves                                 | ✅             | ❌                     | 多 Agent 角色扮演推理游戏        |
+| **对话应用**  | conversational_agents/chatbot_fullstack_runtime       | ✅             | ✅                     | 带前端/后端的聊天机器人            |
+|           | conversational_agents/chatbot                         | ✅             | ❌                     | 聊天机器人                   |
+|           | conversational_agents/multiagent_conversation         | ✅             | ❌                     | 多 Agent 对话场景            |
+|           | conversational_agents/multiagent_debate               | ✅             | ❌                     | Agent 辩论                |
+| **评估**    | evaluation/ace_bench                                  | ✅             | ❌                     | ACE Bench 基准测试          |
+| **Alias** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
 
 ---
 
