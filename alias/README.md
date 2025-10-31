@@ -1,7 +1,7 @@
 <div align="center">
 
-<img src="assets/alias.png" alt="Alias-Agent Logo" width="100" height="50" style="vertical-align: middle; margin-right: 20px;">
-<h1 style="text-decoration: none; border-bottom: none; display: inline; vertical-align: middle; margin: 0;">Alias-Agent</h1>
+<img src="assets/alias.png" alt="Alias-Agent Logo" width="500" height="250" style="vertical-align: middle; margin-right: 20px;">
+<h1 style="text-decoration: none; border-bottom: none; display: inline; vertical-align: middle; margin: 0;">Alias-Agent: Start It Now, Extend It Your Way, Deploy All with Ease</h1>
 
 </div>
 
