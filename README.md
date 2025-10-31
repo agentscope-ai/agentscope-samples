@@ -80,6 +80,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ├── evaluation/
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
+├── data_juicer_agent/                      # Data processing multi-agent system
 ├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
@@ -88,19 +89,36 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 
 ## 📌 Example List
 
-| Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                                               |
-|-------------------------|-------------------------------------------------------|-----------------|------------------------|---------------------------------------------------------------------------|
-| **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌                      | Command-line browser automation using AgentScope                          |
-|                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅                      | Full-stack browser automation with UI & sandbox                           |
-| **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌                      | Multi-agent research pipeline                                             |
-|                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅                      | Full-stack deep research app                                              |
-| **Games**               | games/game_werewolves                                 | ✅               | ❌                      | Multi-agent roleplay game                                                 |
-| **Conversational Apps** | conversational_agents/chatbot_fullstack_runtime       | ✅               | ✅                      | Chatbot application with frontend/backend                                 |
-|                         | conversational_agents/chatbot                         | ✅               | ❌                      |                                                                           |
-|                         | conversational_agents/multiagent_conversation         | ✅               | ❌                      | Multi-agent dialogue scenario                                             |
-|                         | conversational_agents/multiagent_debate               | ✅               | ❌                      | Agents engaging in debates                                                |
-| **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌                      | Benchmarks with ACE Bench                                                 |
+| Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
+| ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
+| **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
+| **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
+|                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
+| **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
+|                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅            | Full-stack deep research app                     |
+| **Games**               | games/game_werewolves                                 | ✅               | ❌            | Multi-agent roleplay game                        |
+| **Conversational Apps** | conversational_agents/chatbot_fullstack_runtime       | ✅               | ✅            | Chatbot application with frontend/backend        |
+|                         | conversational_agents/chatbot                         | ✅               | ❌            |                                                  |
+|                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
+|                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
+| **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
 | **Alias**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
+
+------
+
+## 🌟 Featured Examples
+
+### DataJuicer Agent
+
+A powerful multi-agent data processing system that leverages Data-Juicer's 200+ operators for intelligent data processing:
+
+- **Intelligent Query**: Find suitable operators from 200+ data processing operators
+- **Automated Pipeline**: Generate Data-Juicer YAML configurations from natural language
+- **Custom Development**: Create domain-specific operators with AI assistance
+- **Multiple Retrieval Modes**: LLM-based and vector-based operator matching
+- **MCP Integration**: Native Model Context Protocol support
+
+📖 **Documentation**: [English](data_juicer_agent/README.md) | [中文](data_juicer_agent/README_ZH.md)
 
 ------
 
