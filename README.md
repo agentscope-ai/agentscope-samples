@@ -59,6 +59,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ## 🌳 Repository Structure
 
 ```bash
+├── alias/                                  # Agent to solve real-world problems
 ├── browser_use/
 │   ├── agent_browser/                      # Pure Python browser agent
 │   └── browser_use_fullstack_runtime/      # Full-stack runtime version with frontend/backend
@@ -100,6 +101,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
+| **Alias**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
 | **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
 
 ------

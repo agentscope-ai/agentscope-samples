@@ -14,7 +14,7 @@ from utils import (
     names_to_str,
 )
 
-from .structured_model import (
+from structured_model import (
     DiscussionModel,
     WitchResurrectModel,
     get_hunter_model,
