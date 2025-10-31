@@ -4,7 +4,7 @@ import os
 
 from agentscope.agent import ReActAgent
 from agentscope_runtime.engine import LocalDeployManager, Runner
-from agentscope.model import OpenAIChatModel
+from agentscope.model import DashScopeChatModel
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.services.context_manager import ContextManager
 
@@ -20,9 +20,9 @@ async def _local_deploy():
 
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
-    model = OpenAIChatModel(
+    model = DashScopeChatModel(
         model_name="qwen-turbo",
-        api_key=os.getenv("OPENAI_API_KEY"),
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
 
     )
     agent = AgentScopeAgent(
