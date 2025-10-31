@@ -91,6 +91,7 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 
 | 分类        | 示例文件夹                                                 | 使用 AgentScope | 使用 AgentScope Runtime | 描述                      |
 |-----------|-------------------------------------------------------|---------------|-----------------------|-------------------------|
+| **数据处理**            | data_juicer_agent/                                 | ✅               | ❌                       | 基于 Data-Juicer 的多智能体数据处理 |
 | **浏览器相关** | browser_use/agent_browser                             | ✅             | ❌                     | 基于 AgentScope 的命令行浏览器自动化 |
 |           | browser_use/browser_use_fullstack_runtime             | ✅             | ✅                     | 带 UI 和沙盒环境的全栈浏览器自动化     |
 | **深度研究**  | deep_research/agent_deep_research                     | ✅             | ❌                     | 多 Agent 研究流程            |
@@ -102,7 +103,6 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 |           | conversational_agents/multiagent_debate               | ✅             | ❌                     | Agent 辩论                |
 | **评估**    | evaluation/ace_bench                                  | ✅             | ❌                     | ACE Bench 基准测试          |
 | **Alias** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
-| **数据处理**            | data_juicer_agent/                                 | ✅               | ❌                       | 基于 Data-Juicer 的多智能体数据处理 |
 
 ---
 
