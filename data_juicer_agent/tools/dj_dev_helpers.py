@@ -7,7 +7,6 @@ and example code for different operator types.
 """
 
 import os
-from pathlib import Path
 from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 

@@ -8,9 +8,9 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.memory import InMemoryMemory
 from agentscope.agent import UserAgent
 
-from .agent_factory import create_agent
-from .prompts import DJ_SYS_PROMPT, DJ_DEV_SYS_PROMPT, ROUTER_SYS_PROMPT, MCP_SYS_PROMPT
-from .tools import (
+from agent_factory import create_agent
+from prompts import DJ_SYS_PROMPT, DJ_DEV_SYS_PROMPT, ROUTER_SYS_PROMPT, MCP_SYS_PROMPT
+from tools import (
     dj_toolkit,
     dj_dev_toolkit,
     mcp_tools,

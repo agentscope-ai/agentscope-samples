@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
+
+import sys
+from pathlib import Path
+
+root_path = Path(__file__).parent.parent
+sys.path.insert(0, str(root_path))
+sys.path.insert(0, str(Path(root_path)/"data_juicer_agent"))
+
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from agentscope.agent import ReActAgent
@@ -22,12 +30,14 @@ from data_juicer_agent.tools import (
     dj_tools,
     dj_dev_tools,
     mcp_tools,
+    get_mcp_toolkit,
     execute_safe_command,
     query_dj_operators,
     get_basic_files,
     get_operator_example,
     configure_data_juicer_path,
 )
+
 
 class TestDataJuicerAgent:
     """Test suite for the data_juicer_agent functionality"""
@@ -138,6 +148,13 @@ class TestDataJuicerAgent:
     @pytest.mark.asyncio
     async def test_mcp_tools_list(self, mock_mcp_client):
         """Test MCP tools list contains expected tools and MCP client binding"""
+        with patch(
+                "agentscope.mcp.HttpStatefulClient",
+                return_value=mock_mcp_client,
+            ) as mock_client_cls:
+            await get_mcp_toolkit()
+            assert mock_client_cls.assert_called_once
+            
         expected_tools = [view_text_file, write_text_file]
         assert len(mcp_tools) == len(expected_tools)
         for tool in expected_tools:
@@ -179,7 +196,7 @@ class TestDataJuicerAgent:
             mock_mcp_clients = [mock_mcp_client]
 
             with patch(
-                "data_juicer_agent.tools.mcp_tools._create_clients",
+                "data_juicer_agent.tools.mcp_helpers._create_clients",
                 return_value=mock_mcp_clients,
             ):
                 with patch(
@@ -215,6 +232,7 @@ class TestDataJuicerAgent:
                             for call in create_calls  # First parameter is name
                         )
                         assert mcp_agent_created, "MCP agent should be created"
+
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
