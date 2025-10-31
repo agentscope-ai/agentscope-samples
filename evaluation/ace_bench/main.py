@@ -21,8 +21,8 @@ from agentscope.tool import Toolkit
 
 
 async def react_agent_solution(
-    ace_task: Task,
-    pre_hook: Callable,
+        ace_task: Task,
+        pre_hook: Callable,
 ) -> SolutionOutput:
     """Run ReAct agent with the given task in ACEBench.
 
@@ -42,8 +42,8 @@ async def react_agent_solution(
     agent = ReActAgent(
         name="Friday",
         sys_prompt="You are a helpful assistant named Friday. "
-        "Your target is to solve the given task with your tools."
-        "Try to solve the task as best as you can.",
+                   "Your target is to solve the given task with your tools."
+                   "Try to solve the task as best as you can.",
         model=DashScopeChatModel(
             api_key=os.environ.get("DASHSCOPE_API_KEY"),
             model_name="qwen-max",
@@ -129,4 +129,5 @@ async def main() -> None:
     await evaluator.run(react_agent_solution)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
