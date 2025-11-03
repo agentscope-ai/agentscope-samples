@@ -10,7 +10,7 @@ from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 
-from .deep_research_agent import DeepResearchAgent
+from deep_research_agent import DeepResearchAgent
 
 
 async def main(user_query: str) -> None:

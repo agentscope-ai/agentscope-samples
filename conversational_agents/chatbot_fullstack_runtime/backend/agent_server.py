@@ -3,8 +3,8 @@ import asyncio
 import os
 
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine import LocalDeployManager, Runner
 from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine import LocalDeployManager, Runner
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.services.context_manager import ContextManager
 
@@ -23,12 +23,13 @@ async def _local_deploy():
     model = DashScopeChatModel(
         model_name="qwen-turbo",
         api_key=os.getenv("DASHSCOPE_API_KEY"),
-
     )
     agent = AgentScopeAgent(
         name="Friday",
         model=model,
-        agent_config={"sys_prompt": "A simple LLM agent to generate a short response"},
+        agent_config={
+            "sys_prompt": "A simple LLM agent to generate a short response",
+        },
         agent_builder=ReActAgent,
     )
 

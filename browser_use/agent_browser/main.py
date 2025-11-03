@@ -10,7 +10,7 @@ from agentscope.memory import InMemoryMemory
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit
 
-from .browser_agent import BrowserAgent  # pylint: disable=C0411
+from browser_agent import BrowserAgent  # pylint: disable=C0411
 
 
 async def main() -> None:

@@ -95,14 +95,14 @@ class ReflectFailure(BaseModel):
                 "properties": {
                     "need_rephrase": {
                         "type": "boolean",
-                        "description": "Set to 'true' if the failed subtask "
-                        "needs to be rephrased due to a design "
+                        "description": "Set to 'true' if the failed"
+                        " subtask needs to be rephrased due to a design "
                         "flaw or misunderstanding; otherwise, 'false'.",
                     },
                     "rephrased_plan": {
                         "type": "string",
-                        "description": "The modified working meta_planner_agent "
-                        "with only the inappropriate "
+                        "description": "The modified working "
+                        "meta_planner_agent with only the inappropriate "
                         "subtask replaced by its improved version. If no "
                         "rephrasing is needed, provide an empty string.",
                     },
