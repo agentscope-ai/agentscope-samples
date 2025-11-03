@@ -102,7 +102,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
-| **Alias**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
+| **General AI Agent**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
 
 ------
 
@@ -119,6 +119,18 @@ A powerful multi-agent data processing system that leverages Data-Juicer's 200+ 
 - **MCP Integration**: Native Model Context Protocol support
 
 📖 **Documentation**: [English](data_juicer_agent/README.md) | [中文](data_juicer_agent/README_ZH.md)
+
+
+### Alias-Agent
+
+*Alias-Agent* (short for *Alias*) is designed to serve as an intelligent assistant for tackle diverse and complicated real-world tasks, providing three operational modes for flexible task execution:
+- **Simple React**: Employs vanilla reasoning-acting loops to iteratively solve problems and execute tool calls.
+- **Planner-Worker**: Uses intelligent planning to decompose complex tasks into manageable subtasks, with dedicated worker agents handling each subtask independently.
+- **Built-in Agents**: Leverages specialized agents tailored for specific domains, including *Deep Research Agent* for comprehensive analysis and *Browser-use Agent* for web-based interactions. 
+
+Beyond being a ready-to-use agent, we envision Alias as a foundational template that can be adapted to different scenarios.
+
+📖 **Documentation**: [English](alias/README.md) | [中文](alias/README_ZH.md)
 
 ------
 
