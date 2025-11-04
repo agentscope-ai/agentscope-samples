@@ -40,6 +40,7 @@ jobs:
 
       - name: Run Tests
         env:
+          PYTHONPATH: ${{ github.workspace }}/browser_use/agent_browser
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           # ✅ Ensure test-results directory exists

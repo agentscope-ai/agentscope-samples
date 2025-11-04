@@ -33,5 +33,7 @@ jobs:
           pip install pytest pytest-asyncio pytest-mock
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/deep_research/agent_deep_research
         run: |
           python -m pytest tests/agent_deep_research_test.py -v
