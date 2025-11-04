@@ -50,7 +50,7 @@ class TestReActAgent:
     async def test_exit_command(self, test_agent, monkeypatch):
         """Test exit command handling"""
 
-        async def exit_model_response():
+        async def exit_model_response(*_args, **_kwargs):
             yield Msg(
                 name="Friday",
                 content="exit",
@@ -69,7 +69,7 @@ class TestReActAgent:
     async def test_conversation_flow(self, monkeypatch):
         """Test full conversation flow"""
 
-        async def model_response():
+        async def model_response(*_args, **_kwargs):
             yield Msg(
                 name="Friday",
                 content="Thought: I need to use a tool\n"

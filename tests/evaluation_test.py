@@ -112,12 +112,12 @@ class TestMainFunction:
 
                 # ✅ Simulate _download_data and _load_data
                 with patch(
-                    "agentscope.evaluate._ace_benchmark.\
-                        _ace_benchmark.ACEBenchmark._download_data",
+                    "agentscope.evaluate._ace_benchmark."
+                    "_ace_benchmark.ACEBenchmark._download_data",
                 ):
                     with patch(
-                        "agentscope.evaluate._ace_benchmark.\
-                            _ace_benchmark.ACEBenchmark._load_data",
+                        "agentscope.evaluate._ace_benchmark."
+                        "_ace_benchmark.ACEBenchmark._load_data",
                         return_value=[],
                     ):
                         # Run main function
@@ -146,12 +146,12 @@ class TestMainFunction:
 
                 # ✅ Simulate _download_data and _load_data
                 with patch(
-                    "agentscope.evaluate._ace_benchmark._ace_benchmark.\
-                    ACEBenchmark._download_data",
+                    "agentscope.evaluate._ace_benchmark._ace_benchmark."
+                    "ACEBenchmark._download_data",
                 ):
                     with patch(
-                        "agentscope.evaluate._ace_benchmark.\
-                        _ace_benchmark.ACEBenchmark._load_data",
+                        "agentscope.evaluate._ace_benchmark."
+                        "_ace_benchmark.ACEBenchmark._load_data",
                         return_value=[],
                     ):
                         # Run main function

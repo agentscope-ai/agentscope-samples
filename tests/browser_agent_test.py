@@ -21,13 +21,16 @@ def mock_dependencies() -> Dict[str, MagicMock]:
 
 
 @pytest.fixture
-def agent(mock_deps_fixture: Dict[str, MagicMock]) -> BrowserAgent:
+def agent(
+    # pylint: disable=redefined-outer-name
+    mock_dependencies: Dict[str, MagicMock],
+) -> BrowserAgent:
     return BrowserAgent(
         name="TestBot",
-        model=mock_deps_fixture["model"],
-        formatter=mock_deps_fixture["formatter"],
-        memory=mock_deps_fixture["memory"],
-        toolkit=mock_deps_fixture["toolkit"],
+        model=mock_dependencies["model"],
+        formatter=mock_dependencies["formatter"],
+        memory=mock_dependencies["memory"],
+        toolkit=mock_dependencies["toolkit"],
         start_url="https://test.com",
     )
 
@@ -35,27 +38,29 @@ def agent(mock_deps_fixture: Dict[str, MagicMock]) -> BrowserAgent:
 # -----------------------------
 # ✅ Hook registration verification (adapted for ReActAgentBase)
 # -----------------------------
-def test_hooks_registered(agent_fixture: BrowserAgent) -> None:
+def test_hooks_registered(
+    agent: BrowserAgent,  # pylint: disable=redefined-outer-name
+) -> None:
     """Verify instance-level hooks are registered"""
     # Disable pylint warning for protected member access
     assert hasattr(
-        agent_fixture,
+        agent,
         "_instance_pre_reply_hooks",
     )  # pylint: disable=protected-access
     assert (
         "browser_agent_default_url_pre_reply"
         # pylint: disable=protected-access
-        in agent_fixture._instance_pre_reply_hooks
+        in agent._instance_pre_reply_hooks
     )
 
     assert hasattr(
-        agent_fixture,
+        agent,
         "_instance_pre_reasoning_hooks",
     )  # pylint: disable=protected-access
     assert (
         "browser_agent_observe_pre_reasoning"
         # pylint: disable=protected-access
-        in agent_fixture._instance_pre_reasoning_hooks
+        in agent._instance_pre_reasoning_hooks
     )
 
 
@@ -63,48 +68,52 @@ def test_hooks_registered(agent_fixture: BrowserAgent) -> None:
 # ✅ Navigation hook test (direct hook invocation)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_pre_reply_hook_navigation(agent_fixture: BrowserAgent) -> None:
+async def test_pre_reply_hook_navigation(
+    agent: BrowserAgent,  # pylint: disable=redefined-outer-name
+) -> None:
     # pylint: disable=protected-access
-    agent_fixture._has_initial_navigated = False
+    agent._has_initial_navigated = False
 
     # Get instance-level hook function
     # pylint: disable=protected-access
-    hook_func = agent_fixture._instance_pre_reply_hooks[
+    hook_func = agent._instance_pre_reply_hooks[
         "browser_agent_default_url_pre_reply"
     ]
-    await hook_func(agent_fixture)  # Directly invoke hook function
+    await hook_func(agent)  # Directly invoke hook function
 
     # pylint: disable=protected-access
-    assert agent_fixture._has_initial_navigated is True
-    assert agent_fixture.toolkit.call_tool_function.called
+    assert agent._has_initial_navigated is True
+    assert agent.toolkit.call_tool_function.called
 
 
 # -----------------------------
 # ✅ Snapshot hook test (fix content attribute access issue)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_observe_pre_reasoning(agent_fixture: BrowserAgent) -> None:
+async def test_observe_pre_reasoning(
+    agent: BrowserAgent,  # pylint: disable=redefined-outer-name
+) -> None:
     # Mock tool response (fix: use Msg object with content attribute)
     mock_response = AsyncMock()
     mock_response.__aiter__.return_value = [
         Msg("system", [{"text": "Snapshot content"}], "system"),
     ]
-    agent_fixture.toolkit.call_tool_function = AsyncMock(
+    agent.toolkit.call_tool_function = AsyncMock(
         return_value=mock_response,
     )
 
     # Replace memory add method
     with patch.object(
-        agent_fixture.memory,
+        agent.memory,
         "add",
         new_callable=AsyncMock,
     ) as mock_add:
         # Get instance-level hook function
         # pylint: disable=protected-access
-        hook_func = agent_fixture._instance_pre_reasoning_hooks[
+        hook_func = agent._instance_pre_reasoning_hooks[
             "browser_agent_observe_pre_reasoning"
         ]
-        await hook_func(agent_fixture)  # Directly invoke hook function
+        await hook_func(agent)  # Directly invoke hook function
 
         mock_add.assert_awaited_once()
         added_msg = mock_add.call_args[0][0]
@@ -114,7 +123,9 @@ async def test_observe_pre_reasoning(agent_fixture: BrowserAgent) -> None:
 # -----------------------------
 # ✅ Text filtering test (improved regex)
 # -----------------------------
-def test_filter_execution_text(agent_fixture: BrowserAgent) -> None:
+def test_filter_execution_text(
+    agent: BrowserAgent,  # pylint: disable=redefined-outer-name
+) -> None:
     text = """
     ### New console messages
     Some console output
@@ -127,7 +138,7 @@ def test_filter_execution_text(agent_fixture: BrowserAgent) -> None:
     Regular text content
     """
     # pylint: disable=protected-access
-    filtered = agent_fixture._filter_execution_text(text)
+    filtered = agent._filter_execution_text(text)
 
     assert "console output" not in filtered
     assert "key: value" not in filtered
@@ -139,22 +150,22 @@ def test_filter_execution_text(agent_fixture: BrowserAgent) -> None:
 # ✅ Memory summarization test (already passing)
 # -----------------------------
 @pytest.mark.asyncio
-async def test_memory_summarizing(agent_fixture: BrowserAgent) -> None:
-    agent_fixture.memory.get_memory = AsyncMock(
+async def test_memory_summarizing(
+    agent: BrowserAgent,  # pylint: disable=redefined-outer-name
+) -> None:
+    agent.memory.get_memory = AsyncMock(
         return_value=[MagicMock(role="user", content="Original question")]
         * 25,
     )
-    agent_fixture.memory.size = AsyncMock(return_value=25)
+    agent.memory.size = AsyncMock(return_value=25)
 
-    agent_fixture.model = AsyncMock()
-    agent_fixture.model.return_value = MagicMock(
+    agent.model = AsyncMock()
+    agent.model.return_value = MagicMock(
         content=[MagicMock(text="Summary text")],
     )
 
     # pylint: disable=protected-access
-    await agent_fixture._memory_summarizing()
+    await agent._memory_summarizing()
 
-    assert agent_fixture.memory.clear.called
-    assert (
-        agent_fixture.memory.add.call_count == 2
-    )  # Original question + summary
+    assert agent.memory.clear.called
+    assert agent.memory.add.call_count == 2  # Original question + summary

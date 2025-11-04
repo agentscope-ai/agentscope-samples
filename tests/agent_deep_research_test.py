@@ -2,7 +2,7 @@
 import os
 import shutil
 import tempfile
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
 import pytest
 from agentscope.formatter import DashScopeChatFormatter
@@ -71,40 +71,42 @@ class TestDeepResearchAgent:
 
     def test_agent_initialization(
         self,
-        mock_model_fixture,
-        mock_tavily_client_fixture,
-        temp_working_dir_fixture,
+        mock_model,  # pylint: disable=redefined-outer-name
+        mock_tavily_client,  # pylint: disable=redefined-outer-name
+        temp_working_dir,  # pylint: disable=redefined-outer-name
     ):
         """Test agent initialization with valid parameters"""
-        with patch("asyncio.create_task"):
+        mock_loop = MagicMock()
+        mock_task = AsyncMock()
+        mock_loop.create_task = MagicMock(return_value=mock_task)
+        with patch("asyncio.get_running_loop", return_value=mock_loop):
             agent = DeepResearchAgent(
                 name="Friday",
                 sys_prompt="You are a helpful assistant named Friday.",
-                model=mock_model_fixture,
+                model=mock_model,
                 formatter=DashScopeChatFormatter(),
                 memory=InMemoryMemory(),
-                search_mcp_client=mock_tavily_client_fixture,
-                tmp_file_storage_dir=temp_working_dir_fixture,
+                search_mcp_client=mock_tavily_client,
+                tmp_file_storage_dir=temp_working_dir,
             )
 
         assert agent.name == "Friday"
         assert agent.sys_prompt.startswith(
             "You are a helpful assistant named Friday.",
         )
-        assert agent.tmp_file_storage_dir == temp_working_dir_fixture
-        assert os.path.exists(temp_working_dir_fixture)
+        assert agent.tmp_file_storage_dir == temp_working_dir
+        assert os.path.exists(temp_working_dir)
 
     @pytest.mark.asyncio
     async def test_main_function_success(
         self,
-        mock_tavily_client_fixture,
-        _mock_model_fixture,
-        temp_working_dir_fixture,
+        mock_tavily_client,  # pylint: disable=redefined-outer-name
+        temp_working_dir,  # pylint: disable=redefined-outer-name
     ):
         """Test main function with successful execution"""
         with patch(
             "deep_research.agent_deep_research.main.StdIOStatefulClient",
-            return_value=mock_tavily_client_fixture,
+            return_value=mock_tavily_client,
         ):
             with patch(
                 "deep_research.agent_deep_research.main.DeepResearchAgent",
@@ -121,14 +123,14 @@ class TestDeepResearchAgent:
                 with patch("os.makedirs") as mock_makedirs:
                     with patch.dict(
                         os.environ,
-                        {"AGENT_OPERATION_DIR": temp_working_dir_fixture},
+                        {"AGENT_OPERATION_DIR": temp_working_dir},
                     ):
                         test_query = "Test research question"
 
                         await main(test_query)
 
                         mock_makedirs.assert_called_once_with(
-                            temp_working_dir_fixture,
+                            temp_working_dir,
                             exist_ok=True,
                         )
                         mock_agent_class.assert_called_once()
@@ -149,22 +151,24 @@ class TestDeepResearchAgent:
     @pytest.mark.asyncio
     async def test_agent_cleanup(
         self,
-        _mock_env_vars_fixture,
-        mock_tavily_client_fixture,
+        mock_tavily_client,  # pylint: disable=redefined-outer-name
     ):
         """Test proper cleanup of resources"""
         with patch(
             "deep_research.agent_deep_research.main.StdIOStatefulClient",
-            return_value=_mock_env_vars_fixture,
+            return_value=mock_tavily_client,
         ):
             with patch.dict(os.environ, {"AGENT_OPERATION_DIR": "/tmp"}):
                 await main("Test query")
 
-            mock_tavily_client_fixture.close.assert_called_once()
+            mock_tavily_client.close.assert_called_once()
 
-    def test_working_directory_creation(self, temp_working_dir_fixture):
+    def test_working_directory_creation(
+        self,
+        temp_working_dir,  # pylint: disable=redefined-outer-name
+    ):
         """Test working directory is created correctly"""
-        test_dir = os.path.join(temp_working_dir_fixture, "test_subdir")
+        test_dir = os.path.join(temp_working_dir, "test_subdir")
         os.makedirs(test_dir, exist_ok=True)
         assert os.path.exists(test_dir)
         os.makedirs(test_dir, exist_ok=True)  # Should not raise error
@@ -176,13 +180,12 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_filesystem_errors(
         self,
-        _mock_env_vars_fixture,
-        mock_tavily_client_fixture,
+        mock_tavily_client,  # pylint: disable=redefined-outer-name
     ):
         """Test handling of filesystem errors"""
         with patch(
             "deep_research.agent_deep_research.main.StdIOStatefulClient",
-            return_value=mock_tavily_client_fixture,
+            return_value=mock_tavily_client,
         ):
             with patch.dict(
                 os.environ,
