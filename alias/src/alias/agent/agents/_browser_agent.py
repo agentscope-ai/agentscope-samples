@@ -11,8 +11,6 @@ import json
 from typing import Type, Optional, Any
 import asyncio
 import copy
-import base64
-import shutil
 from loguru import logger
 from pydantic import BaseModel
 
@@ -24,6 +22,7 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
     ImageBlock,
+    Base64Source,
 )
 from agentscope.model import ChatModelBase
 from agentscope.tool import (
@@ -194,22 +193,6 @@ class BrowserAgent(AliasAgentBase):
         self.toolkit.register_tool_function(self.browser_subtask_manager)
         self.toolkit.register_tool_function(self.image_understanding)
 
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
-            # If the model supports multimodal input,
-            # prepare a directory for screenshots
-            screenshot_dir = os.path.join(
-                "./logs/screenshots/",
-                "tmp" + "_browser_agent",
-            )
-            if os.path.exists(screenshot_dir):
-                shutil.rmtree(screenshot_dir)
-            os.makedirs(screenshot_dir, exist_ok=True)
-            self.screenshot_dir = screenshot_dir
         self.no_screenshot_tool_list = [
             tool
             for tool in self.toolkit.get_json_schemas()
@@ -243,7 +226,7 @@ class BrowserAgent(AliasAgentBase):
             if isinstance(msg, list)
             else ""
         )
-        
+
         if self.start_url and not self._has_initial_navigated:
             await self._navigate_to_start_url()
             self._has_initial_navigated = True
@@ -264,7 +247,6 @@ class BrowserAgent(AliasAgentBase):
             await self._summarize_mem()
 
             msg_reasoning = await self._pure_reasoning()
-
             tool_calls = msg_reasoning.get_content_blocks("tool_use")
             if tool_calls and tool_calls[0]["name"] == "browser_snapshot":
                 msg_reasoning = await self._reasoning_with_observation()
@@ -299,7 +281,7 @@ class BrowserAgent(AliasAgentBase):
 
     async def _pure_reasoning(
         self,
-    ):
+    ) -> Msg:
         msg = Msg(
             "user",
             content=self.pure_reasoning_prompt.format(
@@ -329,7 +311,7 @@ class BrowserAgent(AliasAgentBase):
                 msg = Msg(self.name, [], "assistant")
                 async for content_chunk in res:
                     msg.content = content_chunk.content
-                await self.print(msg, False)
+                await self.print(msg)
             else:
                 msg = Msg(self.name, list(res.content), "assistant")
                 await self.print(msg)
@@ -349,12 +331,6 @@ class BrowserAgent(AliasAgentBase):
 
             # Post-process for user interruption
             if interrupted_by_user and msg:
-                # Fake tool results
-                tool_use_blocks: list = (
-                    msg.get_content_blocks(  # pylint: disable=E1133
-                        "tool_use",
-                    )
-                )
                 for tool_call in tool_use_blocks:  # pylint: disable=E1133
                     msg_res = Msg(
                         "system",
@@ -371,7 +347,7 @@ class BrowserAgent(AliasAgentBase):
                     )
 
                     await self.memory.add(msg_res)
-                    await self.print(msg_res, True)
+                    await self.print(msg_res)
 
     async def _reasoning_with_observation(
         self,
@@ -389,7 +365,6 @@ class BrowserAgent(AliasAgentBase):
 
         for _ in self.snapshot_in_chunk:
             observe_msg = await self._build_observation()
-
             prompt = await self.formatter.format(
                 msgs=[
                     Msg("system", self.sys_prompt, "system"),
@@ -448,7 +423,7 @@ class BrowserAgent(AliasAgentBase):
                     )
 
                     await self.memory.add(msg_res)
-                    await self.print(msg_res, True)
+                    await self.print(msg_res)
             if not self.chunk_continue_status:
                 break
 
@@ -467,8 +442,7 @@ class BrowserAgent(AliasAgentBase):
         self,
     ) -> Msg:
         """Get a snapshot in text before reasoning"""
-
-        image_path: Optional[str] = None
+        image_data: Optional[str] = None
         if (
             self.model.model_name.startswith("qvq")
             or "-vl" in self.model.model_name
@@ -476,17 +450,10 @@ class BrowserAgent(AliasAgentBase):
             or "gpt-5" in self.model.model_name
         ):
             # If the model supports multimodal input, take a screenshot
-            # and pass it to the observation message
-            img_path = os.path.join(
-                self.screenshot_dir,
-                f"screenshot_{self.iter_n}.png",
-            )
-            # if the img_path already exists,
-            # do not need to take a screenshot again
-            if not os.path.exists(img_path):
-                image_path = await self._get_screenshot(img_path)
+            # and pass it to the observation message as base64
+            image_data = await self._get_screenshot()
 
-        observe_msg = self.observe_by_chunk(image_path)
+        observe_msg = self.observe_by_chunk(image_data)
         return observe_msg
 
     async def _update_chunk_observation_status(
@@ -550,7 +517,6 @@ class BrowserAgent(AliasAgentBase):
                 Return a message to the user if the `_finish_function` is
                 called, otherwise return `None`.
         """
-
         tool_res_msg = Msg(
             "system",
             [
@@ -575,6 +541,7 @@ class BrowserAgent(AliasAgentBase):
                     "output"
                 ] = chunk.content
                 # Return message if generate_response is called successfully
+
                 if tool_call[
                     "name"
                 ] == self.finish_function_name and chunk.metadata.get(
@@ -601,7 +568,8 @@ class BrowserAgent(AliasAgentBase):
                     await self.memory.delete(mem_len - 1)
             else:
                 await self.memory.add(tool_res_msg)
-            await self.print(tool_res_msg, False)
+            if tool_call["name"] != self.finish_function_name:
+                await self.print(tool_res_msg)
 
     def _clean_tool_excution_content(
         self,
@@ -651,11 +619,11 @@ class BrowserAgent(AliasAgentBase):
             async for content_chunk in res:
                 decompose_text = content_chunk.content[0]["text"]
                 print_msg.content = content_chunk.content
-                await self.print(print_msg, last=False)
+                await self.print(print_msg, False)
         else:
             decompose_text = res.content[0]["text"]
         print_msg.content = [TextBlock(type="text", text=decompose_text)]
-        await self.print(print_msg, last=True)
+        await self.print(print_msg, True)
 
         # Use path relative to this file for robustness
         reflection_prompt_path = os.path.join(
@@ -818,7 +786,6 @@ class BrowserAgent(AliasAgentBase):
         snapshot_in_chunk = self._split_snapshot_by_chunk(
             snapshot_str,
         )
-
         return snapshot_in_chunk
 
     async def _memory_summarizing(self) -> None:
@@ -902,11 +869,10 @@ class BrowserAgent(AliasAgentBase):
         for msg in summarized_memory:
             await self.memory.add(msg)
 
-    async def _get_screenshot(self, img_path: str = "") -> Optional[str]:
+    async def _get_screenshot(self) -> Optional[str]:
         """
-        Optionally take a screenshot of the current web page
-        for use in multimodal prompts.
-        Returns the path to the image if available, else None.
+        Optionally take a screenshot of the current web page for multimodal prompts.
+        Returns base64-encoded PNG data if available, else None.
         """
         try:
             # Prepare tool call for screenshot
@@ -920,7 +886,7 @@ class BrowserAgent(AliasAgentBase):
             screenshot_response = await self.toolkit.call_tool_function(
                 tool_call,
             )
-            # Extract image path from response
+            # Extract image base64 from response
             async for chunk in screenshot_response:
                 if (
                     chunk.content
@@ -928,17 +894,12 @@ class BrowserAgent(AliasAgentBase):
                     and "data" in chunk.content[1]
                 ):
                     image_data = chunk.content[1]["data"]
-                    image_data = base64.b64decode(image_data)
-                    with open(img_path, "wb") as fi:
-                        fi.write(image_data)
-                    returned_img_path = img_path
-                    # Exit loop on success
                 else:
-                    returned_img_path = None
+                    image_data = None
 
         except Exception:
-            returned_img_path = None
-        return returned_img_path
+            image_data = None
+        return image_data
 
     @staticmethod
     def _filter_execution_text(
@@ -993,7 +954,7 @@ class BrowserAgent(AliasAgentBase):
             for i in range(0, len(snapshot_str), max_length)
         ]
 
-    def observe_by_chunk(self, image_path: str | None = "") -> Msg:
+    def observe_by_chunk(self, image_data: str | None = "") -> Msg:
         """Create an observation message for chunk-based reasoning.
 
         This method formats the current chunk of the webpage snapshot with
@@ -1024,13 +985,14 @@ class BrowserAgent(AliasAgentBase):
             or "4o" in self.model.model_name
             or "gpt-5" in self.model.model_name
         ):
-            if image_path:
+            if image_data:
                 image_block = ImageBlock(
                     type="image",
-                    source={
-                        "type": "url",
-                        "url": image_path,
-                    },
+                    source=Base64Source(
+                        type="base64",
+                        media_type="image/png",
+                        data=image_data,
+                    ),
                 )
                 content.append(image_block)
 
@@ -1383,20 +1345,15 @@ class BrowserAgent(AliasAgentBase):
             ),
         ]
         # Attach screenshot if available
+
         if image_data:
-            image_data = base64.b64decode(image_data)
-            img_path = os.path.join(
-                self.screenshot_dir,
-                f"screenshot_image_understanding_{self.iter_n}.png",
-            )
-            with open(img_path, "wb") as fi:
-                fi.write(image_data)
             image_block = ImageBlock(
                 type="image",
-                source={
-                    "type": "url",
-                    "url": img_path,
-                },
+                source=Base64Source(
+                    type="base64",
+                    media_type="image/png",
+                    data=image_data,
+                ),
             )
             content_blocks.append(image_block)
 

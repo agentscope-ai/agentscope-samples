@@ -61,3 +61,6 @@ uv.lock
 # Logs
 logs/
 *.log
+
+# Agent-generated files
+**sessions_mount_dir/
