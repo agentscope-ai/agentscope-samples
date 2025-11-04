@@ -22,6 +22,7 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
     ImageBlock,
+    Base64Source,
 )
 from agentscope.model import ChatModelBase
 from agentscope.tool import (
@@ -280,7 +281,7 @@ class BrowserAgent(AliasAgentBase):
 
     async def _pure_reasoning(
         self,
-    ):
+    ) -> Msg:
         msg = Msg(
             "user",
             content=self.pure_reasoning_prompt.format(
@@ -310,7 +311,7 @@ class BrowserAgent(AliasAgentBase):
                 msg = Msg(self.name, [], "assistant")
                 async for content_chunk in res:
                     msg.content = content_chunk.content
-                await self.print(msg, False)
+                await self.print(msg)
             else:
                 msg = Msg(self.name, list(res.content), "assistant")
                 await self.print(msg)
@@ -330,12 +331,6 @@ class BrowserAgent(AliasAgentBase):
 
             # Post-process for user interruption
             if interrupted_by_user and msg:
-                # Fake tool results
-                tool_use_blocks: list = (
-                    msg.get_content_blocks(  # pylint: disable=E1133
-                        "tool_use",
-                    )
-                )
                 for tool_call in tool_use_blocks:  # pylint: disable=E1133
                     msg_res = Msg(
                         "system",
@@ -352,7 +347,7 @@ class BrowserAgent(AliasAgentBase):
                     )
 
                     await self.memory.add(msg_res)
-                    await self.print(msg_res, True)
+                    await self.print(msg_res)
 
     async def _reasoning_with_observation(
         self,
@@ -428,7 +423,7 @@ class BrowserAgent(AliasAgentBase):
                     )
 
                     await self.memory.add(msg_res)
-                    await self.print(msg_res, True)
+                    await self.print(msg_res)
             if not self.chunk_continue_status:
                 break
 
@@ -522,7 +517,6 @@ class BrowserAgent(AliasAgentBase):
                 Return a message to the user if the `_finish_function` is
                 called, otherwise return `None`.
         """
-
         tool_res_msg = Msg(
             "system",
             [
@@ -547,6 +541,7 @@ class BrowserAgent(AliasAgentBase):
                     "output"
                 ] = chunk.content
                 # Return message if generate_response is called successfully
+
                 if tool_call[
                     "name"
                 ] == self.finish_function_name and chunk.metadata.get(
@@ -573,7 +568,8 @@ class BrowserAgent(AliasAgentBase):
                     await self.memory.delete(mem_len - 1)
             else:
                 await self.memory.add(tool_res_msg)
-            await self.print(tool_res_msg, False)
+            if tool_call["name"] != self.finish_function_name:
+                await self.print(tool_res_msg)
 
     def _clean_tool_excution_content(
         self,
@@ -623,11 +619,11 @@ class BrowserAgent(AliasAgentBase):
             async for content_chunk in res:
                 decompose_text = content_chunk.content[0]["text"]
                 print_msg.content = content_chunk.content
-                await self.print(print_msg, last=False)
+                await self.print(print_msg, False)
         else:
             decompose_text = res.content[0]["text"]
         print_msg.content = [TextBlock(type="text", text=decompose_text)]
-        await self.print(print_msg, last=True)
+        await self.print(print_msg, True)
 
         # Use path relative to this file for robustness
         reflection_prompt_path = os.path.join(
@@ -790,7 +786,6 @@ class BrowserAgent(AliasAgentBase):
         snapshot_in_chunk = self._split_snapshot_by_chunk(
             snapshot_str,
         )
-
         return snapshot_in_chunk
 
     async def _memory_summarizing(self) -> None:
@@ -993,11 +988,11 @@ class BrowserAgent(AliasAgentBase):
             if image_data:
                 image_block = ImageBlock(
                     type="image",
-                    source={
-                        "type": "base64",
-                        "media_type": "image/png",
-                        "data": image_data,
-                    },
+                    source=Base64Source(
+                        type="base64",
+                        media_type="image/png",
+                        data=image_data,
+                    ),
                 )
                 content.append(image_block)
 
@@ -1354,11 +1349,11 @@ class BrowserAgent(AliasAgentBase):
         if image_data:
             image_block = ImageBlock(
                 type="image",
-                source={
-                    "type": "base64",
-                    "media_type": "image/png",
-                    "data": image_data,
-                },
+                source=Base64Source(
+                    type="base64",
+                    media_type="image/png",
+                    data=image_data,
+                ),
             )
             content_blocks.append(image_block)
 
