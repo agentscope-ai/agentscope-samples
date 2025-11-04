@@ -96,8 +96,8 @@ async def stream():
 
 @app.route("/env_info", methods=["GET"])
 async def get_env_info():
-    if agent.ws is not None:
-        url = agent.ws
+    if agent.desktop_url is not None:
+        url = agent.desktop_url
         logger.info(url)
         return jsonify({"url": url})
     else:
