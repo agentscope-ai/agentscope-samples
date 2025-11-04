@@ -102,7 +102,7 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 |           | conversational_agents/multiagent_conversation         | ✅             | ❌                     | 多 Agent 对话场景            |
 |           | conversational_agents/multiagent_debate               | ✅             | ❌                     | Agent 辩论                |
 | **评估**    | evaluation/ace_bench                                  | ✅             | ❌                     | ACE Bench 基准测试          |
-| **Alias** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
+| **通用智能体** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
 
 ---
 
@@ -119,6 +119,17 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 - **MCP 集成**：原生模型上下文协议支持
 
 📖 **文档**：[English](data_juicer_agent/README.md) | [中文](data_juicer_agent/README_ZH.md)
+
+### Alias 智能体
+
+*Alias-Agent*（简称 *Alias*）旨在作为一个智能助手来处理多样且复杂的真实世界任务，提供三种操作模式以实现灵活的任务执行：
+- **Simple React**：采用经典的推理-行动循环来迭代解决问题并执行工具调用。
+- **Planner-Worker**：使用智能规划将复杂任务分解为可管理的子任务，并由专门的执行智能体独立处理每个子任务。
+- **Built-in Agents**：利用针对特定领域定制的专用智能体，包括用于全面分析的Deep Research Agent和用于基于 Web 交互的Browser-use Agent。
+
+除了作为一个即用型智能体，我们也希望 Alias 能够成为一个基础模板，可以迁移到不同的场景。
+
+📖 **文档**：[English](alias/README.md) | [中文](alias/README_ZH.md)
 
 ---
 
