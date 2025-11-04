@@ -256,7 +256,7 @@ const App: React.FC = () => {
               {desktopUrl && (
                 <iframe
                   src={desktopUrl}
-                  style={{ width: '100%', height: '600px', border: 'none' }}
+                  style={{ width: '1280px', height: '800px', border: 'none' }}
                   title="WebSocketPage"
                 />
               )}
