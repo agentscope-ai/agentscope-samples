@@ -257,7 +257,7 @@ const App: React.FC = () => {
                 <iframe
                   src={desktopUrl}
                   style={{ width: '1280px', height: '800px', border: 'none' }}
-                  title="WebSocketPage"
+                  title="DesktopPage"
                 />
               )}
             </Flex>
