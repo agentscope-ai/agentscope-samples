@@ -21,9 +21,6 @@ jobs:
     - name: Update setuptools and wheel
       run: |
         pip install setuptools==68.2.2 wheel==0.41.2
-    - name: Install AgentScope Runtime
-      run: |
-        pip install -q -e ".[dev]"
     - name: Install pre-commit hooks
       run: |
         pre-commit install
