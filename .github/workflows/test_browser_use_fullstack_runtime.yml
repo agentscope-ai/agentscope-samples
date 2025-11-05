@@ -1,8 +1,5 @@
 name: browser_use_fullstack_runtime_test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test:

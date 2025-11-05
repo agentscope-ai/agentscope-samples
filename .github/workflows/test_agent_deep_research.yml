@@ -1,8 +1,5 @@
 name: deep_research_runtime_test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   test:
