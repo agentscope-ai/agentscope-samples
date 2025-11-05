@@ -17,7 +17,7 @@ def generate_unique_username():
 
 @pytest.fixture
 def client_and_username():
-    """创建独立的测试客户端和用户名"""
+    """Create an Isolated Test Client and Username"""
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["TESTING"] = True
@@ -27,7 +27,7 @@ def client_and_username():
         _db.drop_all()
         _db.create_all()
 
-        # 生成唯一用户名
+        # Generate Unique Username
         username = generate_unique_username()
         password = "testpass"
         user = User(username=username, name="Test User")
@@ -45,7 +45,7 @@ def test_user_login_success(
     # pylint: disable=redefined-outer-name
     client_and_username,
 ):
-    """测试用户登录成功"""
+    """Test Successful User Login"""
     client, username, password = client_and_username
 
     response = client.post(
