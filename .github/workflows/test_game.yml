@@ -29,7 +29,8 @@ jobs:
       - name: Run game_test.py
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-          PYTHONPATH: ${{ env.GITHUB_WORKSPACE }}/games/game_werewolves
+          PYTHONPATH: $GITHUB_WORKSPACE/games/game_werewolves
         run: |
           # ✅ Ensure correct working directory
+          cd $GITHUB_WORKSPACE
           python -m pytest tests/game_test.py -v
