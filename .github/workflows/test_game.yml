@@ -1,9 +1,6 @@
 name: Run test_game.py
 
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test:
@@ -21,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -32,7 +29,7 @@ jobs:
       - name: Run game_test.py
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-          PYTHONPATH: ${{ env.GITHUB_WORKSPACE }}/games/game_werewolves
+          PYTHONPATH: $GITHUB_WORKSPACE/games/game_werewolves
         run: |
           # ✅ Ensure correct working directory
-          python -m pytest tests/game_test.py -v
+          PYTHONPATH=$GITHUB_WORKSPACE/games/game_werewolves python -m pytest tests/game_test.py -v

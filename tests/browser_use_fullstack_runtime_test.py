@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 from types import SimpleNamespace
-
+from unittest.mock import AsyncMock, MagicMock, patch
+import pytest
 import pytest_asyncio
 
-from browser_use.browser_use_fullstack_runtime.backend.agentscope_browseruse_agent import (
-    AgentscopeBrowseruseAgent,
-    RunStatus,
-)
-from browser_use.browser_use_fullstack_runtime.backend.async_quart_service import (
-    app,
-)
 from quart.testing import QuartClient
+
+from browser_use.browser_use_fullstack_runtime.backend import (
+    agentscope_browseruse_agent as agent_module,
+)
+from browser_use.browser_use_fullstack_runtime.backend import (
+    async_quart_service as service,
+)
+
+AgentscopeBrowseruseAgent = agent_module.AgentscopeBrowseruseAgent
+RunStatus = agent_module.RunStatus
+app = service.app
 
 
 # -----------------------------
@@ -31,13 +34,17 @@ def event_loop():
 async def agent_singleton():
     """Session-scoped single instance of AgentscopeBrowseruseAgent"""
     with patch(
-        "browser_use.browser_use_fullstack_runtime.backend.agentscope_browseruse_agent.SandboxService",
+        "browser_use.browser_use_fullstack_runtime."
+        "backend.agentscope_browseruse_agent.SandboxService",
     ) as MockSandboxService, patch(
-        "browser_use.browser_use_fullstack_runtime.backend.agentscope_browseruse_agent.InMemoryMemoryService",
+        "browser_use.browser_use_fullstack_runtime."
+        "backend.agentscope_browseruse_agent.InMemoryMemoryService",
     ) as MockMemoryService, patch(
-        "browser_use.browser_use_fullstack_runtime.backend.agentscope_browseruse_agent.InMemorySessionHistoryService",
+        "browser_use.browser_use_fullstack_runtime."
+        "backend.agentscope_browseruse_agent.InMemorySessionHistoryService",
     ) as MockHistoryService, patch(
-        "agentscope_runtime.sandbox.manager.container_clients.docker_client.docker",
+        "agentscope_runtime.sandbox.manager."
+        "container_clients.docker_client.docker",
     ) as mock_docker, patch(
         "agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager",
     ) as MockSandboxManager:
@@ -88,16 +95,20 @@ async def test_app():
 # ✅ AgentscopeBrowseruseAgent Singleton Tests
 # -----------------------------
 @pytest.mark.asyncio
-async def test_agent_singleton_initialization(agent_singleton):
+async def agent_singleton_singleton_initialization(
+    agent_singleton,  # pylint: disable=redefined-outer-name
+):
     """Test agent singleton initialization"""
-    agent = agent_singleton
+    agent = agent_singleton  # pylint: disable=redefined-outer-name
     assert isinstance(agent, AgentscopeBrowseruseAgent)
     assert hasattr(agent, "agent")
     assert hasattr(agent, "runner")
 
 
 @pytest.mark.asyncio
-async def test_chat_method(agent_singleton):
+async def test_chat_method(
+    agent_singleton,
+):  # pylint: disable=redefined-outer-name
     """Test chat method handles messages"""
     mock_request = {
         "messages": [
@@ -108,20 +119,28 @@ async def test_chat_method(agent_singleton):
     # ✅ Create mock object with object/status properties
     mock_event = SimpleNamespace(
         object="message",
-        status=RunStatus.Completed,
+        status=agent_module.RunStatus.Completed,
         content=[{"type": "text", "text": "Test response"}],
     )
 
-    with patch.object(agent_singleton.runner, "stream_query") as mock_stream:
+    with patch.object(
+        agent_singleton.runner,  # pylint: disable=redefined-outer-name
+        "stream_query",
+    ) as mock_stream:
         # ✅ Return object with properties
-        async def mock_stream_query(*args, **kwargs):
+        async def mock_stream_query(*_args, **_kwargs):
             yield mock_event
 
         mock_stream.side_effect = mock_stream_query
 
         responses = []
-        async for response in agent_singleton.chat(mock_request["messages"]):
+        async for response in agent_singleton.chat(
+            # pylint: disable=redefined-outer-name
+            mock_request["messages"],
+        ):
             responses.append(response)
 
         assert len(responses) == 1
-        assert responses[0][0]["text"] == "Test response"  # ✅ Fix property access
+        assert (
+            responses[0][0]["text"] == "Test response"
+        )  # ✅ Fix property access

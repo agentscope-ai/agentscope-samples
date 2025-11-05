@@ -1,8 +1,5 @@
 name: browser_use_fullstack_runtime_test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test:
@@ -37,6 +34,7 @@ jobs:
       - name: Run tests
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}/browser_use/browser_use_fullstack_runtime/backend
         run: |
           # ✅ Use validated path from debug output
           python -m pytest tests/browser_use_fullstack_runtime_test.py -v

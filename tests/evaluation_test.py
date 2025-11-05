@@ -1,5 +1,4 @@
-# tests/evaluation_test.py
-import asyncio
+# -*- coding: utf-8 -*-
 import os
 from unittest.mock import Mock, AsyncMock, patch
 from typing import List, Dict, Any, Tuple, Callable
@@ -29,19 +28,21 @@ class TestReActAgentSolution:
     def mock_pre_hook(self) -> Mock:
         """Create a mock pre-hook function that returns None"""
 
-        def pre_hook_return(*args, **kwargs):
+        def pre_hook_return():
             """Mock function that returns None (no modifications)"""
             return None
 
         mock = Mock()
         mock.__name__ = "save_logging"
-        mock.side_effect = pre_hook_return  # ✅ Return None to avoid parameter pollution
+        mock.side_effect = (
+            pre_hook_return  # ✅ Return None to avoid parameter pollution
+        )
         return mock
 
     def _create_mock_tools(self) -> List[Tuple[Callable, Dict[str, Any]]]:
         """Create mock tool functions with schemas"""
 
-        def mock_tool(*args, **kwargs):
+        def mock_tool():
             return "tool_response"
 
         tool_schema = {
@@ -110,8 +111,15 @@ class TestMainFunction:
                 mock_evaluator_class.return_value = mock_evaluator
 
                 # ✅ Simulate _download_data and _load_data
-                with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data"):
-                    with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data", return_value=[]):
+                with patch(
+                    "agentscope.evaluate._ace_benchmark."
+                    "_ace_benchmark.ACEBenchmark._download_data",
+                ):
+                    with patch(
+                        "agentscope.evaluate._ace_benchmark."
+                        "_ace_benchmark.ACEBenchmark._load_data",
+                        return_value=[],
+                    ):
                         # Run main function
                         await ace_main.main()
 
@@ -137,8 +145,15 @@ class TestMainFunction:
                 mock_evaluator_class.return_value = mock_evaluator
 
                 # ✅ Simulate _download_data and _load_data
-                with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._download_data"):
-                    with patch("agentscope.evaluate._ace_benchmark._ace_benchmark.ACEBenchmark._load_data", return_value=[]):
+                with patch(
+                    "agentscope.evaluate._ace_benchmark._ace_benchmark."
+                    "ACEBenchmark._download_data",
+                ):
+                    with patch(
+                        "agentscope.evaluate._ace_benchmark."
+                        "_ace_benchmark.ACEBenchmark._load_data",
+                        return_value=[],
+                    ):
                         # Run main function
                         await ace_main.main()
 

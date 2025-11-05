@@ -1,8 +1,5 @@
 name: deep_research_runtime_test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   test:
@@ -33,5 +30,7 @@ jobs:
           pip install pytest pytest-asyncio pytest-mock
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/deep_research/agent_deep_research
         run: |
           python -m pytest tests/agent_deep_research_test.py -v

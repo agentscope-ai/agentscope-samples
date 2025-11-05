@@ -137,9 +137,9 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 
 如果你：
 
-- 需要安装帮助  
-- 遇到问题  
-- 想了解某个示例的工作方式  
+- 需要安装帮助
+- 遇到问题
+- 想了解某个示例的工作方式
 
 请：
 
@@ -157,10 +157,10 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 
 欢迎提交：
 
-- Bug 报告  
-- 新功能请求  
-- 文档改进  
-- 代码贡献  
+- Bug 报告
+- 新功能请求
+- 文档改进
+- 代码贡献
 
 详情见 [Contributing](https://github.com/agentscope-ai/agentscope-samples/blob/main/CONTRIBUTING_zh.md) 文档。
 

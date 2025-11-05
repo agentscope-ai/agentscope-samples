@@ -1,8 +1,5 @@
 name: ACE Benchmark Evaluation Test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test:
@@ -33,6 +30,7 @@ jobs:
 
       - name: Run tests
         env:
+          PYTHONPATH: ${{ env.GITHUB_WORKSPACE }}/evaluation/ace_bench
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           python -m pytest tests/evaluation_test.py -v

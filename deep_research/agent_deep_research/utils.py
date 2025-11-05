@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """The utilities for deep research agent"""
-import json
 import os
+import json
 import re
-from typing import Any, Sequence, Type, Union
+from typing import Union, Sequence, Any, Type
+from pydantic import BaseModel
 
 from agentscope.tool import Toolkit, ToolResponse
-from pydantic import BaseModel
 
 TOOL_RESULTS_MAX_WORDS = 5000
 
@@ -281,11 +281,14 @@ def load_prompt_dict() -> dict:
 
     prompt_dict["summarize_hint"] = (
         "Based on your work history above, examine which step in the "
-        "following working meta_planner_agent has been completed. Mark the completed "
+        "following working meta_planner_agent has been "
+        "completed. Mark the completed "
         "step with [DONE] at the end of its line (e.g., k. step k [DONE]) "
         "and leave the uncompleted steps unchanged. You MUST return only "
-        "the updated meta_planner_agent, preserving exactly the same format as the "
-        "original meta_planner_agent. Do not include any explanations, reasoning, "
+        "the updated meta_planner_agent, preserving exactly "
+        "the same format as the "
+        "original meta_planner_agent. Do not include any "
+        "explanations, reasoning, "
         "or section headers such as '## Working Plan:', just output the"
         "updated meta_planner_agent itself."
         "\n\n## Working Plan:\n{meta_planner_agent}"
@@ -304,11 +307,13 @@ def load_prompt_dict() -> dict:
         "following report that consolidates and summarizes the essential "
         "findings:\n {intermediate_report}\n\n"
         "Such report has been saved to the {report_path}. "
-        "I will now **proceed to the next item** in the working meta_planner_agent."
+        "I will now **proceed to the next item** "
+        "in the working meta_planner_agent."
     )
 
     prompt_dict["save_report_hint"] = (
-        "The milestone results of the current item in working meta_planner_agent "
+        "The milestone results of the current "
+        "item in working meta_planner_agent "
         "are summarized into the following report:\n{intermediate_report}"
     )
 

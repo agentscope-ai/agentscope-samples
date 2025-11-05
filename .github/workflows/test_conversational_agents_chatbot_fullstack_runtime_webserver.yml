@@ -1,8 +1,5 @@
 name: Flask API Runtime Test
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test:
@@ -33,5 +30,7 @@ jobs:
           pip install pytest pytest-asyncio
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/conversational_agents/chatbot_fullstack_runtime
         run: |
           python -m pytest tests/conversational_agents_chatbot_fullstack_runtime_webserver_test.py -v
