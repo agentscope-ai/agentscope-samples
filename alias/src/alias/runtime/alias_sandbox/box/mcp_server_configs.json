@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.39",
+        "--no-sandbox",
+        "--config",
+        "/agentscope_runtime/playwright_mcp_config.json"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem@2025.3.28",
+        "/workspace"
+      ]
+    },
+    "markitdown": {
+      "command": "markitdown-mcp"
+    }
+  }
+}

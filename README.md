@@ -59,6 +59,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ## 🌳 Repository Structure
 
 ```bash
+├── alias/                                  # Agent to solve real-world problems
 ├── browser_use/
 │   ├── agent_browser/                      # Pure Python browser agent
 │   └── browser_use_fullstack_runtime/      # Full-stack runtime version with frontend/backend
@@ -79,6 +80,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ├── evaluation/
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
+├── data_juicer_agent/                      # Data processing multi-agent system
 ├── sample_template/                        # Template for new sample contributions
 └── README.md
 ```
@@ -89,6 +91,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 
 | Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
+| **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
 | **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
@@ -99,6 +102,35 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
+| **General AI Agent**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
+
+------
+
+## 🌟 Featured Examples
+
+### DataJuicer Agent
+
+A powerful multi-agent data processing system that leverages Data-Juicer's 200+ operators for intelligent data processing:
+
+- **Intelligent Query**: Find suitable operators from 200+ data processing operators
+- **Automated Pipeline**: Generate Data-Juicer YAML configurations from natural language
+- **Custom Development**: Create domain-specific operators with AI assistance
+- **Multiple Retrieval Modes**: LLM-based and vector-based operator matching
+- **MCP Integration**: Native Model Context Protocol support
+
+📖 **Documentation**: [English](data_juicer_agent/README.md) | [中文](data_juicer_agent/README_ZH.md)
+
+
+### Alias-Agent
+
+*Alias-Agent* (short for *Alias*) is designed to serve as an intelligent assistant for tackle diverse and complicated real-world tasks, providing three operational modes for flexible task execution:
+- **Simple React**: Employs vanilla reasoning-acting loops to iteratively solve problems and execute tool calls.
+- **Planner-Worker**: Uses intelligent planning to decompose complex tasks into manageable subtasks, with dedicated worker agents handling each subtask independently.
+- **Built-in Agents**: Leverages specialized agents tailored for specific domains, including *Deep Research Agent* for comprehensive analysis and *Browser-use Agent* for web-based interactions. 
+
+Beyond being a ready-to-use agent, we envision Alias as a foundational template that can be adapted to different scenarios.
+
+📖 **Documentation**: [English](alias/README.md) | [中文](alias/README_ZH.md)
 
 ------
 

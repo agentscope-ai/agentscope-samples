@@ -6,14 +6,13 @@ import type { InputRef } from "antd";
 
 import { Image, Avatar, Spin } from "antd";
 import { Flex } from "antd";
-import Browser from "./Browser";
 
 const { Content, Footer } = Layout;
 
 const REACT_APP_API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:9000";
 const BACKEND_URL = REACT_APP_API_URL + "/v1/chat/completions";
-const BACKEND_WS_URL = REACT_APP_API_URL + "/env_info";
+const BACKEND_DESLKTOP_URL = REACT_APP_API_URL + "/env_info";
 const DEFAULT_MODEL = "qwen-max";
 const systemMessage = {
   role: "system",
@@ -37,7 +36,7 @@ const { Search } = Input;
 const App: React.FC = () => {
   const inputRef = useRef<InputRef>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const [webSocketUrl, setWebSocketUrl] = useState("");
+  const [desktopUrl, setDesktopUrl] = useState("");
   const handleFocus = () => {
     if (inputRef.current) {
       inputRef.current.select();
@@ -57,8 +56,8 @@ const App: React.FC = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
 
-  async function get_ws() {
-    const response = await fetch(BACKEND_WS_URL, {
+  async function get_desktop_url() {
+    const response = await fetch(BACKEND_DESLKTOP_URL, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -74,11 +73,11 @@ const App: React.FC = () => {
 
     const data = await response.json();
     console.log(data);
-    setWebSocketUrl(data.url);
+    setDesktopUrl(data.url);
   }
 
   const handleSend = async (message: string) => {
-    await get_ws();
+    await get_desktop_url();
     setCollapsed(true);
     if (message.trim() === "") {
       return;
@@ -254,7 +253,13 @@ const App: React.FC = () => {
                 )}
               </Flex>
 
-              <Browser webSocketUrl={webSocketUrl} activeKey={"3"} />
+              {desktopUrl && (
+                <iframe
+                  src={desktopUrl}
+                  style={{ width: '1280px', height: '800px', border: 'none' }}
+                  title="DesktopPage"
+                />
+              )}
             </Flex>
           </Flex>
         </div>

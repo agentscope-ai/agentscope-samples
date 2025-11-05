@@ -1,0 +1,72 @@
+[project]
+name = "alias"
+version = "0.0.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.11.16",
+    "dashscope>=1.23.1",
+    "docker>=7.1.0",
+    "fastapi>=0.115.12",
+    "gitpython>=3.1.44",
+    "ipython>=8.35.0",
+    "mcp>=1.6.0",
+    "playwright>=1.51.0",
+    "steel-sdk>=0.1.0",
+    "uvicorn>=0.34.0",
+    "redis>=6.0.0b2",
+    "celery[redis]>=5.3.1",
+    "fastapi-limiter>=0.1.6",
+    "pyjwt>=2.10.1",
+    "sqlmodel>=0.0.24",
+    "pydantic-settings>=2.9.1",
+    "pydantic[email]>=2.11.3",
+    "user-agents>=2.2.0",
+    "passlib>=1.7.4",
+    "authlib>=1.5.2",
+    "loguru>=0.6.0",
+    "python-multipart>=0.0.20",
+    "elasticsearch>=9.0.0",
+    "jinja2>=3.1.6",
+    "bcrypt==4.0.1",
+    "agentscope[full]>=1.0.6",
+    "tenacity>=8.5.0",
+    "apscheduler>=3.11.0",
+    "chardet>=5.2.0",
+    "aiofiles>=23.2.1",
+    "pygments>=2.19.1",
+    "markdown2>=2.5.3",
+    "psycopg2-binary>=2.9.10",
+    "alembic>=1.16.1",
+    "opentelemetry-api==1.27.0",
+    "opentelemetry-sdk==1.27.0",
+    "opentelemetry-exporter-otlp==1.27.0",
+    "opentelemetry-instrumentation-celery==0.48b0",
+    "opentelemetry-instrumentation-fastapi==0.48b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.48b0",
+    "opentelemetry-instrumentation-redis==0.48b0",
+    "sentry-sdk[fastapi]===2.30.0",
+    "agentscope-runtime>=0.1.6",
+    "aiosqlite>=0.21.0",
+    "asyncpg>=0.30.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.3.5",
+]
+
+[project.scripts]
+alias_agent = "alias.cli:main"
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"

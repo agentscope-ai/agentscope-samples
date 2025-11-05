@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+src/alias/agent/agents/log/
+# Python
+*.py[cod]
+*$py.class
+
+# Package
+alias.egg-info/
