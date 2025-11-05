@@ -514,7 +514,7 @@ class WorkerManager(StateModule):
         subtask_idx: int,
         selected_worker_name: str,
         detailed_instruction: str,
-        reset_worker_memory: bool = False
+        reset_worker_memory: bool = False,
     ) -> ToolResponse:
         """
         Execute a worker agent for the next unfinished subtask.
@@ -539,7 +539,7 @@ class WorkerManager(StateModule):
                 memory can also be reset for better performance (but require
                 providing sufficient context information in
                 `detailed_instruction`); 3) if a worker is stopped just because
-                hitting th maximum round constraint in the previous execution
+                hitting the maximum round constraint in the previous execution
                 and it's going to work on the sam task, DO NOT reset the
                 memory.
 

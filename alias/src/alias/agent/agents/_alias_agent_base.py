@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from typing import Optional, Any, Type, Callable
 import asyncio
-import time
-from pydantic import BaseModel
-from loguru import logger
-import traceback
 import json
+import time
+import traceback
+from typing import Any, Optional, Type
+
+from loguru import logger
+from pydantic import BaseModel
 
 from agentscope.agent import ReActAgent
 from agentscope.model import ChatModelBase
@@ -49,6 +50,7 @@ class AliasAgentBase(ReActAgent):
 
     async def _reasoning(self):
         """Override _reasoning to add retry logic."""
+
         # Call the parent class's _reasoning method directly to
         # avoid double hook execution
         # We need to call the underlying implementation without hooks
@@ -57,10 +59,10 @@ class AliasAgentBase(ReActAgent):
             # metaclass processing
             # Access the method from the class that defines it
             # (before metaclass wrapping)
-            original_method = ReActAgent.__dict__['_reasoning']
+            original_method = ReActAgent.__dict__["_reasoning"]
             # Check if this is the wrapped version by looking for
             # the wrapper attributes
-            if hasattr(original_method, '__wrapped__'):
+            if hasattr(original_method, "__wrapped__"):
                 # This is the wrapped version, get the original
                 original_method = original_method.__wrapped__
             return await original_method(self)
@@ -68,17 +70,17 @@ class AliasAgentBase(ReActAgent):
         for i in range(MODEL_MAX_RETRIES - 1):
             try:
                 return await call_parent_reasoning()
-            except Exception as e:
+            except Exception:
                 logger.warning(
                     f"Reasoning fail at attempt {i + 1}. "
                     f"Max attempts {MODEL_MAX_RETRIES}\n"
-                    f"{traceback.format_exc()}"
+                    f"{traceback.format_exc()}",
                 )
                 memory_msgs = await self.memory.get_memory()
                 mem_len = len(memory_msgs)
                 # ensure the last message has no tool_use before next attempt
                 if mem_len > 0 and memory_msgs[-1].has_content_blocks(
-                    "tool_use"
+                    "tool_use",
                 ):
                     await self.memory.delete(index=mem_len - 1)
                 time.sleep(2)
@@ -240,7 +242,6 @@ class AliasAgentBase(ReActAgent):
                         except (TypeError, ValueError):
                             # Skip non-serializable values
                             pass
-
 
                 # Skip the printing of the finish function call
                 if (

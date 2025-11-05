@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from pydantic import BaseModel, Field
+
 
 class SubtasksDecomposition(BaseModel):
     """
@@ -7,19 +9,22 @@ class SubtasksDecomposition(BaseModel):
 
     knowledge_gaps: str = Field(
         description=(
-            "A markdown checklist of essential knowledge gaps and optional "
-            "perspective-expansion gaps (flagged with (EXPANSION)), each on its own line. "
-            "E.g. '- [ ] Detailed analysis of JD.com's ...\\n- [ ] (EXPANSION) X...'."
+            "A markdown checklist of essential knowledge gaps and "
+            "optional perspective-expansion gaps (flagged with "
+            "(EXPANSION)), each on its own line. E.g. '- [ ] Detailed "
+            "analysis of JD.com's ...\\n- [ ] (EXPANSION) X...'."
         ),
     )
     working_plan: str = Field(
         description=(
-            "A logically ordered step-by-step working plan (3-5 steps), "
-            "each step starting with its number (1., 2., etc), including both "
-            "core and expansion steps. Expanded steps should be clearly marked "
-            "with (EXPANSION) and provide contextual or analytical depth.."
+            "A logically ordered step-by-step working plan (3-5 steps),"
+            " each step starting with its number (1., 2., etc), "
+            "including both core and expansion steps. Expanded steps "
+            "should be clearly marked with (EXPANSION) and provide "
+            "contextual or analytical depth.."
         ),
     )
+
 
 class WebExtraction(BaseModel):
     """
@@ -42,6 +47,7 @@ class WebExtraction(BaseModel):
         ),
     )
 
+
 class FollowupJudge(BaseModel):
     """
     Model for structured follow-up decompose judging output in deep research.
@@ -49,15 +55,15 @@ class FollowupJudge(BaseModel):
 
     reasoning: str = Field(
         description=(
-            "The reasoning for your decision, including a summary of evidence "
-            "and logic for whether more information is needed. You should "
-            "include specific gaps or opportunities if the current "
-            "information is still insufficient"
+            "The reasoning for your decision, including a summary of "
+            "evidence and logic for whether more information is needed. "
+            "You should include specific gaps or opportunities if the "
+            "current information is still insufficient"
         ),
     )
     knowledge_gap_revision: str = Field(
         "Revise the knowledge gaps in the current. "
-        "Mark the gaps with sufficient information as [x]."
+        "Mark the gaps with sufficient information as [x].",
     )
     to_further_explore: bool = Field(
         description=(
@@ -81,10 +87,11 @@ class ReflectFailure(BaseModel):
 
     rephrase_subtask: dict = Field(
         description=(
-            "Information about whether the problematic subtask needs to be "
-            "rephrased due to a design flaw or misunderstanding. If rephrasing "
-            "is needed, provide the modified working plan with only the inappropriate "
-            "subtask replaced by its improved version."
+            "Information about whether the problematic subtask needs to "
+            "be rephrased due to a design flaw or misunderstanding. If "
+            "rephrasing is needed, provide the modified working plan with"
+            " only the inappropriate subtask replaced by its improved "
+            "version."
         ),
         json_schema_extra={
             "additionalProperties": {
@@ -92,25 +99,30 @@ class ReflectFailure(BaseModel):
                 "properties": {
                     "need_rephrase": {
                         "type": "boolean",
-                        "description": "Set to 'true' if the failed subtask "
-                                       "needs to be rephrased due to a design "
-                                       "flaw or misunderstanding; otherwise, 'false'.",
+                        "description": (
+                            "Set to 'true' if the failed subtask needs "
+                            "to be rephrased due to a design flaw or "
+                            "misunderstanding; otherwise, 'false'."
+                        ),
                     },
                     "rephrased_plan": {
                         "type": "string",
-                        "description": "The modified working plan with only the inappropriate "
-                                       "subtask replaced by its improved version. If no "
-                                       "rephrasing is needed, provide an empty string.",
+                        "description": (
+                            "The modified working plan with only the "
+                            "inappropriate subtask replaced by its "
+                            "improved version. If no rephrasing is "
+                            "needed, provide an empty string."
+                        ),
                     },
-                }
-            }
-        }
+                },
+            },
+        },
     )
     decompose_subtask: dict = Field(
         description=(
-            "Information about whether the problematic subtask should be further "
-            "decomposed. If decomposition is required, provide the failed subtask "
-            "and the reason for its decomposition."
+            "Information about whether the problematic subtask should be "
+            "further decomposed. If decomposition is required, provide "
+            "the failed subtask and the reason for its decomposition."
         ),
         json_schema_extra={
             "additionalProperties": {
@@ -118,15 +130,19 @@ class ReflectFailure(BaseModel):
                 "properties": {
                     "need_decompose": {
                         "type": "boolean",
-                        "description": "Set to 'true' if the failed subtask should "
-                                       "be further decomposed; otherwise, 'false'.",
+                        "description": (
+                            "Set to 'true' if the failed subtask should "
+                            "be further decomposed; otherwise, 'false'."
+                        ),
                     },
                     "failed_subtask": {
                         "type": "string",
-                        "description": "The failed subtask that needs to be further "
-                                        "decomposed.",
+                        "description": (
+                            "The failed subtask that needs to be further "
+                            "decomposed."
+                        ),
                     },
-                }
-            }
-        }
+                },
+            },
+        },
     )

@@ -17,5 +17,5 @@ You are a professional researcher expert in writing comprehensive reports from y
 
 ## Important Notes
 1. Avoid combining, excessively paraphrasing, omitting, or condensing any individual snippet that provides unique or relevant details. The final report must cover ALL key information as presented in the original results.
-2. Each bullet point should be sufficiently detailed (at least **2000 chars**) 
+2. Each bullet point should be sufficiently detailed (at least **2000 chars**)
 3. Both items with and without `(EXPANSION)` tag in knowledge gaps list are important and useful for task completion.
