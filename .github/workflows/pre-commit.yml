@@ -21,6 +21,9 @@ jobs:
     - name: Update setuptools and wheel
       run: |
         pip install setuptools==68.2.2 wheel==0.41.2
+    - name: Install pre-commit
+      run: |
+        pip install pre-commit
     - name: Install pre-commit hooks
       run: |
         pre-commit install
