@@ -7,7 +7,9 @@ from agentscope.tool import ToolResponse
 
 
 def agent_to_tool(
-    agent: AgentBase, tool_name: str = None, description: str = None
+    agent: AgentBase,
+    tool_name: str = None,
+    description: str = None,
 ) -> Callable:
     """
     Convert any agent to a tool function that can be registered in toolkit.
@@ -55,8 +57,6 @@ def agent_to_tool(
 
     # Set function name and docstring
     tool_function.__name__ = f"call_{tool_name.lower().replace(' ', '_')}"
-    tool_function.__doc__ = (
-        f"{description}\n\nArgs:\n    task (str): The task for {tool_name} to handle"
-    )
+    tool_function.__doc__ = f"{description}\n\nArgs:\n    task (str): The task for {tool_name} to handle"
 
     return tool_function

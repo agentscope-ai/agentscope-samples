@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import inspect
 from data_juicer.tools.op_search import OPSearcher
 
@@ -7,7 +8,11 @@ all_ops = searcher.search()
 
 dj_func_info = []
 for i, op in enumerate(all_ops):
-    class_entry = {"index": i, "class_name": op["name"], "class_desc": op["desc"]}
+    class_entry = {
+        "index": i,
+        "class_name": op["name"],
+        "class_desc": op["desc"],
+    }
     param_desc = op["param_desc"]
     param_desc_map = {}
     args = ""

@@ -38,8 +38,8 @@ def get_basic_files() -> ToolResponse:
                 TextBlock(
                     type="text",
                     text="DATA_JUICER_PATH is not configured. Please ask the user to provide the DATA_JUICER_PATH",
-                )
-            ]
+                ),
+            ],
         )
 
     try:
@@ -54,9 +54,7 @@ def get_basic_files() -> ToolResponse:
 
                     filename = os.path.basename(file_path)
                     combined_content += f"## {filename}\n\n"
-                    combined_content += (
-                        f"```{'python' if filename.endswith('.py') else 'markdown'}\n"
-                    )
+                    combined_content += f"```{'python' if filename.endswith('.py') else 'markdown'}\n"
                     combined_content += content
                     combined_content += "\n```\n\n"
                 except Exception as e:
@@ -65,7 +63,9 @@ def get_basic_files() -> ToolResponse:
                     )
                     combined_content += f"Error: {str(e)}\n\n"
 
-        return ToolResponse(content=[TextBlock(type="text", text=combined_content)])
+        return ToolResponse(
+            content=[TextBlock(type="text", text=combined_content)],
+        )
 
     except Exception as e:
         return ToolResponse(
@@ -73,13 +73,14 @@ def get_basic_files() -> ToolResponse:
                 TextBlock(
                     type="text",
                     text=f"Error occurred while getting basic files: {str(e)}",
-                )
-            ]
+                ),
+            ],
         )
 
 
 async def get_operator_example(
-    requirement_description: str, limit: int = 2
+    requirement_description: str,
+    limit: int = 2,
 ) -> ToolResponse:
     """Get example operators based on requirement description using dynamic search.
 
@@ -97,8 +98,8 @@ async def get_operator_example(
                 TextBlock(
                     type="text",
                     text="DATA_JUICER_PATH is not configured. Please ask the user to provide the DATA_JUICER_PATH",
-                )
-            ]
+                ),
+            ],
         )
 
     try:
@@ -108,7 +109,11 @@ async def get_operator_example(
         # Query relevant operators using the requirement description
         # Use retrieval mode from environment variable if set
         retrieval_mode = os.environ.get("RETRIEVAL_MODE", "auto")
-        tool_names = await retrieve_ops(requirement_description, limit=limit, mode=retrieval_mode)
+        tool_names = await retrieve_ops(
+            requirement_description,
+            limit=limit,
+            mode=retrieval_mode,
+        )
 
         if not tool_names:
             return ToolResponse(
@@ -117,8 +122,8 @@ async def get_operator_example(
                         type="text",
                         text=f"No relevant operators found for requirement: {requirement_description}\n"
                         f"Please try with more specific keywords or check if DATA_JUICER_PATH is properly configured.",
-                    )
-                ]
+                    ),
+                ],
             )
 
         combined_content = (
@@ -148,9 +153,7 @@ async def get_operator_example(
                 combined_content += operator_code
                 combined_content += "\n```\n\n"
             else:
-                combined_content += (
-                    f"**Note:** Source code file not found for `{tool_name}`.\n\n"
-                )
+                combined_content += f"**Note:** Source code file not found for `{tool_name}`.\n\n"
 
             test_path = f"tests/ops/{op_type}/test_{tool_name}.py"
 
@@ -172,7 +175,9 @@ async def get_operator_example(
 
             combined_content += "---\n\n"
 
-        return ToolResponse(content=[TextBlock(type="text", text=combined_content)])
+        return ToolResponse(
+            content=[TextBlock(type="text", text=combined_content)],
+        )
 
     except Exception as e:
         return ToolResponse(
@@ -181,8 +186,8 @@ async def get_operator_example(
                     type="text",
                     text=f"Error occurred while getting operator examples: {str(e)}\n"
                     f"Please check the requirement description and try again.",
-                )
-            ]
+                ),
+            ],
         )
 
 
@@ -197,7 +202,7 @@ def configure_data_juicer_path(data_juicer_path: str) -> ToolResponse:
         ToolResponse: Configuration result
     """
     global DATA_JUICER_PATH
-    
+
     data_juicer_path = os.path.expanduser(data_juicer_path)
 
     try:
@@ -207,8 +212,8 @@ def configure_data_juicer_path(data_juicer_path: str) -> ToolResponse:
                     TextBlock(
                         type="text",
                         text=f"Specified DataJuicer path does not exist: {data_juicer_path}",
-                    )
-                ]
+                    ),
+                ],
             )
 
         # Update global DATA_JUICER_PATH
@@ -219,8 +224,8 @@ def configure_data_juicer_path(data_juicer_path: str) -> ToolResponse:
                 TextBlock(
                     type="text",
                     text=f"DataJuicer path has been updated to: {DATA_JUICER_PATH}",
-                )
-            ]
+                ),
+            ],
         )
 
     except Exception as e:
@@ -229,6 +234,6 @@ def configure_data_juicer_path(data_juicer_path: str) -> ToolResponse:
                 TextBlock(
                     type="text",
                     text=f"Error occurred while configuring DataJuicer path: {str(e)}",
-                )
-            ]
+                ),
+            ],
         )

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import os.path as osp
 import json
@@ -96,7 +97,9 @@ async def retrieve_ops_lm(user_query, limit=20):
     else:
         from create_dj_func_info import dj_func_info
 
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        project_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), ".."),
+        )
 
         with open(os.path.join(project_root, TOOLS_INFO_PATH), "w") as f:
             f.write(json.dumps(dj_func_info))
@@ -124,13 +127,14 @@ async def retrieve_ops_lm(user_query, limit=20):
     user_prompt = (
         retrieval_prompt_with_limit
         + """
-User requirement description: 
+User requirement description:
 {user_query}
 
 Available tools:
 {tools_string}
 """.format(
-            user_query=user_query, tools_string=tools_string
+            user_query=user_query,
+            tools_string=tools_string,
         )
     )
 
@@ -191,9 +195,7 @@ def _load_cached_index() -> bool:
         index_path = osp.join(VECTOR_INDEX_CACHE_PATH, "faiss_index")
         metadata_path = osp.join(VECTOR_INDEX_CACHE_PATH, "metadata.json")
 
-        if not all(
-            os.path.exists(p) for p in [index_path, metadata_path]
-        ):
+        if not all(os.path.exists(p) for p in [index_path, metadata_path]):
             return False
 
         # Check if cached index matches current tools info file
@@ -215,7 +217,9 @@ def _load_cached_index() -> bool:
         )
 
         _cached_vector_store = FAISS.load_local(
-            index_path, embeddings, allow_dangerous_deserialization=True
+            index_path,
+            embeddings,
+            allow_dangerous_deserialization=True,
         )
 
         _cached_file_hash = cached_hash
@@ -244,7 +248,10 @@ def _save_cached_index():
             _cached_vector_store.save_local(index_path)
 
         # Save metadata
-        metadata = {"tools_info_hash": _cached_file_hash, "created_at": time.time()}
+        metadata = {
+            "tools_info_hash": _cached_file_hash,
+            "created_at": time.time(),
+        }
         with open(metadata_path, "w") as f:
             json.dump(metadata, f)
 
@@ -261,16 +268,23 @@ def _build_vector_index():
     with open(TOOLS_INFO_PATH, "r", encoding="utf-8") as f:
         tools_info = json.loads(f.read())
 
-    tool_descriptions = [f"{t['class_name']}: {t['class_desc']}" for t in tools_info]
+    tool_descriptions = [
+        f"{t['class_name']}: {t['class_desc']}" for t in tools_info
+    ]
 
     from langchain_community.embeddings import DashScopeEmbeddings
 
     embeddings = DashScopeEmbeddings(
-        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"), model="text-embedding-v1"
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+        model="text-embedding-v1",
     )
 
     metadatas = [{"index": i} for i in range(len(tool_descriptions))]
-    vector_store = FAISS.from_texts(tool_descriptions, embeddings, metadatas=metadatas)
+    vector_store = FAISS.from_texts(
+        tool_descriptions,
+        embeddings,
+        metadatas=metadatas,
+    )
 
     # Cache the results
     _cached_vector_store = vector_store
@@ -292,7 +306,10 @@ def retrieve_ops_vector(user_query, limit=20):
         _build_vector_index()
 
     # Perform similarity search
-    retrieved_tools = _cached_vector_store.similarity_search(user_query, k=limit)
+    retrieved_tools = _cached_vector_store.similarity_search(
+        user_query,
+        k=limit,
+    )
     retrieved_indices = [doc.metadata["index"] for doc in retrieved_tools]
 
     with open(TOOLS_INFO_PATH, "r", encoding="utf-8") as f:
@@ -307,7 +324,11 @@ def retrieve_ops_vector(user_query, limit=20):
     return tool_names
 
 
-async def retrieve_ops(user_query: str, limit: int = 20, mode: str = "auto") -> list:
+async def retrieve_ops(
+    user_query: str,
+    limit: int = 20,
+    mode: str = "auto",
+) -> list:
     """
     Tool retrieval with configurable mode
 
@@ -347,12 +368,14 @@ async def retrieve_ops(user_query: str, limit: int = 20, mode: str = "auto") -> 
                 return retrieve_ops_vector(user_query, limit=limit)
             except Exception as fallback_e:
                 logging.error(
-                    f"Tool retrieval failed: {str(e)}, fallback retrieval also failed: {str(fallback_e)}"
+                    f"Tool retrieval failed: {str(e)}, fallback retrieval also failed: {str(fallback_e)}",
                 )
                 return []
 
     else:
-        raise ValueError(f"Invalid mode: {mode}. Must be 'llm', 'vector', or 'auto'")
+        raise ValueError(
+            f"Invalid mode: {mode}. Must be 'llm', 'vector', or 'auto'",
+        )
 
 
 if __name__ == "__main__":
@@ -365,16 +388,22 @@ if __name__ == "__main__":
 
     # Test different modes
     print("=== Testing LLM mode ===")
-    tool_names_llm = asyncio.run(retrieve_ops(user_query, limit=10, mode="llm"))
+    tool_names_llm = asyncio.run(
+        retrieve_ops(user_query, limit=10, mode="llm"),
+    )
     print("Retrieved tool names (LLM):")
     print(tool_names_llm)
 
     print("\n=== Testing Vector mode ===")
-    tool_names_vector = asyncio.run(retrieve_ops(user_query, limit=10, mode="vector"))
+    tool_names_vector = asyncio.run(
+        retrieve_ops(user_query, limit=10, mode="vector"),
+    )
     print("Retrieved tool names (Vector):")
     print(tool_names_vector)
 
     print("\n=== Testing Auto mode (default) ===")
-    tool_names_auto = asyncio.run(retrieve_ops(user_query, limit=10, mode="auto"))
+    tool_names_auto = asyncio.run(
+        retrieve_ops(user_query, limit=10, mode="auto"),
+    )
     print("Retrieved tool names (Auto):")
     print(tool_names_auto)

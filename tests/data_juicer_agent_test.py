@@ -139,7 +139,9 @@ class TestDataJuicerAgent:
         assert dj_dev_toolkit.tools.get("write_text_file") is not None
         assert dj_dev_toolkit.tools.get("get_basic_files") is not None
         assert dj_dev_toolkit.tools.get("get_operator_example") is not None
-        assert dj_dev_toolkit.tools.get("configure_data_juicer_path") is not None
+        assert (
+            dj_dev_toolkit.tools.get("configure_data_juicer_path") is not None
+        )
 
         # Verify tool list contains expected tools
         expected_tools = [
@@ -198,7 +200,11 @@ class TestDataJuicerAgent:
             assert isinstance(agent, ReActAgent)
 
     @pytest.mark.asyncio
-    async def test_main_with_multiple_agents_loading(self, mock_agent, mock_mcp_client):
+    async def test_main_with_multiple_agents_loading(
+        self,
+        mock_agent,
+        mock_mcp_client,
+    ):
         """Test main function loads multiple agents successfully"""
         with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
             mock_mcp_clients = [mock_mcp_client]
@@ -210,13 +216,16 @@ class TestDataJuicerAgent:
                 with patch(
                     "data_juicer_agent.main.create_agent",
                     side_effect=lambda name, *args, **kwargs: self.create_named_mock_agent(
-                        name, mock_agent, *args, **kwargs
+                        name,
+                        mock_agent,
+                        *args,
+                        **kwargs,
                     ),
                 ) as mock_create_agent:
                     with patch(
-                        "data_juicer_agent.main.user", side_effect=self.mock_user_func
+                        "data_juicer_agent.main.user",
+                        side_effect=self.mock_user_func,
                     ):
-
                         await main(
                             use_studio=False,
                             available_agents=["dj", "dj_dev", "dj_mcp"],
