@@ -141,11 +141,25 @@ export DATA_JUICER_PATH="your-data-juicer-path"
 Choose the running mode using the `-u` or `--use_studio` parameter:
 
 ```bash
-# Use AgentScope Studio (provides interactive interface)
+# Use AgentScope Studio's interactive interface (please install and start AgentScope Studio first)
 python main.py --use_studio True
 
-# Or use command-line mode (default)
+# Or use command line mode directly (default)
 python main.py
+```
+
+Note:
+
+Install AgentScope Studio via npm:
+
+```bash
+npm install -g @agentscope/studio
+```
+
+Start Studio with the following command:
+
+```bash
+as_studio
 ```
 
 ## Agent Introduction
@@ -276,7 +290,7 @@ Data-Juicer provides two types of MCP:
 
 This means that in some scenarios, the Agent's call path can be *shorter, faster, and more direct* than manually writing YAML.
 
-For detailed information, please refer to: [Data-Juicer MCP Service Documentation](https://modelscope.github.io/data-juicer/en/main/docs/DJ_service.html#mcp-server)
+For detailed information, please refer to: [Data-Juicer MCP Service Documentation](https://datajuicer.github.io/data-juicer/en/main/docs/DJ_service.html#mcp-server)
 
 > **Note**: The Data-Juicer MCP server is currently in early development, and features and tools may change with ongoing development.
 
@@ -300,10 +314,10 @@ Enable MCP Agent to replace DJ Agent:
 
 ```bash
 # Enable MCP Agent and Dev Agent
-python main.py --available_agents [dj_mcp, dj_dev]
+python main.py --available_agents [dj_mcp,dj_dev]
 
 # Or use shorthand
-python main.py -a [dj_mcp, dj_dev]
+python main.py -a [dj_mcp,dj_dev]
 ```
 
 ## Customization and Extension

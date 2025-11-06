@@ -1,6 +1,6 @@
 # DataJuicer 智能体
 
-基于 [AgentScope](https://github.com/modelscope/agentscope) 和 [Data-Juicer (DJ)](https://github.com/modelscope/data-juicer) 构建的数据处理多智能体系统。该项目展示了如何利用大模型的自然语言理解能力，让非专家用户也能轻松使用 Data-Juicer 的强大数据处理能力。
+基于 [AgentScope](https://github.com/agentscope-ai/agentscope) 和 [Data-Juicer (DJ)](https://github.com/datajuicer/data-juicer) 构建的数据处理多智能体系统。该项目展示了如何利用大模型的自然语言理解能力，让非专家用户也能轻松使用 Data-Juicer 的强大数据处理能力。
 
 ## 🎯 为什么需要 DataJuicer Agent？
 
@@ -141,11 +141,25 @@ export DATA_JUICER_PATH="your-data-juicer-path"
 通过 `-u` 或 `--use_studio` 参数选择运行方式：
 
 ```bash
-# 使用 AgentScope Studio（提供交互式界面）
+# 使用 AgentScope Studio 的交互式界面（请先安装并启动 AgentScope Studio）
 python main.py --use_studio True
 
-# 或使用命令行模式（默认）
+# 或直接使用命令行模式（默认）
 python main.py
+```
+
+注：
+
+AgentScope Studio 通过 npm 安装：
+
+```bash
+npm install -g @agentscope/studio
+```
+
+使用以下命令启动 Studio：
+
+```bash
+as_studio
 ```
 
 ## 智能体介绍
@@ -276,7 +290,7 @@ Data-Juicer 提供两类 MCP：
 
 这意味着，在某些场景下，Agent 的调用路径可以比手动写 YAML *更短、更快、更直接*。
 
-详细信息请参考：[Data-Juicer MCP 服务文档](https://modelscope.github.io/data-juicer/en/main/docs/DJ_service.html#mcp-server)
+详细信息请参考：[Data-Juicer MCP 服务文档](https://datajuicer.github.io/data-juicer/en/main/docs/DJ_service.html#mcp-server)
 
 > **注意**：Data-Juicer MCP 服务器目前处于早期开发阶段，功能和工具可能会随着持续开发而变化。
 
@@ -300,10 +314,10 @@ Data-Juicer 提供两类 MCP：
 
 ```bash
 # 启用 MCP 智能体和开发智能体
-python main.py --available_agents [dj_mcp, dj_dev]
+python main.py --available_agents [dj_mcp,dj_dev]
 
 # 或使用简写
-python main.py -a [dj_mcp, dj_dev]
+python main.py -a [dj_mcp,dj_dev]
 ```
 
 
