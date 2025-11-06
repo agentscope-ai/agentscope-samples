@@ -3,12 +3,12 @@
 import asyncio
 import os
 
-from agentscope.agent import UserAgent
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.mcp import StdIOStatefulClient
 from agentscope.memory import InMemoryMemory
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit
+from agentscope.mcp import StdIOStatefulClient
+from agentscope.agent import UserAgent
 
 from browser_agent import BrowserAgent  # pylint: disable=C0411
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     print(
         "The browser agent will use "
         "playwright-mcp (https://github.com/microsoft/playwright-mcp)."
-        "Make sure the MCP server can be installed "
+        "Make sure the MCP server is can be install "
         "by `npx @playwright/mcp@latest`",
     )
 
