@@ -45,7 +45,7 @@ async def browser_agent_default_url_pre_reply(
 
 
 async def browser_agent_summarize_mem_pre_reasoning(
-    self: "BrowserAgent",  # pylint: disable=W0613Ï
+    self: "BrowserAgent",  # pylint: disable=W0613
     *args: Any,
     **kwargs: Any,
 ) -> None:
