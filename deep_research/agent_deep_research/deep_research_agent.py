@@ -8,9 +8,7 @@ import asyncio
 from typing import Type, Optional, Any, Tuple
 from datetime import datetime
 from copy import deepcopy
-
 import shortuuid
-
 from pydantic import BaseModel
 
 from built_in_prompt.promptmodule import (
@@ -25,6 +23,7 @@ from utils import (
     get_dynamic_tool_call_json,
     get_structure_output,
 )
+
 from agentscope import logger, setup_logger
 from agentscope.mcp import StatefulClientBase
 from agentscope.agent import ReActAgent
@@ -42,6 +41,7 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
 )
+
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
 
@@ -196,7 +196,7 @@ class DeepResearchAgent(ReActAgent):
             SubTaskItem(objective=self.user_query),
         )
 
-        # Identify the expected output and generate a meta_planner_agent
+        # Identify the expected output and generate a plan
         await self.decompose_and_expand_subtask()
         msg.content += (
             f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
@@ -214,7 +214,7 @@ class DeepResearchAgent(ReActAgent):
             )
 
         for _ in range(self.max_iters):
-            # Generate the working meta_planner_agent first
+            # Generate the working plan first
             if not self.current_subtask[-1].working_plan:
                 await self.decompose_and_expand_subtask()
 
@@ -497,23 +497,20 @@ class DeepResearchAgent(ReActAgent):
 
     async def decompose_and_expand_subtask(self) -> ToolResponse:
         """Identify the knowledge gaps of the current subtask and generate a
-        working meta_planner_agent by subtask decomposition.
-        The working meta_planner_agent includes
+        working plan by subtask decomposition. The working plan includes
         necessary steps for task completion and expanded steps.
 
         Returns:
             ToolResponse:
-                The knowledge gaps and working meta_planner_agent
-                of the current subtask in JSON format.
+                The knowledge gaps and working plan of the current subtask
+                in JSON format.
         """
         if len(self.current_subtask) <= self.max_depth:
             decompose_sys_prompt = self.prompt_dict["decompose_sys_prompt"]
 
             previous_plan = ""
             for i, subtask in enumerate(self.current_subtask):
-                previous_plan += (
-                    f"The {i}-th meta_planner_agent: {subtask.working_plan}\n"
-                )
+                previous_plan += f"The {i}-th plan: {subtask.working_plan}\n"
             previous_plan_inst = self.prompt_dict[
                 "previous_plan_inst"
             ].format_map(
@@ -716,7 +713,7 @@ class DeepResearchAgent(ReActAgent):
 
     async def summarize_intermediate_results(self) -> ToolResponse:
         """Summarize the intermediate results into a report when a step
-        in working meta_planner_agent is completed.
+        in working plan is completed.
 
         Returns:
             ToolResponse:
@@ -740,9 +737,7 @@ class DeepResearchAgent(ReActAgent):
                         "user",
                         self.prompt_dict["summarize_hint"].format_map(
                             {
-                                "meta_planner_agent": self.current_subtask[
-                                    -1
-                                ].working_plan,
+                                "plan": self.current_subtask[-1].working_plan,
                             },
                         ),
                         role="user",
@@ -953,12 +948,11 @@ class DeepResearchAgent(ReActAgent):
 
     async def reflect_failure(self) -> ToolResponse:
         """Reflect on the failure of the action and determine to rephrase
-        the meta_planner_agent or deeper decompose the current step.
+        the plan or deeper decompose the current step.
 
         Returns:
             ToolResponse:
-                The reflection about meta_planner_agent
-                rephrasing and subtask decomposition.
+                The reflection about plan rephrasing and subtask decomposition.
         """
         reflect_sys_prompt = self.prompt_dict["reflect_sys_prompt"]
         conversation_history = ""
@@ -974,7 +968,7 @@ class DeepResearchAgent(ReActAgent):
         reflect_inst = self.prompt_dict["reflect_instruction"].format_map(
             {
                 "conversation_history": conversation_history,
-                "meta_planner_agent": self.current_subtask[-1].working_plan,
+                "plan": self.current_subtask[-1].working_plan,
             },
         )
         try:

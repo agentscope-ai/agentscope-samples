@@ -108,13 +108,13 @@ class EnglishPrompts:
 
     to_all_wolf_win = (
         "There are {n_alive} players alive, and {n_werewolves} of them are "
-        "game_werewolves. "
-        "The game is over and game_werewolves win🐺🎉!"
+        "werewolves. "
+        "The game is over and werewolves win🐺🎉!"
         "In this game, the true roles of all players are: {true_roles}"
     )
 
     to_all_village_win = (
-        "All the game_werewolves have been eliminated."
+        "All the werewolves have been eliminated."
         "The game is over and villagers win🏘️🎉!"
         "In this game, the true roles of all players are: {true_roles}"
     )

@@ -2,29 +2,35 @@
 # pylint: disable=too-many-branches, too-many-statements, no-name-in-module
 """A werewolf game implemented by agentscope."""
 import numpy as np
-from agentscope.agent import ReActAgent
-from agentscope.pipeline import MsgHub, fanout_pipeline, sequential_pipeline
-from prompt import EnglishPrompts as Prompts
+
 from utils import (
-    MAX_DISCUSSION_ROUND,
-    MAX_GAME_ROUND,
-    EchoAgent,
-    Players,
     majority_vote,
     names_to_str,
+    EchoAgent,
+    MAX_GAME_ROUND,
+    MAX_DISCUSSION_ROUND,
+    Players,
 )
-
 from structured_model import (
     DiscussionModel,
-    WitchResurrectModel,
-    get_hunter_model,
-    get_poison_model,
-    get_seer_model,
     get_vote_model,
+    get_poison_model,
+    WitchResurrectModel,
+    get_seer_model,
+    get_hunter_model,
 )
+from prompt import EnglishPrompts as Prompts
 
 # Uncomment the following line to use Chinese prompts
 # from prompt import ChinesePrompts as Prompts
+
+
+from agentscope.agent import ReActAgent
+from agentscope.pipeline import (
+    MsgHub,
+    sequential_pipeline,
+    fanout_pipeline,
+)
 
 
 moderator = EchoAgent()
@@ -113,7 +119,7 @@ async def werewolves_game(agents: list[ReActAgent]) -> None:
                         names_to_str(players.current_alive),
                     ),
                 ),
-                name="game_werewolves",
+                name="werewolves",
             ) as werewolves_hub:
                 # Discussion
                 n_werewolves = len(players.werewolves)
