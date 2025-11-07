@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-import os
-from typing import Optional
-import json
-from pathlib import Path
 import base64
-from loguru import logger
 import io
+import json
+import os
 import tarfile
+from pathlib import Path
+from typing import Optional
 
-from agentscope_runtime.sandbox.manager.container_clients.docker_client import DockerClient
+from loguru import logger
+
+from agentscope_runtime.sandbox.manager.container_clients.docker_client import (  # noqa: E501  # pylint: disable=C0301
+    DockerClient,
+)
 from alias.runtime.alias_sandbox import AliasSandbox
 
 
@@ -386,7 +389,7 @@ def copy_local_file_to_workspace(
                 {
                     "type": "text",
                     "text": "Copying file is not support sandbox "
-                            f"with client type {type(client)}",
+                    f"with client type {type(client)}",
                 },
             ],
         }
@@ -395,7 +398,8 @@ def copy_local_file_to_workspace(
 
     # Create a tar archive in memory
     tar_stream = io.BytesIO()
-    tar = tarfile.open(fileobj=tar_stream, mode='w')
+    # pylint: disable=R1732
+    tar = tarfile.open(fileobj=tar_stream, mode="w")
 
     # Add file to tar archive
     tar.add(local_path, arcname=os.path.basename(target_path))
@@ -416,7 +420,6 @@ def copy_local_file_to_workspace(
             },
         ],
     }
-
 
 
 if __name__ == "__main__":

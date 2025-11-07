@@ -66,6 +66,7 @@ repos:
           | \.html$
           )
         args: [
+          "--init-hook=import sys; sys.path.insert(0, 'alias/src')",
           --disable=W0511,
           --disable=W0718,
           --disable=W0122,

@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=R1724
-from typing import Optional, Callable, Any
 import asyncio
+from typing import Any, Callable, Optional
+
 from loguru import logger
 
-from agentscope.mcp import StatefulClientBase, MCPClientBase
-from agentscope.tool import (
-    Toolkit,
-    ToolResponse,
-)
-from agentscope.message import ToolUseBlock, TextBlock
-from agentscope_runtime.sandbox import FilesystemSandbox, BrowserSandbox
+from agentscope.mcp import MCPClientBase, StatefulClientBase
+from agentscope.message import TextBlock, ToolUseBlock
+from agentscope.tool import ToolResponse, Toolkit
 
 from alias.agent.tools.toolkit_hooks import (
-    LongTextPostHook
+    LongTextPostHook,
 )
 from alias.agent.tools.improved_tools import ImprovedFileOperations
 from alias.agent.tools.tool_blacklist import TOOL_BLACKLIST
 from alias.agent.tools.toolkit_hooks import read_file_post_hook
 from alias.runtime.alias_sandbox.alias_sandbox import AliasSandbox
+
+
+FilesystemSandbox = AliasSandbox
 
 
 class AliasToolkit(Toolkit):
@@ -44,9 +44,8 @@ class AliasToolkit(Toolkit):
             # Get tools
             tools_schema = self.sandbox.list_tools()
             for category, function_dicts in tools_schema.items():
-                if (
-                    (is_browser_toolkit and category == "playwright")
-                    or (not is_browser_toolkit and category != "playwright")
+                if (is_browser_toolkit and category == "playwright") or (
+                    not is_browser_toolkit and category != "playwright"
                 ):
                     for _, function_json in function_dicts.items():
                         if function_json["name"] not in self.tool_blacklist:
@@ -66,7 +65,7 @@ class AliasToolkit(Toolkit):
     def _add_io_function(
         self,
         json_schema: dict,
-        is_browser_tool: bool = False
+        is_browser_tool: bool = False,  # pylint: disable=W0613
     ) -> None:
         tool_name = json_schema["name"]
 
@@ -142,8 +141,9 @@ class AliasToolkit(Toolkit):
             if tool_func.startswith(("read_file", "read_multiple_files")):
                 self.tools[tool_func].postprocess_func = read_file_post_hook
             if tool_func.startswith("tavily"):
-                self.tools[tool_func].postprocess_func = \
-                    long_text_hook.truncate_and_save_response
+                self.tools[
+                    tool_func
+                ].postprocess_func = long_text_hook.truncate_and_save_response
 
     async def add_and_connet_mcp_client(
         self,
@@ -193,10 +193,10 @@ async def test_toolkit():
                 type="tool_use",
                 id="",
                 name="list_allowed_directories",
-                input={}
-            )
+                input={},
+            ),
         )
-        print(f"Allow directory:")
+        print("Allow directory:")
         async for response in res:
             print(response)
 
@@ -215,6 +215,7 @@ async def test_toolkit():
             print(response)
 
         await toolkit.close_mcp_clients()
+
 
 if __name__ == "__main__":
     asyncio.run(test_toolkit())

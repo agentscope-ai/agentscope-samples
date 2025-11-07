@@ -1,41 +1,27 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=W0612,E0611,C2801
 import os
-from typing import Optional
-from datetime import datetime
 import traceback
+from datetime import datetime
+
 from loguru import logger
 
-from agentscope.message import Msg
-from agentscope.model import (
-    OpenAIChatModel,
-    AnthropicChatModel,
-    DashScopeChatModel,
-)
-from agentscope.formatter import (
-    OpenAIChatFormatter,
-    AnthropicChatFormatter,
-    DashScopeChatFormatter,
-)
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.mcp import StdIOStatefulClient
 from agentscope.memory import InMemoryMemory
-from agentscope.mcp import StdIOStatefulClient, StatefulClientBase
-from agentscope.token import OpenAITokenCounter
+from agentscope.message import Msg
+from agentscope.model import DashScopeChatModel
 from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
-from alias.agent.agents import (
-    MetaPlanner,
-    DeepResearchAgent,
-    BrowserAgent,
-)
-from alias.agent.tools import AliasToolkit
+from alias.agent.agents import BrowserAgent, DeepResearchAgent, MetaPlanner
 from alias.agent.agents._planning_tools._worker_manager import share_tools
-from alias.agent.utils.constants import BROWSER_AGENT_DESCRIPTION
+from alias.agent.mock import MockSessionService
+from alias.agent.tools import AliasToolkit
 from alias.agent.tools.improved_tools import DashScopeMultiModalTools
 from alias.agent.tools.toolkit_hooks import LongTextPostHook
+from alias.agent.utils.constants import BROWSER_AGENT_DESCRIPTION
 
 # Open source version always uses mock services
-from alias.agent.mock import MockSessionService
-
 SessionService = MockSessionService
 
 
@@ -126,7 +112,7 @@ async def add_tools(
 
 
 async def arun_agents(
-    session_service: SessionService,
+    session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
     enable_clarification: bool = True,
 ):
@@ -188,7 +174,7 @@ async def arun_agents(
 
 async def test_deepresearch_agent(
     task_str: str,
-    session_service: SessionService,
+    session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
 ):
     instruction = Msg(
@@ -234,7 +220,7 @@ async def test_deepresearch_agent(
 
 async def test_browseruse_agent(
     task_str: str,
-    session_service: SessionService,
+    session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
 ):
     time_str = datetime.now().strftime("%Y%m%d%H%M%S")

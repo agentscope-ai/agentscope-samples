@@ -1,51 +1,40 @@
 # -*- coding: utf-8 -*-
 """Deep Research Agent"""
 # pylint: disable=too-many-lines, no-name-in-module
-import os
 import json
+import os
 import traceback
 import uuid
-
-from typing import Type, Optional, Any, Tuple
 from datetime import datetime
+from typing import Any, Optional, Tuple, Type
+
 # from copy import deepcopy
 import shortuuid
 from pydantic import BaseModel
 
+from agentscope import logger
+from agentscope.formatter import FormatterBase
+from agentscope.memory import MemoryBase
+from agentscope.message import Msg, TextBlock, ToolResultBlock, ToolUseBlock
+from agentscope.model import ChatModelBase
+from agentscope.tool import ToolResponse
+
 from alias.agent.agents import AliasAgentBase
-from alias.agent.tools import AliasToolkit
+from alias.agent.agents._dragent_utils.built_in_prompt.promptmodule import (
+    FollowupJudge,
+    ReflectFailure,
+    SubtasksDecomposition,
+    WebExtraction,
+)
+from alias.agent.agents._dragent_utils.utils import (
+    get_dynamic_tool_call_json,
+    get_structure_output,
+    load_prompt_dict,
+)
 from alias.agent.agents._planning_tools._planning_notebook import (
     WorkerResponse,
 )
-
-from alias.agent.agents._dragent_utils.built_in_prompt.promptmodule import (
-    SubtasksDecomposition,
-    WebExtraction,
-    FollowupJudge,
-    ReflectFailure,
-)
-from alias.agent.agents._dragent_utils.utils import (
-    load_prompt_dict,
-    get_dynamic_tool_call_json,
-    get_structure_output,
-)
-
-from agentscope import logger, setup_logger
-# from agentscope.mcp import StatefulClientBase
-# from agentscope.agent import ReActAgent
-from agentscope.model import ChatModelBase
-from agentscope.formatter import FormatterBase
-from agentscope.memory import MemoryBase
-from agentscope.tool import (
-    ToolResponse,
-    Toolkit,
-)
-from agentscope.message import (
-    Msg,
-    ToolUseBlock,
-    TextBlock,
-    ToolResultBlock,
-)
+from alias.agent.tools import AliasToolkit
 
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
@@ -61,7 +50,7 @@ class SubTaskItem(BaseModel):
 
 async def deep_research_pre_reply_hook(
     self: "DeepResearchAgent",
-    kwargs: dict[str, Any],  # pylint: disable=W0613
+    kwargs: dict[str, Any],
 ):
     # Maintain the subtask list
     msg: Msg = kwargs.get("msg")
@@ -82,29 +71,40 @@ async def deep_research_pre_reply_hook(
 
 async def deep_research_post_reply_hook(
     self: "DeepResearchAgent",
-    kwargs: Any,
-    output: Any,
+    kwargs: Any,  # pylint: disable=W0613
+    output: Any,  # pylint: disable=W0613
 ):
     self.current_subtask = []
 
+
 def _dump_json(
     save_info: list[Msg] | dict,
-    dir: str = "./dr_execution_trac"
+    directory: str = "./dr_execution_trac",
 ):
-    if not os.path.isdir(dir):
-        os.makedirs(dir, exist_ok=True)
-    if isinstance(save_info, list) and len(save_info) > 0 and isinstance(save_info[0], Msg):
+    if not os.path.isdir(directory):
+        os.makedirs(directory, exist_ok=True)
+    if (
+        isinstance(save_info, list)
+        and len(save_info) > 0
+        and isinstance(save_info[0], Msg)
+    ):
         save_info = [msg.to_dict() for msg in save_info]
-        file_path = os.path.join(dir, "memory-" + str(uuid.uuid4().hex) + ".json")
+        file_path = os.path.join(
+            directory,
+            "memory-" + str(uuid.uuid4().hex) + ".json",
+        )
     else:
-        file_path = os.path.join(dir, "plane-" + str(uuid.uuid4().hex) + ".json")
-    with open(file_path, "w") as f:
+        file_path = os.path.join(
+            directory,
+            "plane-" + str(uuid.uuid4().hex) + ".json",
+        )
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(save_info, f, ensure_ascii=False, indent=4)
 
 
 async def deep_research_pre_reasoning_hook(
     self: "DeepResearchAgent",
-    kwargs: Any,
+    kwargs: Any,  # pylint: disable=W0613
 ):
     memory = await self.memory.get_memory()
     _dump_json(memory)
@@ -117,15 +117,17 @@ async def deep_research_pre_reasoning_hook(
         ]
         research_results = []
         for tool_call in self.search_call_buffer:
-            msg = await self._get_research_result(tool_call.get("id"))
+            msg = await self._get_research_result(  # pylint: disable=W0212
+                tool_call.get("id"),
+            )
             if msg is not None:
                 research_results.append(
                     json.dumps(
                         msg.get_content_blocks("tool_result"),
                         ensure_ascii=False,
-                    )
+                    ),
                 )
-        await self._follow_up(
+        await self._follow_up(  # pylint: disable=W0212
             search_results="\n".join(research_results),
             search_queries="\n".join(search_queries),
         )
@@ -142,9 +144,7 @@ async def deep_research_pre_reasoning_hook(
     reasoning_prompt = self.prompt_dict["reasoning_prompt"].format_map(
         {
             "objective": self.current_subtask[-1].objective,
-            "plan": cur_plan
-            if cur_plan
-            else "There is no working plan now.",
+            "plan": cur_plan if cur_plan else "There is no working plan now.",
             "knowledge_gap": f"## Knowledge Gaps:\n {cur_know_gap}"
             if cur_know_gap
             else "",
@@ -166,8 +166,8 @@ async def deep_research_pre_reasoning_hook(
 
 async def deep_research_post_reasoning_hook(
     self: "DeepResearchAgent",  # pylint: disable=W0613
-    kwargs: Any,
-    output_msg: Msg,
+    kwargs: Any,  # pylint: disable=W0613
+    output_msg: Msg,  # pylint: disable=W0613
 ):
     num_msgs = await self.memory.size()
     if num_msgs > 1:
@@ -178,7 +178,7 @@ async def deep_research_post_reasoning_hook(
 async def deep_research_post_action_hook(
     self: "DeepResearchAgent",
     kwargs: Any,
-    output_msg: Msg,
+    output_msg: Msg,  # pylint: disable=W0613
 ):
     tool_call = kwargs.get("tool_call", {})
     if tool_call and tool_call.get("name") == self.search_function:
@@ -274,7 +274,7 @@ class DeepResearchAgent(AliasAgentBase):
                 "intermediate_summarize": self.summarize_function,
                 "reflect_failure": "reflect_failure",
                 "subtask_finish": "finish_current_subtask",
-                "finish_function_name": self.finish_function_name
+                "finish_function_name": self.finish_function_name,
             },
         )
         tool_use_rule = self.prompt_dict["tool_use_rule"].format_map(
@@ -311,34 +311,34 @@ class DeepResearchAgent(AliasAgentBase):
             self.summarize_intermediate_results,
         )
         self.toolkit.register_tool_function(
-            self.finish_current_subtask
+            self.finish_current_subtask,
         )
 
         # add hooks
         self.register_instance_hook(
             "pre_reply",
             "deep_research_pre_reply_hook",
-            deep_research_pre_reply_hook
+            deep_research_pre_reply_hook,
         )
         self.register_instance_hook(
             "post_reply",
             "deep_research_post_reply_hook",
-            deep_research_post_reply_hook
+            deep_research_post_reply_hook,
         )
         self.register_instance_hook(
             "pre_reasoning",
             "deep_research_pre_reasoning_hook",
-            deep_research_pre_reasoning_hook
+            deep_research_pre_reasoning_hook,
         )
         self.register_instance_hook(
             "post_reasoning",
             "deep_research_post_reasoning_hook",
-            deep_research_post_reasoning_hook
+            deep_research_post_reasoning_hook,
         )
         self.register_instance_hook(
             "post_acting",
             "deep_research_post_action_hook",
-            deep_research_post_action_hook
+            deep_research_post_action_hook,
         )
         self.search_call_buffer = []
 
@@ -471,7 +471,7 @@ class DeepResearchAgent(AliasAgentBase):
                     "Identify the knowledge gaps of the current "
                     "subtask and generate a working plan by subtask "
                     "decomposition",
-                    "assistant"
+                    "assistant",
                 ),
             )
 
@@ -548,7 +548,7 @@ class DeepResearchAgent(AliasAgentBase):
                 "(Follow-up by extraction)"
                 "Read the website more intensively to mine more "
                 "information.",
-                "assistant"
+                "assistant",
             ),
         )
         try:
@@ -568,9 +568,9 @@ class DeepResearchAgent(AliasAgentBase):
                         text=json.dumps(
                             extraction_check,
                             ensure_ascii=False,
-                            indent=2
-                        )
-                    )
+                            indent=2,
+                        ),
+                    ),
                 ],
                 role="assistant",
             )
@@ -579,7 +579,7 @@ class DeepResearchAgent(AliasAgentBase):
         except Exception as e:  # noqa: F841
             logger.warning(
                 f"Error when checking subtask finish status {e}"
-                f"{traceback.format_exc()}"
+                f"{traceback.format_exc()}",
             )
             extraction_check = {}
 
@@ -599,9 +599,9 @@ class DeepResearchAgent(AliasAgentBase):
                 Msg(
                     self.name,
                     [TextBlock(type="text", text=f"Reading {urls}")],
-                    "assistant"
+                    "assistant",
                 ),
-                last=True
+                last=True,
             )
 
             # call the extract_function
@@ -629,7 +629,7 @@ class DeepResearchAgent(AliasAgentBase):
                     self.name,
                     "(Follow-up to explore)"
                     "Check if current subtask knowledge gaps are fulfilled",
-                    "assistant"
+                    "assistant",
                 ),
             )
             msgs = [
@@ -646,7 +646,7 @@ class DeepResearchAgent(AliasAgentBase):
                     "user",
                     self.prompt_dict["follow_up_judge_sys_prompt"],
                     role="user",
-                )
+                ),
             ]
             follow_up_judge = await self.get_model_output(
                 msgs=msgs,
@@ -660,23 +660,26 @@ class DeepResearchAgent(AliasAgentBase):
                         type="text",
                         text=json.dumps(
                             follow_up_judge,
-                            ensure_ascii=False, indent=2
-                        )
-                    )
+                            ensure_ascii=False,
+                            indent=2,
+                        ),
+                    ),
                 ],
                 role="assistant",
             )
             await self.memory.add(follow_up_msg)
         except Exception as e:  # noqa: F841
             logger.warning(
-                f"Error when checking subtask finish status {e}"
+                f"Error when checking subtask finish status {e}",
             )
             logger.error(traceback.format_exc())
             follow_up_judge = {}
 
         if follow_up_judge.get("knowledge_gap_revision", ""):
-            self.current_subtask[-1].knowledge_gaps = \
-                follow_up_judge.get("knowledge_gap_revision", "")
+            self.current_subtask[-1].knowledge_gaps = follow_up_judge.get(
+                "knowledge_gap_revision",
+                "",
+            )
 
         if (
             follow_up_judge.get("to_further_explore", False)
@@ -690,15 +693,13 @@ class DeepResearchAgent(AliasAgentBase):
                         TextBlock(
                             type="text",
                             text="Still need to do more research "
-                                 f"to figure out {subtask}",
-                        )
+                            f"to figure out {subtask}",
+                        ),
                     ],
-                    role="assistant"
-                )
+                    role="assistant",
+                ),
             )
-            intermediate_report = (
-                await self.summarize_intermediate_results()
-            )
+            intermediate_report = await self.summarize_intermediate_results()
             self.current_subtask.append(
                 SubTaskItem(objective=subtask),
             )
@@ -748,14 +749,12 @@ class DeepResearchAgent(AliasAgentBase):
         for msg in reversed(memory_msgs):
             if msg.metadata and msg.metadata.get("is_report_msg"):
                 break
-            else:
-                intermediate_memory.append(msg)
+            intermediate_memory.append(msg)
         intermediate_memory.reverse()
         if remove_last_tool_use:
-            while (
-                len(intermediate_memory) > 0 and
-                intermediate_memory[-1].has_content_blocks("tool_use")
-            ):
+            while len(intermediate_memory) > 0 and intermediate_memory[
+                -1
+            ].has_content_blocks("tool_use"):
                 intermediate_memory.pop(-1)
         return intermediate_memory
 
@@ -765,34 +764,33 @@ class DeepResearchAgent(AliasAgentBase):
         for msg in reversed(memory_msgs):
             if msg.metadata and msg.metadata.get("is_report_msg"):
                 break
-            elif msg.role == "user":
+            if msg.role == "user":
                 break
-            elif msg.has_content_blocks("tool_use"):
+            if msg.has_content_blocks("tool_use"):
                 stop = False
                 for block in msg.get_content_blocks("tool_use"):
                     if block.get("name") == self.summarize_function:
                         stop = True
                 if stop:
                     break
-                else:
-                    remove_num += 1
+                remove_num += 1
             else:
                 remove_num += 1
         start_index = len(memory_msgs) - remove_num
         logger.info(
             "---> delete messages: "
-            f"{list(range(start_index, len(memory_msgs)))}"
+            f"{list(range(start_index, len(memory_msgs)))}",
         )
         await self.memory.delete(list(range(start_index, len(memory_msgs))))
 
     async def _get_research_result(
         self,
-        tool_call_id: str
+        tool_call_id: str,
     ) -> Msg | None:
         memory_msgs = await self.memory.get_memory()
         for msg in reversed(memory_msgs):
             if msg.has_content_blocks("tool_result"):
-                for block in msg.get_content_blocks('tool_result'):
+                for block in msg.get_content_blocks("tool_result"):
                     if block.get("id") == tool_call_id:
                         return msg
         return None
@@ -823,7 +821,7 @@ class DeepResearchAgent(AliasAgentBase):
                     "[summarize_intermediate_results]"
                     "Examine whether the knowledge gaps or objective"
                     "have been fulfill",
-                    "assistant"
+                    "assistant",
                 ),
             )
 
@@ -883,7 +881,7 @@ class DeepResearchAgent(AliasAgentBase):
             Msg(
                 self.name,
                 "Summarize the intermediate results into a report",
-                "assistant"
+                "assistant",
             ),
         )
 
@@ -934,7 +932,7 @@ class DeepResearchAgent(AliasAgentBase):
                         ),
                     ),
                 ],
-                metadata={"is_report_msg": True,}
+                metadata={"is_report_msg": True},
             )
         else:
             # add to memory for the follow-up case
@@ -948,7 +946,7 @@ class DeepResearchAgent(AliasAgentBase):
                         ),
                     ],
                     role="assistant",
-                    metadata={"is_report_msg": True}
+                    metadata={"is_report_msg": True},
                 ),
             )
             return ToolResponse(
@@ -989,7 +987,7 @@ class DeepResearchAgent(AliasAgentBase):
                 tmp_report_path = os.path.join(
                     self.tmp_file_storage_dir,
                     f"{self.report_path_based}_"
-                    f"inprocess_report_{index + 1}.md"
+                    f"inprocess_report_{index + 1}.md",
                 )
                 params = {
                     "file_path": tmp_report_path,
@@ -1010,11 +1008,11 @@ class DeepResearchAgent(AliasAgentBase):
                             TextBlock(
                                 type="text",
                                 text="Reading progress report: "
-                                     f"{tmp_report_path}"
-                            )
+                                f"{tmp_report_path}",
+                            ),
                         ],
-                        "assistant"
-                    )
+                        "assistant",
+                    ),
                 )
 
             msgs = [
@@ -1031,7 +1029,7 @@ class DeepResearchAgent(AliasAgentBase):
             ]
         else:  # Use only intermediate memory to generate report
             intermediate_memory = await self._get_intermediate_memory(
-                remove_last_tool_use=True
+                remove_last_tool_use=True,
             )
             msgs = [
                 Msg(
@@ -1045,7 +1043,7 @@ class DeepResearchAgent(AliasAgentBase):
             Msg(
                 self.name,
                 "Collect and polish all draft reports into a final report",
-                "assistant"
+                "assistant",
             ),
         )
         try:
@@ -1104,8 +1102,10 @@ class DeepResearchAgent(AliasAgentBase):
             name=self.name,
             role="assistant",
             content=[
-                TextBlock(type="text",
-                          text=subtask_progress_summary, )
+                TextBlock(
+                    type="text",
+                    text=subtask_progress_summary,
+                ),
             ],
             metadata=structure_response.model_dump(),
         )
@@ -1122,7 +1122,7 @@ class DeepResearchAgent(AliasAgentBase):
                 The reflection about plan rephrasing and subtask decomposition.
         """
         intermediate_memory = await self._get_intermediate_memory(
-            remove_last_tool_use=True
+            remove_last_tool_use=True,
         )
         reflect_sys_prompt = self.prompt_dict["reflect_sys_prompt"]
         conversation_history = ""
@@ -1148,7 +1148,7 @@ class DeepResearchAgent(AliasAgentBase):
                 Msg(
                     self.name,
                     "Reflect on the failure of the action",
-                    "assistant"
+                    "assistant",
                 ),
             )
             reflection = await self.get_model_output(
@@ -1193,7 +1193,7 @@ class DeepResearchAgent(AliasAgentBase):
                 save_msg = None
                 for msg in reversed(msgs):
                     for i, block in enumerate(
-                        msg.get_content_blocks("tool_use")
+                        msg.get_content_blocks("tool_use"),
                     ):
                         if block.get("name") == "reflect_failure":
                             save_msg = msg
@@ -1286,8 +1286,8 @@ class DeepResearchAgent(AliasAgentBase):
                     TextBlock(
                         type="text",
                         text="All subtasks are done. "
-                             "Consider using generate_response to"
-                             "generate final report",
+                        "Consider using generate_response to"
+                        "generate final report",
                     ),
                 ],
                 metadata={
@@ -1295,7 +1295,6 @@ class DeepResearchAgent(AliasAgentBase):
                 },
                 is_last=True,
             )
-
 
     # pylint: disable=invalid-overridden-method, unused-argument
     async def generate_response(  #
@@ -1333,15 +1332,17 @@ class DeepResearchAgent(AliasAgentBase):
                     detailed_report_path: (
                         f"Final detailed report generated by {self.name}"
                         f"for '{str(self.user_query)}'"
-                    )
+                    ),
                 },
             )
             response_msg = Msg(
                 name=self.name,
                 role="assistant",
                 content=[
-                    TextBlock(type="text",
-                              text=subtask_progress_summary,)
+                    TextBlock(
+                        type="text",
+                        text=subtask_progress_summary,
+                    ),
                 ],
                 metadata=structure_response.model_dump(),
             )

@@ -95,7 +95,7 @@ class DashScopeMultiModalTools:
                     "content": [
                         {
                             "text": "Transcript the content in the audio "
-                                    "to text."
+                            "to text.",
                         },
                     ],
                 },
@@ -253,6 +253,7 @@ class DashScopeMultiModalTools:
                 )
         except Exception as e:
             import traceback
+
             print(traceback.format_exc())
             return ToolResponse(
                 [
@@ -268,7 +269,7 @@ if __name__ == "__main__":
     with AliasSandbox() as box:
         tool_result = box.call_tool(
             "run_shell_command",
-            arguments={"command": "apt update"}
+            arguments={"command": "apt update"},
         )
         print(tool_result)
         tool_result = box.call_tool(
@@ -299,7 +300,7 @@ if __name__ == "__main__":
         )
         toolset = DashScopeMultiModalTools(
             sandbox=box,
-            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", "")
+            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", ""),
         )
         result = toolset.dashscope_image_to_text(
             image_url=picture_path,

@@ -43,7 +43,7 @@ class RoadmapManager(StateModule):
 
     async def decompose_task_and_build_roadmap(
         self,
-        user_latest_input: str,
+        user_latest_input: str,  # pylint: disable=W0613
         given_task_conclusion: str,
         detail_analysis_for_plan: str,
         decomposed_subtasks: list[SubTaskSpecification],

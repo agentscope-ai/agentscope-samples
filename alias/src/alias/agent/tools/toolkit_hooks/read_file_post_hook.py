@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from agentscope.message import ToolUseBlock, TextBlock
 from agentscope.tool import ToolResponse
 
@@ -21,8 +22,8 @@ def _summarize_csv(text_block: TextBlock) -> None:
 
 
 def read_file_post_hook(
-        tool_use: ToolUseBlock,
-        tool_response: ToolResponse,
+    tool_use: ToolUseBlock,
+    tool_response: ToolResponse,
 ) -> ToolResponse:
     """
     Condense large CSV outputs after `read_file` or `read_multiple_files`.

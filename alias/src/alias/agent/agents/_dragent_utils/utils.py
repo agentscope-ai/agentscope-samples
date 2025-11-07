@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """The utilities for deep research agent"""
-import os
 import json
-from typing import Union, Sequence, Any, Type
-from pydantic import BaseModel
+import os
 import re
+from typing import Any, Sequence, Type, Union
+
+from pydantic import BaseModel
 
 from agentscope.tool import Toolkit, ToolResponse
-from agentscope.agent import ReActAgent
 
 TOOL_RESULTS_MAX_WORDS = 30000
 
@@ -24,12 +24,13 @@ def get_prompt_from_file(
             prompt = f.read()
     return prompt
 
+
 async def count_by_words(sentence: str) -> float:
     """Count words of a sentence"""
     words = re.findall(
         r"\w+|[^\w\s]",
         sentence,
-        re.UNICODE
+        re.UNICODE,
     )
 
     word_count = 0.0

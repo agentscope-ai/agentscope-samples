@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """Mock message models for local testing without api_server dependency."""
-from enum import Enum
 import uuid
-from typing import Any, Optional, List
+from enum import Enum
+from typing import Any, Optional
+
 from pydantic import BaseModel
 
 
 class MessageState(str, Enum):
     """Message state enumeration."""
+
     RUNNING = "running"
     FINISHED = "finished"
     FAILED = "failed"
@@ -15,6 +17,7 @@ class MessageState(str, Enum):
 
 class MessageType(str, Enum):
     """Message type enumeration."""
+
     RESPONSE = "response"
     SUB_RESPONSE = "sub_response"
     THOUGHT = "thought"
@@ -27,6 +30,7 @@ class MessageType(str, Enum):
 
 class BaseMessage(BaseModel):
     """Base message class for local testing."""
+
     role: str = "assistant"
     content: Any = ""
     name: Optional[str] = None
@@ -36,6 +40,7 @@ class BaseMessage(BaseModel):
 
 class UserMessage(BaseMessage):
     """User message for local testing."""
+
     role: str = "user"
     name: str = "User"
 

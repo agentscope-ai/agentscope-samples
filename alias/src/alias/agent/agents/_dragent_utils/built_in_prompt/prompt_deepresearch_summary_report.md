@@ -34,19 +34,19 @@ Please revise the provided draft research report into a finalized, professional,
 - The tone must be formal, objective, and professional throughout.
 - Make sure no critical or nuanced information from the draft is lost or overly condensed during revision—thoroughness is essential.
 - Check that all cited sources are accurately referenced.
-- Each section, subsection, and even bullet point MUST contain enough depth, relevant details, and specific information rather than being a brief summary of only a few sentences. 
+- Each section, subsection, and even bullet point MUST contain enough depth, relevant details, and specific information rather than being a brief summary of only a few sentences.
 
 ### Report Format (Fill in appropriate content in [] and ... parts):
 [Your Report Title]
-# Introduction: 
+# Introduction:
 [Introduction to the report]
-# [Section 1 title]: 
+# [Section 1 title]:
 [Section 1 content]
-## [Subsection 1.1 title]: 
+## [Subsection 1.1 title]:
 [Subsection 1.1 content]
-# [Section 2 title]: 
+# [Section 2 title]:
 ...
-# Conclusion: 
+# Conclusion:
 [Conclusion to the report]
 
 Format your report professionally with consistent heading levels and proper spacing.

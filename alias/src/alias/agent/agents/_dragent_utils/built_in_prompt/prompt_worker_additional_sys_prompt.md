@@ -53,14 +53,14 @@
 ### Important Constraints
 1. DO NOT TRY TO MAKE A PLAN yourself.
 2. ALWAYS FOLLOW THE WORKING PLAN SEQUENCE STEP BY STEP!!
-3. For each step, you MUST provide a reason or analysis to **review what was done in the previous step** and **explain why to call a function / use a tool in this step**. 
-4. After each action, YOU MUST seriously confirm that the current item in the plan is done before starting the next item, referring to the following rules: 
-   - Carefully analyze whether the information obtained from the tool is sufficient to fill the knowledge gap corresponding to the current item. 
+3. For each step, you MUST provide a reason or analysis to **review what was done in the previous step** and **explain why to call a function / use a tool in this step**.
+4. After each action, YOU MUST seriously confirm that the current item in the plan is done before starting the next item, referring to the following rules:
+   - Carefully analyze whether the information obtained from the tool is sufficient to fill the knowledge gap corresponding to the current item.
    - Pay more attention to details. Confidently assuming that all tool calls will bring complete information often leads to serious errors (e.g., mistaking the rental website name for the apartment name when renting).
 If the current item in the plan is done, call `summarize_inprocess_results_into_report` to generate an in-process report, then move on to the next item.
 5. Always pay attention to the current subtask and working plan as they may be updated during the workflow.
 6. Each time you reason and act, remember that **Current Subtask** is your primary goal, while **Final Task Objective** constrains your process from deviating from the final goal.
-7. You should use `{subtask_finish}` to mark that you have finished a subtask and proceed to the next one. 
+7. You should use `{subtask_finish}` to mark that you have finished a subtask and proceed to the next one.
 8. You should use the `{finish_function_name}` tool to return your research results when Research Depth = 1 and all checklist items are completed.
 
 

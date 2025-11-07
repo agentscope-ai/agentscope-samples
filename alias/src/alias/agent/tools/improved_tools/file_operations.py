@@ -7,19 +7,20 @@ original read_file functionality and adds support for
 reading specific line ranges from files.
 """
 
-from typing import Optional
-from loguru import logger
 import asyncio
 import os
+from typing import Optional
 
-from agentscope.tool import ToolResponse
+from loguru import logger
+
 from agentscope.message import TextBlock
+from agentscope.tool import ToolResponse
 
 from alias.agent.utils.constants import TMP_FILE_DIR
 from alias.agent.tools.sandbox_util import (
     TEXT_EXTENSIONS,
     create_or_edit_workspace_file,
-    create_workspace_directory
+    create_workspace_directory,
 )
 from alias.runtime.alias_sandbox import AliasSandbox
 
@@ -41,7 +42,7 @@ class ImprovedFileOperations:
         """init with sandbox"""
         self.sandbox = sandbox
 
-    async def read_file(
+    async def read_file(  # pylint: disable=R0911,R0912
         self,
         file_path: str,
         offset: int = 0,
@@ -96,13 +97,14 @@ class ImprovedFileOperations:
             if self.sandbox is None:
                 return ToolResponse(
                     metadata={
-                        "success": False, "error": "No sandbox provided"
+                        "success": False,
+                        "error": "No sandbox provided",
                     },
                     content=[
                         TextBlock(
                             type="text",
                             text="Error: No sandbox provided to "
-                                 "call the original read_file tool",
+                            "call the original read_file tool",
                         ),
                     ],
                 )
@@ -116,7 +118,7 @@ class ImprovedFileOperations:
                 # Call the original read_file tool
                 tool_res = self.sandbox.call_tool(
                     name="read_file",
-                    arguments=params
+                    arguments=params,
                 )
             elif file_extension in TO_MARKDOWN_SUPPORT_MAPPING:
                 tool_res = _transfer_to_markdown_text(file_path, self.sandbox)
@@ -130,9 +132,10 @@ class ImprovedFileOperations:
             ):
                 return ToolResponse(
                     metadata={
-                        "success": False, "error": "Error when read file"
+                        "success": False,
+                        "error": "Error when read file",
                     },
-                    content=tool_res.get("content", [])
+                    content=tool_res.get("content", []),
                 )
             elif (
                 tool_res.get("isError", True)
@@ -144,15 +147,15 @@ class ImprovedFileOperations:
                         TextBlock(
                             type="text",
                             text=f"Fail to read file on path {file_path}",
-                        )
-                    ]
+                        ),
+                    ],
                 )
 
             # Get the text content from the first content block
             full_content = ""
             for block in tool_res.get("content", []):
-                if isinstance(block, dict) and 'text' in block:
-                    full_content += block['text'] + "\n"
+                if isinstance(block, dict) and "text" in block:
+                    full_content += block["text"] + "\n"
 
             # Split into lines
             lines = full_content.splitlines(keepends=True)
@@ -171,7 +174,7 @@ class ImprovedFileOperations:
                 )
 
             # Handle offset and limit
-            start_line = (offset or 0)   # 0-based index
+            start_line = offset or 0  # 0-based index
             end_line = start_line + (limit or total_lines)
 
             # Validate range
@@ -182,7 +185,7 @@ class ImprovedFileOperations:
                         TextBlock(
                             type="text",
                             text=f"Error: Start line {offset} is "
-                                 f"beyond file length ({total_lines} lines).",
+                            f"beyond file length ({total_lines} lines).",
                         ),
                     ],
                 )
@@ -193,11 +196,13 @@ class ImprovedFileOperations:
             # Extract the requested lines
             selected_lines = lines[start_line:end_line]
 
-            content = ''.join(selected_lines)
+            content = "".join(selected_lines)
 
             # Add summary information
-            summary = (f"Read lines {start_line}-{end_line} of "
-                       f"{total_lines} total lines from '{file_path}'")
+            summary = (
+                f"Read lines {start_line}-{end_line} of "
+                f"{total_lines} total lines from '{file_path}'"
+            )
 
             # save as markdown
             return_content = [
@@ -208,18 +213,20 @@ class ImprovedFileOperations:
                 TextBlock(
                     type="text",
                     text=summary,
-                )
+                ),
             ]
             if file_extension in TO_MARKDOWN_SUPPORT_MAPPING:
                 file_name_with_ext = os.path.basename(file_path)
                 filename_without_ext = os.path.splitext(file_name_with_ext)[0]
                 file_path = os.path.join(
                     TMP_FILE_DIR,
-                    filename_without_ext + ".md"
+                    filename_without_ext + ".md",
                 )
                 create_workspace_directory(self.sandbox, TMP_FILE_DIR)
                 create_or_edit_workspace_file(
-                    self.sandbox, file_path, full_content
+                    self.sandbox,
+                    file_path,
+                    full_content,
                 )
                 return_content.append(
                     TextBlock(
@@ -229,8 +236,8 @@ class ImprovedFileOperations:
                             "The (full) file is converted as markdown file"
                             " and saved completely at: "
                             f"{file_path}"
-                        )
-                    )
+                        ),
+                    ),
                 )
 
             return ToolResponse(
@@ -257,7 +264,8 @@ class ImprovedFileOperations:
 
 
 def _transfer_to_markdown_text(
-    file_path: str, sandbox: AliasSandbox = None
+    file_path: str,
+    sandbox: AliasSandbox = None,
 ) -> dict:
     ext = os.path.splitext(file_path)[1].lower()
 
@@ -268,46 +276,46 @@ def _transfer_to_markdown_text(
                 {
                     "type": "text",
                     "text": f"File extension '{ext}' not supported in "
-                            f"{TO_MARKDOWN_SUPPORT_MAPPING}."
-                }
-            ]
+                    f"{TO_MARKDOWN_SUPPORT_MAPPING}.",
+                },
+            ],
         }
 
     params = {
-        "uri": "file:" + file_path
+        "uri": "file:" + file_path,
     }
     try:
-        res = sandbox.call_tool(
+        result = sandbox.call_tool(  # pylint: disable=W0621
             name="convert_to_markdown",
-            arguments=params
+            arguments=params,
         )
-        content = res.get("content", [])
+        content = result.get("content", [])
         new_content = []
-        for i, block in enumerate(content):
+        for i, _block in enumerate(content):
             if content[i].get("text", "").startswith("Converted content:"):
                 continue
-            elif content[i].get("text", "").startswith("Output file:"):
+            if content[i].get("text", "").startswith("Output file:"):
                 continue
-            else:
-                new_content.append(res["content"][i])
+            new_content.append(result["content"][i])
 
-        res["content"] = new_content
+        result["content"] = new_content
     except Exception as e:
-        res = {
+        result = {
             "isError": True,
-            "error": str(e)
+            "error": str(e),
         }
 
-    return res
+    return result
 
 
 if __name__ == "__main__":
     from alias.agent.tools.sandbox_util import copy_local_file_to_workspace
+
     with AliasSandbox() as box:
         res = copy_local_file_to_workspace(
             box,
             "/Users/zitao.l/Downloads/22051_Which_LLM_Multi_Agent.pdf",
-            "/workspace/test.pdf"
+            "/workspace/test.pdf",
         )
         print(res)
         toolset = ImprovedFileOperations(box)
