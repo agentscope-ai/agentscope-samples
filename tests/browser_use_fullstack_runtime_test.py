@@ -43,8 +43,7 @@ async def agent_singleton():
         "browser_use.browser_use_fullstack_runtime."
         "backend.agentscope_browseruse_agent.InMemorySessionHistoryService",
     ) as MockHistoryService, patch(
-        "agentscope_runtime.sandbox.manager."
-        "container_clients.docker_client.docker",
+        "agentscope_runtime.common.container_clients.docker_client.docker",
     ) as mock_docker, patch(
         "agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager",
     ) as MockSandboxManager:
