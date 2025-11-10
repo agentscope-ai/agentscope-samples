@@ -211,4 +211,3 @@ class MockSessionService:
 
     async def get_state(self) -> dict:
         return self.state
-

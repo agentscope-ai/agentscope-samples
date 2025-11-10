@@ -3,14 +3,14 @@
 import asyncio
 import os
 
+from deep_research_agent import DeepResearchAgent
+
 from agentscope import logger
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.mcp import StdIOStatefulClient
 from agentscope.memory import InMemoryMemory
-from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
-
-from deep_research_agent import DeepResearchAgent
+from agentscope.message import Msg
+from agentscope.mcp import StdIOStatefulClient
 
 
 async def main(user_query: str) -> None:

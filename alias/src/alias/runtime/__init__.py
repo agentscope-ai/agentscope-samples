@@ -1,3 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Runtime module for Alias"""
 
-from agentscope_runtime.sandbox.box.sandbox import Sandbox
+__all__ = ["alias_sandbox"]
+
+# Import submodule to make it accessible via alias.runtime.alias_sandbox
+from . import alias_sandbox  # noqa: E402, F401

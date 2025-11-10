@@ -21,8 +21,7 @@ from agentscope.token import TokenCounterBase, OpenAITokenCounter
 _BROWSER_AGENT_DEFAULT_SYS_PROMPT = (
     "You are a helpful browser automation assistant. "
     "You can navigate websites, take screenshots, and interact with web pages."
-    "Always describe what you see and meta_planner_agent"
-    " your next steps clearly. "
+    "Always describe what you see and plan your next steps clearly. "
     "When taking actions, explain what you're doing and why."
 )
 _BROWSER_AGENT_REASONING_PROMPT = (
@@ -30,7 +29,7 @@ _BROWSER_AGENT_REASONING_PROMPT = (
     "The snapshot (and screenshot) of the current webpage is (are) given "
     "below. Since you can only view the latest webpage, "
     "you must promptly summarize current status, record required data, "
-    "and meta_planner_agent your next steps."
+    "and plan your next steps."
 )
 
 

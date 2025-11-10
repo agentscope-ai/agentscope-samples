@@ -4,19 +4,20 @@ Meta Planner agent class that can handle complicated tasks with
 planning-execution pattern.
 """
 # pylint: disable=W0613
+import json
 import os
 import uuid
 from functools import partial
-from typing import Optional, Any, Literal, Callable
-import json
 from pathlib import Path
+from typing import Any, Callable, Literal, Optional
+
 from pydantic import BaseModel, Field
-from agentscope import logger
-from agentscope.message import Msg, ToolUseBlock, TextBlock, ToolResultBlock
-from agentscope.tool import ToolResponse
-from agentscope.model import ChatModelBase
+
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase
+from agentscope.message import Msg, TextBlock, ToolResultBlock, ToolUseBlock
+from agentscope.model import ChatModelBase
+from agentscope.tool import ToolResponse
 
 from alias.agent.agents import AliasAgentBase
 from alias.agent.tools import AliasToolkit
@@ -305,7 +306,6 @@ class MetaPlanner(AliasAgentBase):
             "generate_response_post_action_hook",
             generate_response_post_action_hook,
         )
-
 
     def prepare_planner_tools(
         self,

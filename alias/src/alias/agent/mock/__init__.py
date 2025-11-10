@@ -4,7 +4,7 @@ from .mock_message_models import (
     BaseMessage,
     MessageState,
     MockMessage,
-    UserMessage
+    UserMessage,
 )
 
 __all__ = [

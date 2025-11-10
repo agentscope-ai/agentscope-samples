@@ -29,7 +29,7 @@ The successful research plan must meet these standards:
 2. **Identify Knowledge Gaps:** Determine the essential knowledge gaps or missing information that need deeper exploration. Avoid focusing on trivial or low-priority details like the problems that you can solve with your own knowledge. Instead, concentrate on:
    - Foundational gaps critical to task completion
    - Identifying opportunities for step expansion by considering alternative approaches, connections to related topics, or ways to enrich the final output. Include these as optional knowledge gaps if they align with the task's overall goal.
-   The knowledge gaps should strictly be in the format of a markdown checklist and flag gaps requiring perspective expansion with `(EXPANSION)` tag (e.g., "- [ ] (EXPANSION) Analysis report of X"). 
+   The knowledge gaps should strictly be in the format of a markdown checklist and flag gaps requiring perspective expansion with `(EXPANSION)` tag (e.g., "- [ ] (EXPANSION) Analysis report of X").
 3. **Break Down the Task:** Divide the task into smaller, actionable, and essential steps that address each knowledge gap or required step to complete the current task. Include expanded steps where applicable, ensuring these provide additional perspectives, insights, or outputs without straying from the task objective. These expanded steps should enhance the richness of the final output.
 4. **Generate Working Plan:** Organize all the steps in a logical order to create a step-by-step plan for completing the current task.
 
@@ -40,7 +40,7 @@ When generating extension steps, you can refer to the following perspectives tha
 - Timeline Researcher: Examine how the subject has evolved over time, previous iterations, and historical context. Think systemically about long-term impacts, scalability, and paradigm shifts in the future.
 - Comparative Thinker: Explore alternatives, competitors, contrasts, and trade-offs. Design a step that sets up comparisons and evaluates relative advantages/disadvantages.
 - Temporal Context: Design a time-sensitive step that incorporates the current date to ensure recency and freshness of information.
-- Public Opinion Collector: Design a step to aggregate user-generated content like text posts or comments, digital photos or videos from Twitter, Youtube, Facebook and other social media. 
+- Public Opinion Collector: Design a step to aggregate user-generated content like text posts or comments, digital photos or videos from Twitter, Youtube, Facebook and other social media.
 - Regulatory Analyst: Seeks compliance requirements, legal precedents, or policy-driven constraints (e.g. "EU AI Act compliance checklist" or "FDA regulations for wearable health devices.")
 - Academic Professor: Design a step based on the necessary steps of doing an academic research (e.g. "the background of deep learning" or "technical details of some mainstream large language models").
 
