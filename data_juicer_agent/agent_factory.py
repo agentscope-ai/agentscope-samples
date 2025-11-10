@@ -2,7 +2,8 @@
 """
 Agent Factory
 
-Factory functions for creating and configuring agents with standardized toolkits.
+Factory functions for creating and configuring agents
+with standardized toolkits.
 """
 
 import os
@@ -86,7 +87,7 @@ def create_agent(
         parallel_tool_calls=parallel_tool_calls,
         **kwargs,
     )
-    
+
     agent.__doc__ = description
-    
+
     return agent

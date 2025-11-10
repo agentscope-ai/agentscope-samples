@@ -16,17 +16,23 @@ from agentscope.tool import Toolkit
 from .dj_helpers import execute_safe_command
 from .router_helpers import agent_to_tool
 from .dj_helpers import query_dj_operators
-from .dj_dev_helpers import get_basic_files, get_operator_example, configure_data_juicer_path
+from .dj_dev_helpers import (
+    get_basic_files,
+    get_operator_example,
+    configure_data_juicer_path,
+)
 from .mcp_helpers import get_mcp_toolkit
 
-def create_toolkit(tools: List[str]):
+
+def create_toolkit(tools: List[AgentBase]):
     # Create toolkit and register tools
     toolkit = Toolkit()
     for tool in tools:
         toolkit.register_tool_function(tool)
-    
+
     return toolkit
-    
+
+
 # DJ Agent tools
 dj_tools = [
     execute_safe_command,
@@ -50,9 +56,11 @@ mcp_tools = [
     write_text_file,
 ]
 
+
 def agents2toolkit(agents: List[AgentBase]):
     tools = [agent_to_tool(agent) for agent in agents]
     return create_toolkit(tools)
+
 
 dj_toolkit = create_toolkit(dj_tools)
 dj_dev_toolkit = create_toolkit(dj_dev_tools)
@@ -71,7 +79,6 @@ __all__ = [
     "dj_tools",
     "dj_dev_tools",
     "mcp_tools",
-    "all_tools",
     "agents2toolkit",
     "dj_toolkit",
     "dj_dev_toolkit",

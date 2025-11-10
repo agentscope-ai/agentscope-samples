@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
-
-import sys
-from pathlib import Path
-
-root_path = Path(__file__).parent.parent
-sys.path.insert(0, str(root_path))
-sys.path.insert(0, str(Path(root_path) / "data_juicer_agent"))
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit
@@ -81,10 +74,10 @@ def mock_mcp_client():
 
 @pytest.fixture
 def mock_agent(
-    mock_model,
-    mock_formatter,
-    mock_toolkit,
-    mock_memory,
+    mock_model,  # pylint: disable=redefined-outer-name
+    mock_formatter,  # pylint: disable=redefined-outer-name
+    mock_toolkit,  # pylint: disable=redefined-outer-name
+    mock_memory,  # pylint: disable=redefined-outer-name
 ):
     """Create a mocked ReActAgent instance"""
     agent = Mock(spec=ReActAgent)
@@ -101,7 +94,11 @@ def mock_agent(
 class TestDataJuicerAgent:
     """Test suite for the data_juicer_agent functionality"""
 
-    def create_named_mock_agent(self, name, mock_agent, *args, **kwargs):
+    def named_mock_agent(
+        self,
+        name,
+        mock_agent,  # pylint: disable=redefined-outer-name
+    ):
         """Create a named mock agent for testing"""
         agent_instance = Mock(spec=ReActAgent)
         agent_instance.model = mock_agent.model
@@ -112,7 +109,19 @@ class TestDataJuicerAgent:
         agent_instance.name = name
         return agent_instance
 
-    async def mock_user_func(self, msg=None):
+    def _named_mock_agent_side_effect(
+        self,
+        mock_agent,  # pylint: disable=redefined-outer-name
+    ):
+        """Side effect function for creating named mock agents"""
+        return lambda name, *args, **kwargs: self.named_mock_agent(
+            name,
+            mock_agent,
+            *args,
+            **kwargs,
+        )
+
+    async def mock_user_func(self):
         return Msg("user", "exit", role="user")
 
     def test_dj_toolkit_initialization(self):
@@ -139,7 +148,9 @@ class TestDataJuicerAgent:
         assert dj_dev_toolkit.tools.get("write_text_file") is not None
         assert dj_dev_toolkit.tools.get("get_basic_files") is not None
         assert dj_dev_toolkit.tools.get("get_operator_example") is not None
-        assert dj_dev_toolkit.tools.get("configure_data_juicer_path") is not None
+        assert (
+            dj_dev_toolkit.tools.get("configure_data_juicer_path") is not None
+        )
 
         # Verify tool list contains expected tools
         expected_tools = [
@@ -154,8 +165,11 @@ class TestDataJuicerAgent:
             assert tool in dj_dev_tools
 
     @pytest.mark.asyncio
-    async def test_mcp_tools_list(self, mock_mcp_client):
-        """Test MCP tools list contains expected tools and MCP client binding"""
+    async def test_mcp_tools_list(
+        self,
+        mock_mcp_client,  # pylint: disable=redefined-outer-name
+    ):
+        """Test MCP tools list contains expected tools"""
         with patch(
             "agentscope.mcp.HttpStatefulClient",
             return_value=mock_mcp_client,
@@ -171,10 +185,10 @@ class TestDataJuicerAgent:
     @pytest.mark.asyncio
     async def test_agent_initialization(
         self,
-        mock_model,
-        mock_formatter,
-        mock_toolkit,
-        mock_memory,
+        mock_model,  # pylint: disable=redefined-outer-name
+        mock_formatter,  # pylint: disable=redefined-outer-name
+        mock_toolkit,  # pylint: disable=redefined-outer-name
+        mock_memory,  # pylint: disable=redefined-outer-name
     ):
         """Test ReActAgent initialization"""
         with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
@@ -198,7 +212,11 @@ class TestDataJuicerAgent:
             assert isinstance(agent, ReActAgent)
 
     @pytest.mark.asyncio
-    async def test_main_with_multiple_agents_loading(self, mock_agent, mock_mcp_client):
+    async def test_main_with_multiple_agents_loading(
+        self,
+        mock_agent,  # pylint: disable=redefined-outer-name
+        mock_mcp_client,  # pylint: disable=redefined-outer-name
+    ):
         """Test main function loads multiple agents successfully"""
         with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "test_key"}):
             mock_mcp_clients = [mock_mcp_client]
@@ -209,21 +227,20 @@ class TestDataJuicerAgent:
             ):
                 with patch(
                     "data_juicer_agent.main.create_agent",
-                    side_effect=lambda name, *args, **kwargs: self.create_named_mock_agent(
-                        name, mock_agent, *args, **kwargs
-                    ),
+                    side_effect=self._named_mock_agent_side_effect(mock_agent),
                 ) as mock_create_agent:
                     with patch(
-                        "data_juicer_agent.main.user", side_effect=self.mock_user_func
+                        "data_juicer_agent.main.user",
+                        side_effect=self.mock_user_func,
                     ):
-
                         await main(
                             use_studio=False,
                             available_agents=["dj", "dj_dev", "dj_mcp"],
                             retrieval_mode="auto",
                         )
 
-                        # Validate multiple agents are correctly created (dj, dj_dev, dj_mcp, and router)
+                        # Validate multiple agents are correctly created
+                        # (dj, dj_dev, dj_mcp, and router)
                         assert mock_create_agent.call_count == 4
 
 
