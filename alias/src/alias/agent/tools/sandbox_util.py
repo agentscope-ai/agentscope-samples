@@ -9,7 +9,7 @@ from typing import Optional
 
 from loguru import logger
 
-from agentscope_runtime.sandbox.manager.container_clients.docker_client import (  # noqa: E501  # pylint: disable=C0301
+from agentscope_runtime.common.container_clients.docker_client import (  # noqa: E501  # pylint: disable=C0301
     DockerClient,
 )
 from alias.runtime.alias_sandbox import AliasSandbox
