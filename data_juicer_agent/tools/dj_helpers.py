@@ -3,7 +3,6 @@ import os
 import os.path as osp
 import json
 import asyncio
-from typing import Any
 from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 from .op_manager.op_retrieval import retrieve_ops
@@ -63,7 +62,8 @@ async def query_dj_operators(query: str, limit: int = 20) -> ToolResponse:
         limit (int): Maximum number of operators to return (default: 20)
 
     Returns:
-        ToolResponse: Tool response containing matched operators with names, descriptions, and parameters
+        ToolResponse: Tool response containing matched operators with names,
+        descriptions, and parameters
     """
 
     try:
@@ -81,11 +81,13 @@ async def query_dj_operators(query: str, limit: int = 20) -> ToolResponse:
                 content=[
                     TextBlock(
                         type="text",
-                        text=f"No matching DataJuicer operators found for query: {query}\n"
-                        f"Suggestions:\n"
-                        f"1. Use more specific keywords like 'text filter', 'image processing'\n"
-                        f"2. Check spelling and try alternative terms\n"
-                        f"3. Try English keywords for better matching",
+                        text="No matching DataJuicer operators found for "
+                        f"query: {query}\n"
+                        "Suggestions:\n"
+                        "1. Use more specific keywords like 'text filter', "
+                        "'image processing'\n"
+                        "2. Check spelling and try alternative terms\n"
+                        "3. Try English keywords for better matching",
                     ),
                 ],
             )
@@ -94,7 +96,7 @@ async def query_dj_operators(query: str, limit: int = 20) -> ToolResponse:
         retrieved_operators = _format_tool_names_to_class_entries(tool_names)
 
         # Format response
-        result_text = f"🔍 DataJuicer Operator Query Results\n"
+        result_text = "🔍 DataJuicer Operator Query Results\n"
         result_text += f"Query: {query}\n"
         result_text += f"Limit: {limit} operators\n"
         result_text += f"{'='*50}\n\n"
@@ -124,10 +126,11 @@ async def query_dj_operators(query: str, limit: int = 20) -> ToolResponse:
 async def execute_safe_command(
     command: str,
     timeout: int = 300,
-    **kwargs: Any,
 ) -> ToolResponse:
-    """Execute safe commands including DataJuicer commands and other safe system commands.
-    Returns the return code, standard output and error within <returncode></returncode>,
+    """Execute safe commands including DataJuicer commands and other safe
+    system commands.
+    Returns the return code, standard output and error within
+    <returncode></returncode>,
     <stdout></stdout> and <stderr></stderr> tags.
 
     Args:
@@ -201,7 +204,12 @@ async def execute_safe_command(
             break
 
     if not command_allowed:
-        error_msg = f"Error: Command not allowed for security reasons. Allowed commands: {', '.join(allowed_commands)}. Received command: {command}"
+        error_msg = (
+            "Error: Command not allowed for security reasons. "
+            "Allowed commands: "
+            f"{', '.join(allowed_commands)}. "
+            f"Received command: {command}"
+        )
         return ToolResponse(
             content=[
                 TextBlock(
@@ -231,7 +239,7 @@ async def execute_safe_command(
 
     except asyncio.TimeoutError:
         stderr_suffix = (
-            f"TimeoutError: The command execution exceeded "
+            "TimeoutError: The command execution exceeded "
             f"the timeout of {timeout} seconds."
         )
         returncode = -1

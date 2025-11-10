@@ -24,7 +24,7 @@ from .dj_dev_helpers import (
 from .mcp_helpers import get_mcp_toolkit
 
 
-def create_toolkit(tools: List[str]):
+def create_toolkit(tools: List[AgentBase]):
     # Create toolkit and register tools
     toolkit = Toolkit()
     for tool in tools:
@@ -79,7 +79,6 @@ __all__ = [
     "dj_tools",
     "dj_dev_tools",
     "mcp_tools",
-    "all_tools",
     "agents2toolkit",
     "dj_toolkit",
     "dj_dev_toolkit",

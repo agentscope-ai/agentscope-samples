@@ -3,7 +3,6 @@ import os
 import os.path as osp
 import json
 import logging
-import pickle
 import hashlib
 import time
 from typing import Optional
@@ -19,17 +18,22 @@ _cached_vector_store: Optional[FAISS] = None
 _cached_tools_info: Optional[list] = None
 _cached_file_hash: Optional[str] = None
 
-RETRIEVAL_PROMPT = """You are a professional tool retrieval assistant responsible for filtering the top {limit} most relevant tools from a large tool library based on user requirements. Execute the following steps:
+RETRIEVAL_PROMPT = """You are a professional tool retrieval assistant
+responsible for filtering the top {limit} most relevant tools from a large
+tool library based on user requirements. Execute the following steps:
 
 # Requirement Analysis
-    Carefully read the user's [requirement description], extract core keywords, functional objectives, usage scenarios, and technical requirements (such as real-time performance, data types, industry domains, etc.).
+    Carefully read the user's [requirement description], extract core keywords,
+    functional objectives, usage scenarios, and technical requirements
+    (such as real-time performance, data types, industry domains, etc.).
 
 # Tool Matching
     Perform multi-dimensional matching based on the following tool attributes:
     - Tool name and functional description
     - Supported input/output formats
     - Applicable industry or scenario tags
-    - Technical implementation principles (API, local deployment, AI model types)
+    - Technical implementation principles
+        (API, local deployment, AI model types)
     - Relevance ranking
 
 # Use weighted scoring mechanism (example weights):
@@ -60,7 +64,8 @@ RETRIEVAL_PROMPT = """You are a professional tool retrieval assistant responsibl
             "key_match": ["Matching keywords/features"]
         }}
     ]
-    Output strictly in JSON array format, and only output the JSON array format tool list.
+    Output strictly in JSON array format, and only output the JSON array format
+    tool list.
 """
 
 
@@ -101,7 +106,11 @@ async def retrieve_ops_lm(user_query, limit=20):
             os.path.join(os.path.dirname(__file__), ".."),
         )
 
-        with open(os.path.join(project_root, TOOLS_INFO_PATH), "w") as f:
+        with open(
+            os.path.join(project_root, TOOLS_INFO_PATH),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write(json.dumps(dj_func_info))
 
         tool_descriptions = [
@@ -126,16 +135,13 @@ async def retrieve_ops_lm(user_query, limit=20):
 
     user_prompt = (
         retrieval_prompt_with_limit
-        + """
+        + f"""
 User requirement description:
 {user_query}
 
 Available tools:
 {tools_string}
-""".format(
-            user_query=user_query,
-            tools_string=tools_string,
-        )
+"""
     )
 
     msgs = [
@@ -199,7 +205,7 @@ def _load_cached_index() -> bool:
             return False
 
         # Check if cached index matches current tools info file
-        with open(metadata_path, "r") as f:
+        with open(metadata_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
 
         cached_hash = metadata.get("tools_info_hash", "")
@@ -252,7 +258,7 @@ def _save_cached_index():
             "tools_info_hash": _cached_file_hash,
             "created_at": time.time(),
         }
-        with open(metadata_path, "w") as f:
+        with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f)
 
         logging.info("Successfully saved vector index to cache")
@@ -297,7 +303,7 @@ def _build_vector_index():
 
 
 def retrieve_ops_vector(user_query, limit=20):
-    """Tool retrieval using vector search with caching - returns list of tool names"""
+    """Tool retrieval using vector search with caching"""
     global _cached_vector_store
 
     # Try to load from cache first
@@ -343,34 +349,20 @@ async def retrieve_ops(
     Returns:
         List of tool names
     """
-    if mode == "llm":
+    if mode in ("llm", "auto"):
         try:
             return await retrieve_ops_lm(user_query, limit=limit)
         except Exception as e:
             logging.error(f"LLM retrieval failed: {str(e)}")
-            return []
+            if mode != "auto":
+                return []
 
-    elif mode == "vector":
+    if mode in ("vector", "auto"):
         try:
             return retrieve_ops_vector(user_query, limit=limit)
         except Exception as e:
             logging.error(f"Vector retrieval failed: {str(e)}")
             return []
-
-    elif mode == "auto":
-        try:
-            return await retrieve_ops_lm(user_query, limit=limit)
-        except Exception as e:
-            import traceback
-
-            print(traceback.format_exc())
-            try:
-                return retrieve_ops_vector(user_query, limit=limit)
-            except Exception as fallback_e:
-                logging.error(
-                    f"Tool retrieval failed: {str(e)}, fallback retrieval also failed: {str(fallback_e)}",
-                )
-                return []
 
     else:
         raise ValueError(
@@ -381,29 +373,32 @@ async def retrieve_ops(
 if __name__ == "__main__":
     import asyncio
 
-    user_query = (
-        "Clean special characters from text and filter samples with excessive length. Mask sensitive information and filter unsafe content including adult/terror-related terms."
-        + "Additionally, filter out small images, perform image tagging, and remove duplicate images."
+    query = (
+        "Clean special characters from text and filter samples with "
+        + "excessive length. Mask sensitive information and filter "
+        + "unsafe content including adult/terror-related terms."
+        + "Additionally, filter out small images, perform image "
+        + "tagging, and remove duplicate images."
     )
 
     # Test different modes
     print("=== Testing LLM mode ===")
     tool_names_llm = asyncio.run(
-        retrieve_ops(user_query, limit=10, mode="llm"),
+        retrieve_ops(query, limit=10, mode="llm"),
     )
     print("Retrieved tool names (LLM):")
     print(tool_names_llm)
 
     print("\n=== Testing Vector mode ===")
     tool_names_vector = asyncio.run(
-        retrieve_ops(user_query, limit=10, mode="vector"),
+        retrieve_ops(query, limit=10, mode="vector"),
     )
     print("Retrieved tool names (Vector):")
     print(tool_names_vector)
 
     print("\n=== Testing Auto mode (default) ===")
     tool_names_auto = asyncio.run(
-        retrieve_ops(user_query, limit=10, mode="auto"),
+        retrieve_ops(query, limit=10, mode="auto"),
     )
     print("Retrieved tool names (Auto):")
     print(tool_names_auto)

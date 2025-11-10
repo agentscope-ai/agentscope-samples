@@ -126,7 +126,7 @@ A powerful multi-agent data processing system that leverages Data-Juicer's 200+ 
 *Alias-Agent* (short for *Alias*) is designed to serve as an intelligent assistant for tackle diverse and complicated real-world tasks, providing three operational modes for flexible task execution:
 - **Simple React**: Employs vanilla reasoning-acting loops to iteratively solve problems and execute tool calls.
 - **Planner-Worker**: Uses intelligent planning to decompose complex tasks into manageable subtasks, with dedicated worker agents handling each subtask independently.
-- **Built-in Agents**: Leverages specialized agents tailored for specific domains, including *Deep Research Agent* for comprehensive analysis and *Browser-use Agent* for web-based interactions. 
+- **Built-in Agents**: Leverages specialized agents tailored for specific domains, including *Deep Research Agent* for comprehensive analysis and *Browser-use Agent* for web-based interactions.
 
 Beyond being a ready-to-use agent, we envision Alias as a foundational template that can be adapted to different scenarios.
 

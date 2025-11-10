@@ -2,7 +2,7 @@
 import json
 import os
 import logging
-from typing import Optional, List
+from typing import Optional
 import string
 
 from agentscope.tool import Toolkit
@@ -29,7 +29,8 @@ def _load_config(config_path: str) -> dict:
             return config
         else:
             logger.warning(
-                f"Configuration file {config_path} not found, using default settings",
+                f"Configuration file {config_path} not found, "
+                "using default settings",
             )
             return _create_default_config()
     except Exception as e:

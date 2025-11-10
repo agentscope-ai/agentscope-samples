@@ -2,7 +2,8 @@
 """
 Agent Factory
 
-Factory functions for creating and configuring agents with standardized toolkits.
+Factory functions for creating and configuring agents
+with standardized toolkits.
 """
 
 import os

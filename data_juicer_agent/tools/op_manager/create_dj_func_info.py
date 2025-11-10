@@ -32,7 +32,8 @@ for i, op in enumerate(all_ops):
             ):
                 continue
             if param_name in param_desc_map:
-                args += f"        {param_name} ({param.annotation}): {param_desc_map[param_name]}\n"
+                args += f"        {param_name} ({param.annotation}):"
+                args += f" {param_desc_map[param_name]}\n"
             else:
                 args += f"        {param_name} ({param.annotation})\n"
     class_entry["arguments"] = args
