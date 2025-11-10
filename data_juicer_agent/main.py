@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-import fire
 from typing import List
+import fire
 
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -9,7 +9,12 @@ from agentscope.memory import InMemoryMemory
 from agentscope.agent import UserAgent
 
 from agent_factory import create_agent
-from prompts import DJ_SYS_PROMPT, DJ_DEV_SYS_PROMPT, ROUTER_SYS_PROMPT, MCP_SYS_PROMPT
+from prompts import (  # pylint: disable=no-name-in-module
+    DJ_SYS_PROMPT,
+    DJ_DEV_SYS_PROMPT,
+    ROUTER_SYS_PROMPT,
+    MCP_SYS_PROMPT,
+)
 from tools import (
     dj_toolkit,
     dj_dev_toolkit,
@@ -41,16 +46,22 @@ user = UserAgent("User")
 
 async def main(
     use_studio: bool = False,
-    available_agents: List[str] = ["dj", "dj_dev"],
+    available_agents: List[str] = None,
     retrieval_mode: str = "auto",
 ):
     """
     Main function for running the agent.
 
     :param use_studio: Whether to use agentscope studio.
-    :param available_agents: List of available agents. Options: dj, dj_dev, dj_mcp
-    :param retrieval_mode: Retrieval mode for operators. Options: auto, vector, llm
+    :param available_agents: List of available agents.
+        Options: dj, dj_dev, dj_mcp
+        Default: ["dj", "dj_dev"]
+    :param retrieval_mode: Retrieval mode for operators.
+        Options: auto, vector, llm
     """
+
+    if available_agents is None:
+        available_agents = ["dj", "dj_dev"]
 
     if "dj" in available_agents:
         # Set global retrieval mode for tools to use
@@ -66,12 +77,14 @@ async def main(
                 DJ_SYS_PROMPT,
                 dj_toolkit,
                 (
-                    "A professional data preprocessing AI assistant with the following core capabilities: \n"
+                    "A professional data preprocessing AI assistant with the "
+                    "following core capabilities: \n"
                     "Tool Matching \n"
                     "- Query and validate suitable DataJuicer operators; \n"
                     "Configuration Generation \n"
                     "- Create YAML configuration files and preview data; \n"
-                    "Task Execution - Run data processing pipelines and output results"
+                    "Task Execution - Run data processing pipelines and "
+                    "output results"
                 ),
                 model,
                 formatter,
@@ -86,11 +99,15 @@ async def main(
                 DJ_DEV_SYS_PROMPT,
                 dj_dev_toolkit,
                 (
-                    "An expert DataJuicer development assistant specializing in creating new DataJuicer operators. \n"
+                    "An expert DataJuicer development assistant specializing "
+                    "in creating new DataJuicer operators. \n"
                     "Core capabilities: \n"
                     "Reference Retrieval - fetch base classes and examples; \n"
-                    "Environment Configuration - handle DATA_JUICER_PATH setup. if user provides a DataJuicer path requiring setup/update, please call this agent;\n; "
-                    "Code Generation - write complete, convention-compliant operator code"
+                    "Environment Configuration - handle DATA_JUICER_PATH "
+                    "setup. if user provides a DataJuicer path requiring "
+                    "setup/update, please call this agent;\n; "
+                    "Code Generation - write complete, convention-compliant "
+                    "operator code"
                 ),
                 dev_model,
                 formatter,
@@ -108,9 +125,11 @@ async def main(
                 MCP_SYS_PROMPT,
                 mcp_toolkit,
                 (
-                    "DataJuicer MCP Agent powered by Recipe Flow MCP server. \n"
+                    "DataJuicer MCP Agent powered by Recipe Flow MCP "
+                    "server. \n"
                     "Core capabilities: \n"
-                    "- Filter operators by tags/categories using MCP protocol; \n"
+                    "- Filter operators by tags/categories using MCP "
+                    "protocol; \n"
                     "- Real-time data processing pipeline execution. \n"
                 ),
                 model,
@@ -119,12 +138,16 @@ async def main(
             )
             agents.append(mcp_agent)
 
-    # Router agent - uses agents2tools to dynamically generate tools from all agents
+    # Router agent - uses agents2tools to dynamically generate tools from
+    # all agents
     router_agent = create_agent(
         "Router",
         ROUTER_SYS_PROMPT,
         agents2toolkit(agents),
-        "A router agent that intelligently routes tasks to specialized DataJuicer agents",
+        (
+            "A router agent that intelligently routes tasks to specialized "
+            "DataJuicer agents"
+        ),
         model,
         formatter,
         InMemoryMemory(),  # Router uses its own memory instance
@@ -143,7 +166,8 @@ async def main(
         msg = await user(msg)
         if msg.get_text_content() == "exit":
             break
-        # Router agent handles the entire task with automatic multi-step routing
+        # Router agent handles the entire task with automatic multi-step
+        # routing
         msg = await router_agent(msg)
 
 
@@ -151,13 +175,15 @@ if __name__ == "__main__":
     # Example tasks
     # project_root = os.path.abspath(os.path.dirname(__file__))
     # task = (
-    #     f"The data is stored in {project_root}/data/demo-dataset-images.jsonl. "
+    #     f"The data is stored in "
+    #     "{project_root}/data/demo-dataset-images.jsonl. "
     #     "Among the samples, the text field length is less than 5 "
     #     "and the image size is less than 100Kb. "
     #     "And save the output results to the ./outputs path."
     # )
     #
     # DJ Development example task:
-    # task = "I want to develop a new DataJuicer filter operator to filter out audio files without vocals"
+    # task = ("I want to develop a new DataJuicer filter operator to filter "
+    #         "out audio files without vocals")
     #
     fire.Fire(main)

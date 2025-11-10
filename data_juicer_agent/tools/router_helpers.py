@@ -7,7 +7,9 @@ from agentscope.tool import ToolResponse
 
 
 def agent_to_tool(
-    agent: AgentBase, tool_name: str = None, description: str = None
+    agent: AgentBase,
+    tool_name: str = None,
+    description: str = None,
 ) -> Callable:
     """
     Convert any agent to a tool function that can be registered in toolkit.
@@ -15,10 +17,12 @@ def agent_to_tool(
     Args:
         agent: The agent instance to convert
         tool_name: Optional custom tool name (defaults to agent.name)
-        description: Optional tool description (defaults to agent's docstring or sys_prompt)
+        description: Optional tool description
+            (defaults to agent's docstring or sys_prompt)
 
     Returns:
-        A tool function that can be registered with toolkit.register_tool_function()
+        A tool function that can be registered with
+        toolkit.register_tool_function()
     """
     # Get tool name and description
     if tool_name is None:
@@ -30,8 +34,6 @@ def agent_to_tool(
             description = agent.__doc__.strip()
         elif hasattr(agent, "sys_prompt"):
             description = f"Agent: {agent.sys_prompt[:100]}..."
-        elif hasattr(agent, "_sys_prompt"):
-            description = f"Agent: {agent._sys_prompt[:100]}..."
         else:
             description = f"Tool function for {tool_name}"
 
@@ -56,7 +58,8 @@ def agent_to_tool(
     # Set function name and docstring
     tool_function.__name__ = f"call_{tool_name.lower().replace(' ', '_')}"
     tool_function.__doc__ = (
-        f"{description}\n\nArgs:\n    task (str): The task for {tool_name} to handle"
+        f"{description}\n\nArgs:"
+        + "\n    task (str): The task for {tool_name} to handle"
     )
 
     return tool_function
