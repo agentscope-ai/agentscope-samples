@@ -47,7 +47,7 @@ dependencies = [
     "opentelemetry-instrumentation-sqlalchemy==0.48b0",
     "opentelemetry-instrumentation-redis==0.48b0",
     "sentry-sdk[fastapi]===2.30.0",
-    "agentscope-runtime==0.1.6",
+    "agentscope-runtime==0.2.0",
     "aiosqlite>=0.21.0",
     "asyncpg>=0.30.0"
 ]
