@@ -56,9 +56,9 @@ It provides five operational modes for diverse real-world tasks:
 <!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
 - **Data Science**: Specialized data science agent for business intelligence.
 
-<!-- <!-- #### General Mode
+#### General Mode
 
-The General mode features the Meta Planner, which orchestrates task execution with automatic mode switching and comprehensive interrupt support. The Meta Planner intelligently routes tasks to appropriate specialized agents based on context, while maintaining robust state preservation throughout the execution lifecycle. This enables seamless transitions between different operational modes (such as deep research and data science) and ensures continuity even when tasks are interrupted or redirected. -->
+The General mode features the Meta Planner, which orchestrates task execution with automatic mode switching and comprehensive interrupt support. The Meta Planner intelligently routes tasks to appropriate specialized agents based on context, while maintaining robust state preservation throughout the execution lifecycle. This enables seamless transitions between different operational modes (such as deep research and data science) and ensures continuity even when tasks are interrupted or redirected.
 
 The general mode also provides an out-of-the-box AgentScope-specific QA Agent ([more details](docs/qa_agent.md)), pre-configured with high-frequency AgentScope-related Q&A pairs. By integrating RAG and GitHub MCP tools, the QA agent can dynamically retrieve the latest source code structure, official tutorial, and community discussions, and combine them with relevant information flexibly matched from a private knowledge base to deliver accurate answers.
 
