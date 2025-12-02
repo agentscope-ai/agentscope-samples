@@ -55,7 +55,10 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = { find = { include = ["alias*"]} }
+packages = { find = { where = ["src"] } }
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]

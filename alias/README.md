@@ -36,8 +36,7 @@ We welcome more developers to join the community and contribute to ongoing innov
 
 - **[2025-12]** Memory system upgrades: Tool Memory service for persistent tool invocation traces and User Profiling service for personalized user experiences.
 
-
-- **[2025-12]** Frontend UI redesign in progress with [Spark Design](https://sparkdesign.agentscope.io/) implementation, featuring interrupt controls and artifact editing capabilities.
+- **[2025-12]** Frontend UI is designed with [Spark Design](https://sparkdesign.agentscope.io/) implementation, featuring interrupt controls and artifact editing capabilities.
 
 - **[2025-12]** Backend refactoring on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/): lightweight single-node deployment, simplified user management, and mode-specific bootstrapping.
 
@@ -53,7 +52,7 @@ It provides five operational modes for diverse real-world tasks:
 - **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
 - **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
-<!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
+- **Financial Analysis**: Hypothesis-driven financial analysis agent. 
 - **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
 
 #### General Mode
