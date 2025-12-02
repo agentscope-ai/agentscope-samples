@@ -203,7 +203,7 @@ alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial perform
 # Data Science mode
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files alias/docs/data/incident_records.csv
+  --files ../docs/data/incident_records.csv
 ```
 
 **Note**: Files uploaded with `--files` are automatically copied to `/workspace` in the sandbox. Generated files are available in `sessions_mount_dir` subdirectories.
