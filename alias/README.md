@@ -54,7 +54,7 @@ It provides five operational modes for diverse real-world tasks:
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
 - **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
 <!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
-<!-- - **Data Science**: Specialized data science agent for business intelligence. -->
+- **Data Science**: Specialized data science agent for business intelligence.
 
 <!-- <!-- #### General Mode
 
