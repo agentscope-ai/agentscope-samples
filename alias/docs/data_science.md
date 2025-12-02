@@ -182,76 +182,23 @@ Alias-DataScience achieves **state-of-the-art (SOTA)** across major data science
 
 ## 🎯 Use Cases
 
-<style>
-  .case-img { 
-    width: 80%; 
-    max-height: 220px; 
-    object-fit: contain; 
-    margin: 12px auto; 
-    display: block; 
-    border-radius: 6px;
-  }
-</style>
-
 ### 1. Machine Learning
 
-<div style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; width: 100%; margin-top: 16px;">
-  <div style="flex: 1; max-width: 42%;">
-    <img src="./figures/alias-ds-case2.png" 
-    style="width: 100%; height: auto; border-radius: 6px;" >
-    <div class="caption" style="text-align: center;"> Obesity Level Prediction<br><em>(From <a href="https://github.com/LiqiangJing/DSBench" target="_blank" rel="noopener">DSBench</a>)</em>
-  </div>
-  </div>
-  <div style="flex: 1; max-width: 45%;">
-    <img src="./figures/alias-ds-case3.png" 
-    style="width: 100%; height: auto; border-radius: 6px;" >
-    <div class="caption" style="text-align: center;"> House Price Prediction<br><em>(From <a href="https://github.com/LiqiangJing/DSBench" target="_blank" rel="noopener">DSBench</a>)</em>
-  </div>
-  </div>
+<div align="center" style="margin: 20px 0;">
+  <img src="./figures/alias-ds-case1.png" width="80%" height: auto;">
 </div>
+
 
 
 ### 2. Exact Data Computation
 
-<div style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; width: 100%; margin-top: 16px;">
-  <div style="flex: 1; max-width: 40%;">
-    <img src="./figures/alias-ds-case1.png" 
-    style="width: 100%; height: auto; border-radius: 6px;" >
-    <div class="caption" style="text-align: center;"> Landfill Penalty Calculation over Multi-modal Inputs <br>
-    <em>(From <a href="https://github.com/LiqiangJing/DSBench" target="_blank" rel="noopener">DSBench</a>)</em>
-  </div>
-  </div>
-  <div style="flex: 1; max-width: 45%;">
-    <img src="./figures/alias-ds-case4.png" 
-    style="width: 100%; height: auto; border-radius: 6px;" >
-    <div class="caption" style="text-align: center;"> MAE Computation over Massive Inputs <br>
-    <em>(From <a href="https://github.com/mitdbg/KramaBench" target="_blank" rel="noopener">KramaBench</a>)</em>
-  </div>
-  </div>
+<div align="center" style="margin: 20px 0;">
+  <img src="./figures/alias-ds-case2.png" width="80%" height: auto;">
 </div>
+
 
 ### 3. Exploratory Data Analysis 
 
-<div style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; width: 100%; margin-top: 16px;">
-  <div style="flex: 1; max-width: 45%;">
-    <img src="./figures/alias-ds-case5.png" 
-    style="width: 100%; height: auto; border-radius: 6px;" >
-    <div class="caption" style="text-align: center;">
-    Root Cause Analysis for Incidence Imbalance<br>
-    <em>(From <a href="https://insightbench.github.io/" target="_blank" rel="noopener">InsightBench</a>)</em>
-    </div>
-  </div>
-  <div style="max-width: 50%; display: flex; flex-direction: column; align-items: center;">
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%;">
-      <img src="./figures/alias-ds-report-short-new.png" style="width: 97%; height: auto; border-radius: 4px;" alt="Short Report">
-      <img src="./figures/alias-ds-report-long-1.png" style="width: 100%; height: auto; border-radius: 4px;" alt="Long Report 1">
-      <img src="./figures/alias-ds-report-long-2.png" style="width: 100%; height: auto; border-radius: 4px;" alt="Long Report 2">
-      <img src="./figures/alias-ds-report-long-3.png" style="width: 100%; height: auto; border-radius: 4px;" alt="Long Report 3">
-    </div>
-    <div class="caption" style="text-align: center;">
-      Visualization of Generated EDA Reports
-    </div>
-  </div>
-  
+<div align="center" style="margin: 20px 0;">
+  <img src="./figures/alias-ds-case3.png" width="80%" height: auto;">
 </div>
-

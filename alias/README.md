@@ -53,7 +53,7 @@ It provides five operational modes for diverse real-world tasks:
 - **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
 - **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
-<!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
+- **Financial Analysis**: Hypothesis-driven financial analysis agent. 
 - **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
 
 #### General Mode
@@ -204,7 +204,7 @@ alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial perform
 # Data Science mode
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files alias/docs/data/incident_records.csv
+  --files ../docs/data/incident_records.csv
 ```
 
 **Note**: Files uploaded with `--files` are automatically copied to `/workspace` in the sandbox. Generated files are available in `sessions_mount_dir` subdirectories.
