@@ -1,10 +1,9 @@
-
 <p align="center">
   <img
     src="assets/alias.png"
     alt="Alias-Agent 徽标"
     width="500"
-    height="250"
+    height="auto"
   />
 </p>
 
@@ -21,7 +20,6 @@
 </div>
 
 
-
 *Alias-Agent*（简称 *Alias*）是一个基于 [AgentScope](https://github.com/agentscope-ai/agentscope) 和 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 构建的、由大语言模型驱动的智能体，旨在作为通用智能助手响应用户查询。Alias 擅长分解复杂问题、构建解决路径，并应用合适的策略来处理多样化的现实世界任务。
 
 Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用（General）模式`、`浏览器使用（Browser Use）模式`、`深度研究（Deep Research）模式`、`金融分析（Financial Analysis）模式` 和 `数据科学（Data Science）模式`。在不同运行模式间切换时，Alias 配备了定制化的指令、专业工具集以及协调各类专家智能体的能力。这使得 Alias 能够更好地适应不同下游任务的具体需求。例如，在处理金融分析时，Alias 采用可追溯的推理链并生成可解释的结果，以增强用户对其决策的信任，同时优化报告可视化效果；在解决数据科学任务时，Alias 可以访问用户关联的数据库，并旨在促进高效的数据分析、处理和预测。
@@ -35,12 +33,9 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 
 - **[2025-12]** 记忆系统升级：提供用于持久化工具调用追踪的 Tool Memory 服务，以及用于个性化用户体验的 User Profiling 服务。
 
-
 - **[2025-12]** 前端 UI 使用 [Spark Design](https://sparkdesign.agentscope.io/) 进行设计，具备中断控制和工件编辑功能。
 
 - **[2025-12]** 后端基于 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 重构：轻量级单节点部署、简化的用户管理以及特定模式的启动引导。
-
-
 
 
 ## ✨ 特性
@@ -66,8 +61,8 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
   <img
     src="assets/browser_agent.png"
     alt="浏览器使用模式"
-    width="500"
-    height="100"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -80,8 +75,8 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
   <img
     src="assets/deep_research.png"
     alt="深度研究模式"
-    width="500"
-    height="100"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -95,8 +90,8 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
   <img
     src="docs/figures/finance_overview.png"
     alt="金融分析模式"
-    width="500"
-    height="250"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -108,7 +103,7 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 #### 数据科学（Data Science）模式 ([详细文档](docs/data_science.md))
 
 <div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="80%" style="max-width: 800px; height: auto;">
+  <img src="docs/figures/alias-ds-overall.png" width="100%" style="max-width: 800px; height: auto;">
 </div>
 
 
@@ -129,6 +124,7 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 #### 全栈部署
 - **前端**：基于 [Spark Design](https://sparkdesign.agentscope.io/) 的 React 应用程序，具备运行时中断控制、工件检查器和可编辑输出。
 - **后端**：基于 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 的轻量级单节点部署，具有简化的用户管理和特定模式的启动引导。
+
 
 ## 🚀 快速开始
 
@@ -203,7 +199,7 @@ alias_agent run --mode finance --task "分析特斯拉 2024年第四季度财务
 # 数据科学模式
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files ../docs/data/incident_records.csv
+  --files ./docs/data/incident_records.csv
 ```
 
 **注意**：使用 `--files` 上传的文件会自动复制到沙盒中的 `/workspace`。生成的文件可在 `sessions_mount_dir` 的子目录中找到。
@@ -337,6 +333,7 @@ DASHSCOPE_MODEL_4_MEMORY=qwen3-max
 - **邮箱**：如 `FIRST_SUPERUSER_EMAIL` 所指定 (默认: `alias@agentscope.com`)
 - **用户名**：如 `FIRST_SUPERUSER_USERNAME` 所指定 (默认: `alias`)
 - **密码**：如 `FIRST_SUPERUSER_PASSWORD` 所指定
+
 
 ## ⚖️ 许可证
 

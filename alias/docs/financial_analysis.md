@@ -2,7 +2,9 @@
 An autonomous, hypothesis-driven deep research agent for complex financial and investment analysis.
 
 ## Overview
-![finance_overview](./figures/finance_overview.png)
+<div align="center">
+  <img src="./figures/finance_overview.png" alt="finance_overview" width="90%" />
+</div>
 
 **Alias-Finance Analysis** is a specialized enhancement/adaptation of the Alias, purpose-built to address the unique challenges of financial analysis: the need for complex reasoning and rigorous evidence chains.
 
@@ -55,7 +57,7 @@ Transform complex financial analysis into clear, traceable, and presentation-rea
 ## Workflow
 
 <p align="center">
-  <img src="./figures/finance_workflow.png" width="30%">
+  <img src="./figures/finance_workflow.png" width="70%">
 </p>
 
 **This diagram illustrates the hypothesis-driven workflow used to forecast Nvidia's 2026 financial performance, including evidence gathering, validation steps, and final report generation.**

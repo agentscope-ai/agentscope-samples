@@ -3,9 +3,13 @@ import os
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 
+_DEFAULT_PROMPT_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "built_in_prompt",
+)
 PROMPT_DS_BASE_PATH = os.getenv(
     "PROMPT_DS_BASE_PATH",
-    "alias/agent/agents/ds_agent_utils/built_in_prompt",
+    _DEFAULT_PROMPT_PATH,
 )
 
 VL_MODEL_NAME = os.getenv("VISION_MODEL", "qwen-vl-max")

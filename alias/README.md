@@ -3,7 +3,7 @@
     src="assets/alias.png"
     alt="Alias-Agent Logo"
     width="500"
-    height="250"
+    height="auto"
   />
 </p>
 
@@ -20,10 +20,7 @@
 </div>
 
 
-
-
 *Alias-Agent* (short for *Alias*) is an LLM-empowered agent built on [AgentScope](https://github.com/agentscope-ai/agentscope) and [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), designed to serve as a general-purpose intelligent assistant for responding to user queries. Alias excels at decomposing complicated problems, constructing roadmaps, and applying appropriate strategies to tackle diverse real-world tasks.
-
 
 Alias employs a multi-mode operational mechanism for flexible task execution, including `General`, `Browser Use`, `Deep Research`, `Financial Analysis`, and `Data Science`. When switching between different operational modes, Alias is equipped with tailored instructions, specialized tool sets, and the capability to orchestrate various expert agents. This allows Alias to better adapt to the specific requirements of diverse downstream tasks. For example, when handling financial analysis, Alias employs traceable reasoning chains and generates explainable results to increase user trust in its decision-making, along with optimized report visualizations; When resolving data science tasks, Alias can access user-associated databases and is designed to facilitate efficient data analysis, processing, and prediction.
 
@@ -41,8 +38,6 @@ We welcome more developers to join the community and contribute to ongoing innov
 - **[2025-12]** Backend refactoring on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/): lightweight single-node deployment, simplified user management, and mode-specific bootstrapping.
 
 
-
-
 ## ✨ Features
 
 ### 🤖 Various Operational Modes for Diverse Scenarios
@@ -52,7 +47,7 @@ It provides five operational modes for diverse real-world tasks:
 - **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
 - **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
-- **Financial Analysis**: Hypothesis-driven financial analysis agent. 
+- **Financial Analysis**: Hypothesis-driven financial analysis agent.
 - **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
 
 #### General Mode
@@ -66,8 +61,8 @@ The general mode also provides an out-of-the-box AgentScope-specific QA Agent ([
   <img
     src="assets/browser_agent.png"
     alt="Browser Use Mode"
-    width="500"
-    height="100"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -80,8 +75,8 @@ To handle the dynamic nature of web browsing, the Browser Use mode implements so
   <img
     src="assets/deep_research.png"
     alt="Deep Research Mode"
-    width="500"
-    height="100"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -95,8 +90,8 @@ This mode also features a tree-structure research process that is driven by divi
   <img
     src="docs/figures/finance_overview.png"
     alt="Financial Analysis Mode"
-    width="500"
-    height="250"
+    width="600"
+    height="auto"
   />
 </p>
 
@@ -108,8 +103,8 @@ The Financial Analysis mode supports tree-structured search, decomposing complex
 #### Data Science Mode ([Detailed Docs](docs/data_science.md))
 
 <div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="80%" style="max-width: 800px; height: auto;">
-</div> 
+  <img src="docs/figures/alias-ds-overall.png" width="100%" style="max-width: 800px; height: auto;">
+</div>
 
 
 In Data Science mode, Alias-Agent serves as an autonomous, end-to-end assistant that transforms high-level analytical questions into executable data science workflows. It seamlessly handles the full pipeline from data acquisition and cleaning to modeling, visualization, and narrative reporting with minimal human intervention, enabling users to move efficiently from intent to insight in real-world scenarios.
@@ -129,6 +124,7 @@ At startup, the Data Science mode uses an intelligent router to assign the user'
 #### Full-Stack Deployment
 - **Frontend**: [Spark Design](https://sparkdesign.agentscope.io/)-based React application with runtime interrupt controls, artifact inspectors, and editable outputs.
 - **Backend**: Lightweight single-node deployment on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) with simplified user management and mode-specific bootstrapping.
+
 
 ## 🚀 Quickstart
 
@@ -203,7 +199,7 @@ alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial perform
 # Data Science mode
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files ../docs/data/incident_records.csv
+  --files ./docs/data/incident_records.csv
 ```
 
 **Note**: Files uploaded with `--files` are automatically copied to `/workspace` in the sandbox. Generated files are available in `sessions_mount_dir` subdirectories.
