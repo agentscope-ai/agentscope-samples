@@ -119,7 +119,7 @@ At startup, the Data Science mode uses an intelligent router to assign the user'
 
 <!-- ### 🧠 Enhanced Memory System -->
 
-<!-- - **Tool Memory (Long-term)**: Persistent storage for tool invocation traces via ReMe, enabling automated summarization and usage guidance. -->
+- **Tool Memory (Long-term)**: Persistent storage for tool invocation traces via ReMe, enabling automated summarization and usage guidance.
 <!-- - **User Profiling (Long-term)**: Captures and refines user behavior through dynamic candidate scoring and promotion to stable profiles via mem0, seamlessly integrated with frontend interactions. -->
 
 ### 🖥️ CLI & Full-Stack Deployment Available
