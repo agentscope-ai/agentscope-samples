@@ -50,9 +50,9 @@ We welcome more developers to join the community and contribute to ongoing innov
 
 It provides five operational modes for diverse real-world tasks:
 
-<!-- - **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
+- **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
-- **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features. -->
+- **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
 <!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
 <!-- - **Data Science**: Specialized data science agent for business intelligence. -->
 
