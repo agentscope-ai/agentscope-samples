@@ -76,7 +76,7 @@ The Browser Use mode extends the browser-use agent with comprehensive multimodal
 
 To handle the dynamic nature of web browsing, the Browser Use mode implements sophisticated dynamic subtask management. The system automatically updates subtasks as web pages change, adapting to new content, pop-ups, or navigation events. This ensures the agent can maintain context and continue task execution even when the browsing environment evolves, making it particularly effective for complex multi-step web interactions that require sustained attention and adaptation.
 
-<!-- #### Deep Research Mode
+#### Deep Research Mode
 <p align="center">
   <img
     src="assets/deep_research.png"
@@ -88,7 +88,7 @@ To handle the dynamic nature of web browsing, the Browser Use mode implements so
 
 The Deep Research mode introduces user-centric enhancements that transform research tasks into collaborative, transparent processes. For research-type questions, the agent employs a pre-search module that gathers professional, detailed information before generating follow-up questions, ensuring that inquiries are more valuable and well-informed. This approach significantly improves the quality of research interactions by grounding questions in comprehensive background knowledge.
 
-This mode also features a tree-structure research process that is driven by diving deeper and deeper by information gathering. Users can also dynamically interrupt the deep research process and steer the research direction. The consolidated execution path provides a unified codebase with configurable prompts, SOPs, and toolkits, allowing the Deep Research agent to adapt to different domains while maintaining a consistent, extensible architecture. -->
+This mode also features a tree-structure research process that is driven by diving deeper and deeper by information gathering. Users can also dynamically interrupt the deep research process and steer the research direction. The consolidated execution path provides a unified codebase with configurable prompts, SOPs, and toolkits, allowing the Deep Research agent to adapt to different domains while maintaining a consistent, extensible architecture.
 
 <!-- #### Financial Analysis Mode ([Detailed Docs](docs/financial_analysis.md))
 
