@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=R1724
-import asyncio
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from loguru import logger
 
-from agentscope.mcp import MCPClientBase, StatefulClientBase
+from agentscope.mcp import (
+    MCPClientBase,
+    StatefulClientBase,
+    HttpStatelessClient,
+)
 from agentscope.message import TextBlock, ToolUseBlock
 from agentscope.tool import ToolResponse, Toolkit
 
@@ -24,7 +27,7 @@ FilesystemSandbox = AliasSandbox
 class AliasToolkit(Toolkit):
     def __init__(  # pylint: disable=W0102
         self,
-        sandbox: Optional[AliasSandbox] = None,
+        sandbox: AliasSandbox = None,
         add_all: bool = False,
         is_browser_toolkit: bool = False,
         tool_blacklist: list = TOOL_BLACKLIST,
@@ -34,13 +37,13 @@ class AliasToolkit(Toolkit):
             self.sandbox = sandbox
             self.session_id = self.sandbox.sandbox_id
         else:
-            logger.warning("Sandbox is None, use pure testing local mode!!!")
+            logger.warning("Sandbox is None, use pure testing local mode!")
             self.sandbox = None
             self.session_id = None
         self.categorized_functions = {}
         self.tool_blacklist = tool_blacklist
 
-        if add_all:
+        if add_all and sandbox:
             # Get tools
             tools_schema = self.sandbox.list_tools()
             for category, function_dicts in tools_schema.items():
@@ -145,7 +148,7 @@ class AliasToolkit(Toolkit):
                     tool_func
                 ].postprocess_func = long_text_hook.truncate_and_save_response
 
-    async def add_and_connet_mcp_client(
+    async def add_and_connect_mcp_client(
         self,
         mcp_client: MCPClientBase,
         group_name: str = "basic",
@@ -175,47 +178,24 @@ class AliasToolkit(Toolkit):
                 preset_kwargs_mapping=preset_kwargs_mapping,
                 postprocess_func=postprocess_func,
             )
+        elif isinstance(mcp_client, HttpStatelessClient):
+            self.additional_mcp_clients.append(mcp_client)
+            await self.register_mcp_client(
+                mcp_client,
+                enable_funcs=enable_funcs,
+                group_name=group_name,
+                disable_funcs=disable_funcs,
+                preset_kwargs_mapping=preset_kwargs_mapping,
+                postprocess_func=postprocess_func,
+            )
+
+        else:
+            raise ValueError(
+                "mcp_client must be either StatefulClientBase "
+                "or StatelessClientBase",
+            )
 
     async def close_mcp_clients(self) -> None:
         for client in reversed(self.additional_mcp_clients):
             if isinstance(client, StatefulClientBase):
                 await client.close()
-
-
-async def test_toolkit():
-    with FilesystemSandbox() as sandbox:
-        toolkit = AliasToolkit(sandbox)
-        print(toolkit.get_json_schemas())
-
-        # test tools
-        res = await toolkit.call_tool_function(
-            ToolUseBlock(
-                type="tool_use",
-                id="",
-                name="list_allowed_directories",
-                input={},
-            ),
-        )
-        print("Allow directory:")
-        async for response in res:
-            print(response)
-
-        res = await toolkit.call_tool_function(
-            ToolUseBlock(
-                type="tool_use",
-                id="",
-                name="write_file",
-                input={
-                    "path": "/workspace/test.md",
-                    "content": "testing the function",
-                },
-            ),
-        )
-        async for response in res:
-            print(response)
-
-        await toolkit.close_mcp_clients()
-
-
-if __name__ == "__main__":
-    asyncio.run(test_toolkit())

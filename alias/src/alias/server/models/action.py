@@ -1,0 +1,31 @@
+# -*- coding: utf-8 -*-
+from enum import Enum
+
+
+class ActionType(str, Enum):
+    LIKE = "LIKE"
+    CANCEL_LIKE = "CANCEL_LIKE"
+    DISLIKE = "DISLIKE"
+    CANCEL_DISLIKE = "CANCEL_DISLIKE"
+    COLLECT_SESSION = "COLLECT_SESSION"
+    UNCOLLECT_SESSION = "UNCOLLECT_SESSION"
+    COLLECT_TOOL = "COLLECT_TOOL"
+    UNCOLLECT_TOOL = "UNCOLLECT_TOOL"
+    START_CHAT = "START_CHAT"
+    BREAK_CHAT = "BREAK_CHAT"
+    FOLLOWUP_CHAT = "FOLLOWUP_CHAT"
+    EDIT_ROADMAP = "EDIT_ROADMAP"
+    EDIT_FILE = "EDIT_FILE"
+    EXECUTE_SHELL_COMMAND = "EXECUTE_SHELL_COMMAND"
+    BROWSER_OPERATION = "BROWSER_OPERATION"
+    TASK_STOP = "TASK_STOP"
+
+
+class FeedbackType(str, Enum):
+    LIKE = "like"
+    DISLIKE = "dislike"
+
+
+class CollectType(str, Enum):
+    COLLECT = "collect"
+    UNCOLLECT = "uncollect"

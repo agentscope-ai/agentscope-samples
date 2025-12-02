@@ -1,0 +1,32 @@
+[project]
+name = "alias-user-profiling-core"
+version = "0.1.0"
+description = "Alias User Profiling Core Library"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.11.3",
+    "pydantic-settings>=2.9.1",
+    "httpx>=0.27.0",
+    "mem0ai>=0.1.48",
+    "redis>=6.0.0b2",
+    "reme_ai>=0.2.0.3",
+]
+
+[tool.setuptools]
+packages = { find = {} }
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "flake8>=7.0.0",
+] 

@@ -1,0 +1,49 @@
+// Tree.scss
+$indent-base: 24px; // Base indent unit
+
+.node {
+  display: flex !important;
+  align-items: center;
+  //   padding: 4px 8px;
+  cursor: pointer;
+  width: 100% !important;
+  box-sizing: border-box;
+  transition: padding 0.2s ease;
+
+  // Dynamically generate level styles (supports 1-8 levels)
+  @for $i from 0 through 100 {
+    &.level-#{$i} {
+      padding-left: ($indent-base * $i) !important;
+    }
+  }
+
+  &:hover {
+    background-color: var(--message-option-bg-hover);
+  }
+
+  &.selected {
+    background-color: var(--filenode-selected-bg);
+  }
+
+  .node-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+
+    .icon {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+    }
+
+    .node-text {
+      font-family: system-ui;
+      font-size: 14px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+  }
+}

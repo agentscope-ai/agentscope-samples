@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=R0912
 """
 Alias Command Line Interface
 
@@ -9,6 +10,7 @@ for the Alias agent application.
 import argparse
 import asyncio
 import os
+import signal
 import sys
 import traceback
 import webbrowser
@@ -20,17 +22,44 @@ from agentscope.agent import TerminalUserInput, UserAgent
 
 from alias.agent.mock import MockSessionService, UserMessage
 from alias.agent.run import (
-    arun_agents,
-    test_browseruse_agent,
-    test_deepresearch_agent,
+    arun_meta_planner,
+    arun_browseruse_agent,
+    arun_deepresearch_agent,
+    arun_datascience_agent,
+    arun_finance_agent,
 )
 from alias.agent.tools.sandbox_util import copy_local_file_to_workspace
 from alias.runtime.alias_sandbox.alias_sandbox import AliasSandbox
 
 
+# Global variable to store the original signal handler
+_original_sigint_handler = None
+
+
+def _safe_sigint_handler(signum, frame):  # pylint: disable=W0613
+    """Signal handler that cancels tasks instead of raising SystemExit."""
+    logger.info(
+        "Custom SIGINT handler triggered - preventing sandbox shutdown",
+    )
+    # Get the current event loop if running
+    try:
+        loop = asyncio.get_running_loop()
+        if loop and loop.is_running():
+            # Cancel all running tasks to propagate CancelledError
+            tasks = [t for t in asyncio.all_tasks(loop) if not t.done()]
+            logger.info(f"Cancelling {len(tasks)} tasks due to SIGINT")
+            for task in tasks:
+                task.cancel()
+            logger.debug(f"Cancelled {len(tasks)} tasks due to SIGINT")
+    except RuntimeError:
+        # No running event loop, raise KeyboardInterrupt
+        logger.info("No running event loop, raising KeyboardInterrupt")
+        raise KeyboardInterrupt()  # pylint: disable=W0707
+
+
 async def run_agent_task(
     user_msg: str,
-    mode: str = "all",
+    mode: str = "general",
     files: Optional[list[str]] = None,
 ) -> None:
     """
@@ -38,9 +67,19 @@ async def run_agent_task(
 
     Args:
         user_msg: The user's task/query
-        mode: Agent mode ('all', 'worker', 'dr', 'browser')
+        mode: Agent mode ('general', 'dr', 'ds', 'browser', 'finance')
         files: List of local file paths to upload to sandbox workspace
     """
+    global _original_sigint_handler
+
+    # Override signal handler BEFORE creating sandbox
+    # This prevents the sandbox library's handler from destroying the container
+    # if _original_sigint_handler is None:
+    #     _original_sigint_handler = signal.signal(
+    #         signal.SIGINT, _safe_sigint_handler
+    #     )
+    #     logger.debug("Installed custom SIGINT handler to protect sandbox")
+
     # Initialize session
     session = MockSessionService()
 
@@ -53,53 +92,82 @@ async def run_agent_task(
     )
 
     # Run agent with sandbox context
-    with AliasSandbox() as sandbox:
+    sandbox = AliasSandbox()
+    sandbox.__enter__()
+
+    # Re-install our signal handler AFTER sandbox creation
+    # The sandbox library may have installed its own handler during __enter__
+    # which would destroy the container. We need to override it again.
+    if _original_sigint_handler is None:
+        _original_sigint_handler = signal.signal(
+            signal.SIGINT,
+            _safe_sigint_handler,
+        )
+    else:
+        # Re-install our handler even if we already saved the original
+        # This ensures it takes precedence over the sandbox library's handler
+        signal.signal(signal.SIGINT, _safe_sigint_handler)
+    logger.debug("Re-installed custom SIGINT handler after sandbox creation")
+
+    logger.info(
+        f"Sandbox mount dir: {sandbox.get_info().get('mount_dir')}",
+    )
+    logger.info(f"Sandbox desktop URL: {sandbox.desktop_url}")
+    webbrowser.open(sandbox.desktop_url)
+    # Upload files to sandbox if provided
+    if files:
+        target_paths = []
         logger.info(
-            f"Sandbox mount dir: {sandbox.get_info().get('mount_dir')}",
+            f"Uploading {len(files)} file(s) to sandbox workspace...",
         )
-        logger.info(f"Sandbox desktop URL: {sandbox.desktop_url}")
-        webbrowser.open(sandbox.desktop_url)
-        # Upload files to sandbox if provided
-        if files:
-            target_paths = []
-            logger.info(
-                f"Uploading {len(files)} file(s) to sandbox workspace...",
+        for file_path in files:
+            if not os.path.exists(file_path):
+                logger.error(f"File not found: {file_path}")
+                continue
+
+            # Get the filename and construct target path in workspace
+            filename = os.path.basename(file_path)
+            target_path = f"/workspace/{filename}"
+
+            logger.info(f"Uploading {file_path} to {target_path}")
+            result = copy_local_file_to_workspace(
+                sandbox=sandbox,
+                local_path=file_path,
+                target_path=target_path,
             )
-            for file_path in files:
-                if not os.path.exists(file_path):
-                    logger.error(f"File not found: {file_path}")
-                    continue
 
-                # Get the filename and construct target path in workspace
-                filename = os.path.basename(file_path)
-                target_path = f"/workspace/{filename}"
+            if result.get("isError"):
+                raise ValueError(f"Failed to upload {file_path}: {result}")
+            logger.info(f"Successfully uploaded to {result}")
 
-                logger.info(f"Uploading {file_path} to {target_path}")
-                result = copy_local_file_to_workspace(
-                    sandbox=sandbox,
-                    local_path=file_path,
-                    target_path=target_path,
-                )
+            target_paths.append(result.get("content", [])[0].get("text"))
 
-                if result.get("isError"):
-                    raise ValueError(f"Failed to upload {file_path}: {result}")
-                logger.info(f"Successfully uploaded to {result}")
+        user_msg += "\n\nUser uploaded files:\n" + "\n".join(target_paths)
 
-                target_paths.append(result.get("content", [])[0].get("text"))
+    # Create initial user message (regardless of whether files were uploaded)
+    initial_user_message = UserMessage(
+        content=user_msg,
+    )
+    await session.create_message(initial_user_message)
 
-            user_msg += "\n\nUser uploaded files:\n" + "\n".join(target_paths)
-
-        initial_user_message = UserMessage(
-            content=user_msg,
-        )
-        await session.create_message(initial_user_message)
-
+    try:
         await _run_agent_loop(
             mode=mode,
             session=session,
             user_agent=user_agent,
             sandbox=sandbox,
         )
+    finally:
+        # Ensure sandbox is properly cleaned up
+        try:
+            sandbox.__exit__(None, None, None)
+        except Exception:
+            pass
+        # Restore original signal handler when done
+        if _original_sigint_handler is not None:
+            signal.signal(signal.SIGINT, _original_sigint_handler)
+            _original_sigint_handler = None
+            logger.debug("Restored original SIGINT handler")
 
 
 async def _run_agent_loop(
@@ -119,34 +187,49 @@ async def _run_agent_loop(
     """
     while True:
         # Run the appropriate agent based on mode
-        if mode == "browser":
-            usr_msg = (await session.get_messages())[-1].message.get("content")
-            logger.info(f"--> user_msg: {usr_msg}")
-            await test_browseruse_agent(
-                usr_msg,
-                session,
-                sandbox=sandbox,
-            )
-            break
-        if mode == "dr":
-            usr_msg = (await session.get_messages())[-1].message.get(
-                "content",
-            )
-            logger.info(f"--> user_msg: {usr_msg}")
-            await test_deepresearch_agent(
-                usr_msg,
-                session,
-                sandbox=sandbox,
-            )
-            break
-        if mode == "all":
-            await arun_agents(
-                session,
-                sandbox=sandbox,
-                enable_clarification=False,
-            )
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
+        try:
+            if mode == "browser":
+                await arun_browseruse_agent(
+                    session,
+                    sandbox=sandbox,
+                )
+            elif mode == "dr":
+                await arun_deepresearch_agent(
+                    session,
+                    sandbox=sandbox,
+                )
+            elif mode == "ds":
+                await arun_datascience_agent(
+                    session,
+                    sandbox=sandbox,
+                )
+            elif mode == "general":
+                await arun_meta_planner(
+                    session,
+                    sandbox=sandbox,
+                )
+            elif mode == "finance":
+                await arun_finance_agent(session, sandbox=sandbox)
+            else:
+                raise ValueError(f"Unknown mode: {mode}")
+
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            logger.info("Agent execution interrupted by user")
+            # Continue to prompt for next action
+        except RuntimeError as e:
+            # Sandbox container may have been destroyed during interruption
+            if "No container found" in str(e):  # pylint: disable=R1723
+                logger.error(
+                    "Sandbox container was destroyed during interruption. "
+                    "Please restart the application to continue.",
+                )
+                logger.error(traceback.format_exc())
+                break  # Exit the loop since sandbox is no longer available
+            else:
+                raise  # Re-raise other RuntimeErrors
+        except Exception as e:
+            logger.error(f"Error running {mode} mode: {e}")
+            logger.error(traceback.format_exc())
 
         # Check for follow-up interaction
         follow_msg = await user_agent()
@@ -166,7 +249,7 @@ def main():
         prog="alias",
         description="Alias Agent System",
         epilog=(
-            "Example: alias run --mode all "
+            "Example: alias run --mode general "
             "--task 'Analyze Meta stock performance'"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -193,14 +276,15 @@ def main():
 
     run_parser.add_argument(
         "--mode",
-        choices=["all", "worker", "dr", "browser"],
-        default="all",
+        choices=["general", "dr", "ds", "browser", "finance"],
+        default="general",
         help=(
             "Agent mode: "
-            "'all' (meta planner with workers), "
-            "'worker' (single worker agent), "
+            "'general' (meta planner with workers), "
             "'dr' (deep research agent), "
+            "'ds' (data science agent), "
             "'browser' (browser agent)"
+            "'finance' (finance agent)"
         ),
     )
 
@@ -244,9 +328,19 @@ def main():
                     files=args.files if hasattr(args, "files") else None,
                 ),
             )
-        except KeyboardInterrupt:
-            logger.info("\nInterrupted by user")
-            sys.exit(0)
+        except (KeyboardInterrupt, SystemExit) as e:
+            # Catch SystemExit from sandbox signal handler (if it still runs)
+            # and KeyboardInterrupt for graceful handling
+            if isinstance(e, SystemExit) and e.code == 0:
+                # Convert SystemExit(0) to KeyboardInterrupt
+                # for graceful handling
+                logger.info("\nInterrupted by user (signal handler)")
+                # Don't exit - let the exception propagate
+                # naturally or be handled
+                sys.exit(0)
+            else:
+                logger.info("\nInterrupted by user")
+                sys.exit(0)
         except Exception as e:
             logger.error(f"Error running agent: {e}")
             if hasattr(args, "verbose") and args.verbose:

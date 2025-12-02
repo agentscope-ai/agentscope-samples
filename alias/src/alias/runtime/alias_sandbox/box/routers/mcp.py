@@ -21,7 +21,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# NOTE: DO NOT use API-KEY Server in release version due to security issues
 @mcp_router.post(
     "/mcp/add_servers",
     summary="Add and initialize MCP servers",

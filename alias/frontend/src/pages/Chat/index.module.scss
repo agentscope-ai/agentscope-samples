@@ -1,0 +1,156 @@
+.home {
+  @apply h-screen w-full flex overflow-hidden bg-page-bg;
+  // > div {
+  //   @apply h-full w-full flex overflow-hidden;
+  // }
+}
+
+/* Right content container */
+.newContainer {
+  @apply flex-1 flex justify-center;
+  position: relative;
+}
+
+/* Chat area */
+.newChatSection {
+  @apply flex-1 rounded-[24px];
+  @apply transition-all duration-300 ease-in-out;
+  min-width: 300px;
+  max-width: 800px;
+  // position: relative;
+  margin: auto;
+
+  /* Disclaimer at bottom */
+  :global(.sps-disclaimer) {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: 16px;
+  }
+}
+
+/* Right content container */
+.rightContents {
+  width: calc(100vw - 72px);
+}
+
+.container {
+  @apply flex-1 flex min-w-0;
+  height: calc(100% - 64px);
+}
+
+/* Chat area */
+.chatSection {
+  @apply w-2/5 flex flex-col rounded-[24px] pl-4;
+  @apply transition-all duration-300 ease-in-out;
+  min-width: 300px;
+
+  .chatContent {
+    @apply flex-1 flex flex-col h-full relative;
+  }
+
+  .messageArea {
+    @apply flex-1 overflow-y-auto scroll-smooth;
+    @apply scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent;
+
+    .message {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+
+      &.userMessage {
+        flex-direction: row-reverse;
+        margin-right: 1.5rem;
+
+        .messageText {
+          margin-right: 1rem;
+          background-color: #4f46e5;
+          color: white;
+          border-radius: 1rem 0.25rem 1rem 1rem;
+
+          .fileAttachment {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+
+            .fileInfo {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+
+              img {
+                width: 1rem;
+                height: 1rem;
+              }
+
+              .fileSize {
+                font-size: 0.75rem;
+                opacity: 0.8;
+              }
+            }
+          }
+        }
+      }
+
+      .avatar {
+        @apply w-8 h-8 flex-shrink-0 mr-3;
+
+        img {
+          @apply w-full h-full;
+        }
+      }
+
+      .messageText {
+        padding: 0.75rem 1rem;
+        border-radius: 0.25rem 1rem 1rem 1rem;
+        background-color: var(--message-option-bg-hover);
+        max-width: 80%;
+      }
+    }
+
+    .options {
+      margin-bottom: 1rem;
+
+      .optionsContainer {
+        @apply bg-page-container rounded-[20px];
+        width: calc(80% + 2.75rem);
+      }
+
+      h3 {
+        @apply font-pingfang text-[14px] leading-[20px] text-text-secondary mb-[9px] px-[30px] pt-[10px];
+      }
+
+      .optionsList {
+        @apply space-y-[3px] pl-[12px] pr-[64px] pb-[10px];
+      }
+
+      .optionButton {
+        @apply block w-full py-[10px] rounded-[12px] bg-white text-left px-[30px] border border-border-option transition-all duration-200;
+        @apply hover:border-purple-200 hover:shadow-sm;
+      }
+    }
+  }
+}
+
+/* Workspace area */
+.workspaceSection {
+  @apply w-3/5 flex flex-col rounded-[8px] ml-4 mr-4;
+  @apply transition-all duration-300 ease-in-out;
+  @apply relative pb-[12px];
+  background-color: var(--sps-color-bg-base);
+  min-width: 300px;
+  box-sizing: border-box;
+  border: 1px solid var(--sps-color-border-secondary);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.tabSpace {
+  :global {
+    .css-var-r1.sps-segmented {
+      margin: 8px;
+    }
+  }
+}

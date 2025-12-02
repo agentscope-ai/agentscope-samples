@@ -6,10 +6,12 @@ planning-execution pattern.
 # pylint: disable=W0613
 import json
 import os
+import traceback
 import uuid
 from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
+from loguru import logger
 
 from pydantic import BaseModel, Field
 
@@ -20,25 +22,29 @@ from agentscope.model import ChatModelBase
 from agentscope.tool import ToolResponse
 
 from alias.agent.agents import AliasAgentBase
-from alias.agent.tools import AliasToolkit
-from ._planning_tools import (  # pylint: disable=C0411
+from alias.agent.tools import AliasToolkit, share_tools
+from alias.agent.tools.add_qa_tools import add_qa_tools
+from .meta_planner_utils import (  # pylint: disable=C0411
     PlannerNoteBook,
     RoadmapManager,
     WorkerManager,
-    share_tools,
 )
-from ._agent_hooks import (
-    update_user_input_pre_reply_hook,
-    planner_compose_reasoning_msg_pre_reasoning_hook,
-    planner_remove_reasoning_msg_post_reasoning_hook,
+from alias.agent.agents.ds_agent_utils import set_run_ipython_cell
+from .common_agent_utils import (
     save_post_reasoning_state,
-    save_post_action_state,
     generate_response_post_action_hook,
-    planner_load_states_pre_reply_hook,
+    agent_load_states_pre_reply_hook,
+)
+from .meta_planner_utils import (
+    planner_compose_reasoning_msg_pre_reasoning_hook,
+    update_user_input_pre_reply_hook,
+    planner_save_post_action_state,
 )
 from ..utils.constants import (
     PLANNER_MAX_ITER,
     DEFAULT_PLANNER_NAME,
+    DEFAULT_DEEP_RESEARCH_AGENT_NAME,
+    DEFAULT_DS_AGENT_NAME,
 )
 
 
@@ -46,14 +52,14 @@ class MetaPlannerResponseWithClarification(BaseModel):
     require_clarification: bool = Field(
         ...,
         description=(
-            "Check If the provide task description is unclear, too general or "
+            "Check if the provide task description is unclear, too general or "
             "lack necessary information."
         ),
     )
     clarification_analysis: str = Field(
         default="",
         description=(
-            "identify the missing information "
+            "Identify the missing information "
             "so that if the user provides clarification or more details, "
             "you can have clearer goal and can better handle the task."
         ),
@@ -115,7 +121,7 @@ MetaPlannerResponseNoClarificationPrompt = (
     "The `{func_name}` should be called when you believe "
     "the task has been done and you want to give a final description. "
     "The `task_conclusion` field needs to be a string that "
-    "briefly summarize your thought in ONE sentence."
+    "briefly covers all required key points."
 )
 
 
@@ -179,6 +185,10 @@ class MetaPlanner(AliasAgentBase):
                 "change yourself to a more long-term planning mode."
                 "If you need tool supplement for easier task, you can call "
                 "`enter_easy_task_mode` to ask for more tools."
+                "If the user asks a question related to AgentScope "
+                "(e.g., about its usage or architecture), you can call "
+                "`enter_qa_mode` to ask for RAG and GitHub MCP tools "
+                "to answer the question."
             )
         else:
             self.base_sys_prompt = sys_prompt
@@ -210,9 +220,9 @@ class MetaPlanner(AliasAgentBase):
                 MetaPlannerResponseWithClarification
             )
             response_func = self.toolkit.tools.get(self.finish_function_name)
-            response_func.json_schema[
+            response_func.json_schema["function"][
                 "description"
-            ] = response_func.json_schema.get(
+            ] = response_func.json_schema["function"].get(
                 "description",
                 "",
             ) + MetaPlannerResponseWithClarificationPrompt.format_map(
@@ -225,9 +235,9 @@ class MetaPlanner(AliasAgentBase):
                 MetaPlannerResponseNoClarification
             )
             response_func = self.toolkit.tools.get(self.finish_function_name)
-            response_func.json_schema[
+            response_func.json_schema["function"][
                 "description"
-            ] = response_func.json_schema.get(
+            ] = response_func.json_schema["function"].get(
                 "description",
                 "",
             ) + MetaPlannerResponseNoClarificationPrompt.format_map(
@@ -260,17 +270,28 @@ class MetaPlanner(AliasAgentBase):
                 self._get_full_worker_tool_list()
             )
             self.prepare_planner_tools(planner_mode)
+
+            def reload_planner_notebook(state_dict: dict) -> PlannerNoteBook:
+                # Create new notebook from state
+                notebook = PlannerNoteBook.model_validate(state_dict)
+                # Update managers to use the same reference
+                if self.roadmap_manager:
+                    self.roadmap_manager.planner_notebook = notebook
+                if self.worker_manager:
+                    self.worker_manager.planner_notebook = notebook
+                return notebook
+
             self.register_state(
                 "planner_notebook",
-                lambda x: x.model_dump(),
-                lambda x: PlannerNoteBook(**x),
+                custom_to_json=lambda x: x.model_dump(),
+                custom_from_json=reload_planner_notebook,
             )
 
         # pre-reply hook
         self.register_instance_hook(
             "pre_reply",
-            "planner_load_states_pre_reply_hook",
-            planner_load_states_pre_reply_hook,
+            "agent_load_states_pre_reply_hook",
+            agent_load_states_pre_reply_hook,
         )
         self.register_instance_hook(
             "pre_reply",
@@ -286,19 +307,14 @@ class MetaPlanner(AliasAgentBase):
         # post_reasoning hook
         self.register_instance_hook(
             "post_reasoning",
-            "planner_remove_reasoning_msg_post_reasoning_hook",
-            planner_remove_reasoning_msg_post_reasoning_hook,
-        )
-        self.register_instance_hook(
-            "post_reasoning",
             "save_state_post_reasoning_hook",
             save_post_reasoning_state,
         )
         # post_action_hook
         self.register_instance_hook(
             "post_acting",
-            "save_post_action_state",
-            save_post_action_state,
+            "planner_save_post_action_state",
+            planner_save_post_action_state,
         )
 
         self.register_instance_hook(
@@ -319,15 +335,19 @@ class MetaPlanner(AliasAgentBase):
             planner_notebook=self.planner_notebook,
         )
 
-        self.worker_manager = WorkerManager(
-            worker_model=self.model,
-            worker_formatter=self.formatter,
-            planner_notebook=self.planner_notebook,
-            agent_working_dir=self.task_dir,
-            worker_full_toolkit=self.worker_full_toolkit,
-            session_service=self.session_service,
-            sandbox=self.toolkit.sandbox,
-        )
+        if self.worker_manager is None:
+            self.worker_manager = WorkerManager(
+                worker_model=self.model,
+                worker_formatter=self.formatter,
+                planner_notebook=self.planner_notebook,
+                agent_working_dir=self.task_dir,
+                worker_full_toolkit=self.worker_full_toolkit,
+                session_service=self.session_service,
+                sandbox=self.toolkit.sandbox,
+            )
+        else:
+            self.worker_manager.planner_notebook = self.planner_notebook
+
         # clean
         self.toolkit.remove_tool_groups("planning")
         self.toolkit.create_tool_group(
@@ -369,13 +389,25 @@ class MetaPlanner(AliasAgentBase):
                 self.toolkit.register_tool_function(
                     self.enter_easy_task_mode,
                 )
+            if "enter_qa_mode" not in self.toolkit.tools:
+                self.toolkit.register_tool_function(
+                    self.enter_qa_mode,
+                )
+            if "enter_data_analysis_mode" not in self.toolkit.tools:
+                self.toolkit.register_tool_function(
+                    self.enter_data_analysis_mode,
+                )
+            if "enter_deep_research_mode" not in self.toolkit.tools:
+                self.toolkit.register_tool_function(
+                    self.enter_deep_research_mode,
+                )
             # Only activate after agent decides to enter the
             # planning-execution mode
             self.toolkit.update_tool_groups(["planning"], False)
         elif planner_mode == "enforced":
             self.toolkit.update_tool_groups(["planning"], True)
             # use the self.agent_working_dir as working dir
-            self._update_toolkit_and_sys_prompt()
+            self._update_toolkit_and_sys_prompt_for_planning()
 
     def _ensure_file_system_functions(self) -> None:
         required_tool_list = [
@@ -458,7 +490,8 @@ class MetaPlanner(AliasAgentBase):
         )
         await self._create_task_directory()
         self.worker_manager.agent_working_dir = self.task_dir
-        self._update_toolkit_and_sys_prompt()
+        self._update_toolkit_and_sys_prompt_for_planning()
+
         return ToolResponse(
             metadata={"success": True},
             content=[
@@ -532,7 +565,7 @@ class MetaPlanner(AliasAgentBase):
             ],
         )
 
-    def _update_toolkit_and_sys_prompt(self) -> None:
+    def _update_toolkit_and_sys_prompt_for_planning(self) -> None:
         # change agent settings for solving complicated task
         with open(
             Path(__file__).parent
@@ -554,11 +587,16 @@ class MetaPlanner(AliasAgentBase):
         self.toolkit.update_tool_groups(["planning"], True)
         self.work_pattern = "planner"
 
+        # add active interrupt function
+        self.add_interrupt_function_name(
+            "decompose_task_and_build_roadmap",
+        )
+
     def resume_planner_tools(self) -> None:
         """Resume the planner notebook for tools"""
         self.prepare_planner_tools(self.planner_mode)
         if self.work_pattern == "planner":
-            self._update_toolkit_and_sys_prompt()
+            self._update_toolkit_and_sys_prompt_for_planning()
 
     def _get_full_worker_tool_list(self) -> list[dict]:
         full_worker_tool_list = [
@@ -572,3 +610,171 @@ class MetaPlanner(AliasAgentBase):
             for func_dict in self.worker_full_toolkit.get_json_schemas()
         ]
         return full_worker_tool_list
+
+    async def enter_deep_research_mode(
+        self,
+        user_query: str,
+    ):
+        """
+        Directly entering the deep research mode.
+        Use this when the user provides some research or information gathering
+        tasks, and require a comprehensive report.
+
+        Args:
+            user_query (`str`):
+                digested user query for a deep research agent to start.
+                If the conversation is recovered from an interruption,
+                also carry the interruption in the context. For example,
+                "User requests to continue the task...."
+        """
+        try:
+            _, dr_agent = self.worker_manager.worker_pool.get(
+                DEFAULT_DEEP_RESEARCH_AGENT_NAME,
+            )
+            msg = await dr_agent(
+                Msg(
+                    "user",
+                    content=[TextBlock(type="text", text=user_query)],
+                    role="user",
+                ),
+            )
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            return ToolResponse(
+                metadata={"success": False},
+                content=[
+                    TextBlock(
+                        type="text",
+                        text=(f"{e}\n" "Fail to execute deep research agent."),
+                    ),
+                ],
+            )
+        return ToolResponse(
+            metadata={"success": True, "return_msg": msg},
+            content=[TextBlock(type="text", text=msg.get_text_content())],
+        )
+
+    async def enter_data_analysis_mode(
+        self,
+        user_query: str,
+    ):
+        """
+        Directly enter the data science mode.
+        Use this when the user provides some data files and ask for processing.
+
+        Args:
+            user_query (`str`):
+                digested user query for a data analysis agent to start.
+                If the conversation is recovered from an interruption,
+                also carry the interruption in the context. For example,
+                "User requests to continue the task...."
+        """
+        try:
+            _, ds_agent = self.worker_manager.worker_pool.get(
+                DEFAULT_DS_AGENT_NAME,
+            )
+            set_run_ipython_cell(self.toolkit.sandbox)
+            await ds_agent.memory.add(
+                Msg(
+                    "user",
+                    content=[TextBlock(type="text", text=user_query)],
+                    role="user",
+                ),
+            )
+            msg = await ds_agent()
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            return ToolResponse(
+                metadata={"success": False},
+                content=[
+                    TextBlock(
+                        type="text",
+                        text=(f"{e}\n" "Fail to execute data analysis agent."),
+                    ),
+                ],
+            )
+        return ToolResponse(
+            metadata={"success": True, "return_msg": msg},
+            content=[TextBlock(type="text", text=msg.get_text_content())],
+        )
+
+    async def enter_qa_mode(
+        self,
+        task_name: str,
+    ) -> ToolResponse:
+        """
+        When the user request meet all following conditions, enter the
+        QA mode by using this tool.
+        1. The user asks a question related to AgentScope (e.g., about
+        its usage or architecture).
+        2. the task can be done within 15 reasoning-acting iterations;
+        3. the task requires only 3-5 additional tools to finish;
+        4. NO NEED to use browser operations
+
+        Args:
+            task_name (`str`):
+                Given a name to the current task as an indicator. Because
+                this name will be used to create a directory, so try to
+                use "_" instead of space between words, e.g. "A_NEW_TASK".
+        """
+        self._ensure_file_system_functions()
+        qa_prompt_path = (
+            Path(__file__).resolve().parent
+            / "qa_agent_utils"
+            / "build_in_prompt"
+            / "qaagent_base_sys_prompt.md"
+        )
+        self._sys_prompt = qa_prompt_path.read_text(encoding="utf-8").format(
+            name=self.name,
+        )
+        available_tool_names = [
+            item.get("function", {}).get("name")
+            for item in list(self.toolkit.get_json_schemas())
+        ]
+        if "retrieve_knowledge" not in available_tool_names:
+            await add_qa_tools(self.toolkit)
+        github_error_message = None
+        if not os.getenv("GITHUB_TOKEN"):
+            github_error_message = (
+                "⚠️ EnvironmentSetupError: Missing GITHUB_TOKEN; "
+                "GitHub MCP tools cannot be used. "
+                "Please export GITHUB_TOKEN in "
+                "your environment before proceeding."
+            )
+
+        # self.toolkit.update_tool_groups("qa_mode", active=True)
+        self.task_dir = os.path.join(
+            self.agent_working_dir_root,
+            task_name,
+        )
+        await self._create_task_directory()
+        self.work_pattern = "worker"
+        available_tool_names = [
+            item.get("function", {}).get("name")
+            for item in list(self.toolkit.get_json_schemas())
+        ]
+        # self.toolkit.update_tool_groups("qa_mode", active=False)
+        content_blocks = [
+            TextBlock(
+                type="text",
+                text=(
+                    "Successfully enter the qa agent mode to "
+                    "answer the user's question. "
+                    "All the file operations, including "
+                    "read/write/modification, should be done in directory "
+                    f"{self.task_dir}"
+                    f"Current available tools: {available_tool_names}"
+                ),
+            ),
+        ]
+        if github_error_message:
+            content_blocks.append(
+                TextBlock(
+                    type="text",
+                    text=github_error_message,
+                ),
+            )
+        return ToolResponse(
+            metadata={"success": True},
+            content=content_blocks,
+        )

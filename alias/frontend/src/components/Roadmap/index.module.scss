@@ -1,0 +1,28 @@
+.roadmap {
+  width: 100%;
+  max-height: calc(100vh - 123px);
+  height: 100%;
+  overflow-y: auto;
+  border-top: solid 1px var(--sps-color-border-secondary);
+  padding: 16px 20px;
+  .title {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 32px;
+    letter-spacing: normal;
+  }
+  .roadmapList {
+    border-radius: 8px;
+    border: solid 1px var(--sps-color-border-secondary);
+    margin-top: 16px;
+  }
+  .listItem {
+    padding: 12px;
+  }
+  .itemFlex {
+    width: 100%;
+  }
+  .success {
+    color: var(--sps-color-text-tertiary);
+  }
+}

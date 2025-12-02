@@ -1,0 +1,27 @@
+.listItem {
+  position: relative;
+  .textEllipsis {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5;
+    padding: 0 16px;
+  }
+  .actionButtons {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    background-color: var(--sps-color-fill-secondary);
+    .actionButtons {
+      opacity: 1;
+    }
+  }
+  .icon {
+    position: absolute;
+    right: 0;
+  }
+}

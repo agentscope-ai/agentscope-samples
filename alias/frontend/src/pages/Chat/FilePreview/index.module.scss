@@ -1,0 +1,102 @@
+.filePreviewContainer {
+  width: 100%;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.filePreviewItem {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+  padding: 12px;
+  width: fit-content; // Let width adapt to content
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  :global(.fileItem) {
+    display: flex;
+    align-items: center;
+
+    :global(.fileIcon) {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    :global(.fileInfoBlock) {
+      margin-left: 8px;
+      flex: 1;
+      min-width: 0; // Allow automatic handling when text overflows
+    }
+  }
+
+  .fileBottom {
+    margin-top: 12px;
+
+    .progressBar {
+      height: 3px;
+      background: #f0f0f0;
+      border-radius: 1.5px;
+      margin-bottom: 8px;
+      overflow: hidden;
+
+      .progressFill {
+        height: 100%;
+        background: #1890ff;
+        transition: width 0.3s ease;
+      }
+    }
+
+    .fileStatus {
+      display: flex;
+      align-items: center;
+      justify-content: space-between; // Changed to justify space between
+      font-size: 11px;
+
+      .uploading {
+        color: #1890ff;
+      }
+
+      .success {
+        color: #52c41a;
+      }
+
+      .error {
+        color: #ff4d4f;
+      }
+
+      .removeButton {
+        background: none;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        color: #999;
+        transition: color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          color: #ff4d4f;
+        }
+
+        svg {
+          width: 12px;
+          height: 12px;
+        }
+      }
+    }
+  }
+}

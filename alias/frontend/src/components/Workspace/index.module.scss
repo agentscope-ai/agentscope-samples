@@ -1,0 +1,91 @@
+.workspaceHeader {
+  @apply flex items-center justify-between;
+  .titleContainer {
+    @apply flex items-center;
+
+    .title {
+      @apply font-alibaba text-[17px] font-bold leading-[28px] text-text-primary;
+    }
+  }
+  .computerIcon {
+    font-size: 20px;
+    font-weight: bold;
+    margin-right: 8px;
+  }
+  .collectButton {
+    @apply flex items-center px-4 py-1 rounded-[12px] border border-black;
+    background-color: var(--message-content);
+
+    img {
+      @apply w-5 h-5 mr-1;
+    }
+
+    span {
+      @apply font-alibaba text-[13px] font-bold leading-[22px] text-text-primary;
+    }
+  }
+}
+
+.todoHeader {
+  @apply flex items-center mt-1;
+
+  .stepIcon {
+    @apply w-5 h-5 mr-[6px];
+  }
+
+  .stepCount {
+    @apply px-2 py-[2px] mr-[5px] rounded-[8px];
+    @apply font-alibaba text-[13px] font-bold leading-[22px];
+    background-color: var(--sps-color-mauve-bg); 
+    color: var(--sps-color-mauve);
+  }
+
+  .stepTitle {
+    @apply font-alibaba text-[15px] leading-6 tracking-[0.2px] text-black;
+    width: 100%;
+  }
+  .workspaceSelect {
+    height: 56px;
+    width: 100%;
+  }
+}
+.todoList {
+  @apply mx-0 my-[14px] mb-[22px];
+  :global(.ant-collapse-content-box) {
+    padding: 0;
+  }
+  :global {
+    pre {
+      background-color: transparent !important;
+    }
+    code {
+      color: var(--sps-color-text-secondary) !important;
+      background-color: transparent !important;
+    }
+  }
+  // .collapse {
+  //   :global {
+  //     .sps-collapse-content-box {
+  //       padding: 0 !important;
+  //     }
+  //   }
+  // }
+}
+
+.workWrap {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  border-top: solid 1px var(--sps-color-border-secondary);
+  .workspaceHeader {
+    height: 52px;
+  }
+}
+.renderLabel {
+  display: flex;
+  justify-content: space-between;
+  .labelId {
+    color: var(--sps-color-text-tertiary);
+    margin-left: 12px;
+  }
+}

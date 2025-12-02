@@ -1,0 +1,41 @@
+.welcome {
+  // margin-top: 24px;
+  .githubButton {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    .button {
+      width: 180px;
+      border-radius: 15px;
+    }
+  }
+  .title {
+    display: flex;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: normal;
+    color: var(--sps-color-text);
+    height: 48px;
+    line-height: 48px;
+    .logo {
+      height: 72px;
+      width: 80px;
+      margin: 0 12px;
+      margin-top: -12px;
+    }
+    .label {
+      height: 48px;
+      line-height: 48px;
+    }
+  }
+  .description {
+    font-size: 16px;
+    font-weight: normal;
+    line-height: 28px;
+    margin-bottom: 24px;
+    text-align: center;
+    letter-spacing: normal;
+    color: var(--sps-color-text-tertiary);
+  }
+}

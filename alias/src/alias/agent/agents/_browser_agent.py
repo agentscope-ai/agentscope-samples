@@ -8,6 +8,8 @@ import re
 import uuid
 import os
 import json
+import inspect
+from functools import wraps
 from typing import Type, Optional, Any
 import asyncio
 import copy
@@ -31,8 +33,21 @@ from agentscope.tool import (
 from agentscope.token import TokenCounterBase, OpenAITokenCounter
 
 from alias.agent.agents import AliasAgentBase
-from alias.agent.agents._planning_tools._planning_notebook import (
+from alias.agent.agents.common_agent_utils import (
     WorkerResponse,
+    get_user_input_to_mem_pre_reply_hook,
+)
+from alias.agent.agents._build_in_helper_browser._image_understanding import (
+    image_understanding,
+)
+from alias.agent.agents._build_in_helper_browser._video_understanding import (
+    video_understanding,
+)
+from alias.agent.agents._build_in_helper_browser._file_download import (
+    file_download,
+)
+from alias.agent.agents._build_in_helper_browser._form_filling import (
+    form_filling,
 )
 from alias.agent.utils.constants import (
     DEFAULT_BROWSER_WORKER_NAME,
@@ -87,6 +102,52 @@ with open(
     encoding="utf-8",
 ) as f:
     _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT = f.read()
+
+
+async def browser_pre_reply_hook(
+    self,
+    kwargs: dict[str, Any],
+):
+    """Pre-reply hook: initial navigation and task decomposition.
+
+    Expects kwargs["msg"] to be a Msg. Returns updated kwargs with possibly
+    rewritten "msg".
+    """
+    msg = kwargs.get("msg")
+    # for the case directly using session service
+    if msg is None:
+        msg = (await self.memory.get_memory())[-1]
+    if self.start_url and not self._has_initial_navigated:
+        await self._navigate_to_start_url()
+        self._has_initial_navigated = True
+    msg = await self._task_decomposition_and_reformat(msg)
+    await self.memory.add(msg)
+
+
+async def browser_post_acting_hook(
+    self,
+    kwargs: dict[str, Any],  # pylint: disable=W0613
+    output: Any,  # pylint: disable=W0613
+):
+    """
+    Hook func for cleaning the messy return after action.
+    Observation will be done before reasoning steps.
+    """
+    mem_msgs = await self.memory.get_memory()
+    mem_length = await self.memory.size()
+    if len(mem_msgs) == 0:
+        return
+    tool_res_msg = mem_msgs[-1]
+    for i, b in enumerate(tool_res_msg.content):
+        if b["type"] == "tool_result":
+            for j, return_json in enumerate(b.get("output", [])):
+                if isinstance(return_json, dict) and "text" in return_json:
+                    tool_res_msg.content[i]["output"][j][
+                        "text"
+                    ] = self._filter_execution_text(return_json["text"])
+    await self.print(tool_res_msg)
+    await self.memory.delete(mem_length - 1)
+    await self.memory.add(tool_res_msg)
 
 
 class BrowserAgent(AliasAgentBase):
@@ -191,7 +252,17 @@ class BrowserAgent(AliasAgentBase):
         )
 
         self.toolkit.register_tool_function(self.browser_subtask_manager)
-        self.toolkit.register_tool_function(self.image_understanding)
+        if (
+            self.model.model_name.startswith("qvq")
+            or "-vl" in self.model.model_name
+            or "4o" in self.model.model_name
+            or "gpt-5" in self.model.model_name
+        ):
+            self._register_skill_tool(image_understanding)
+            self._register_skill_tool(video_understanding)
+
+        self._register_skill_tool(file_download)
+        self._register_skill_tool(form_filling)
 
         self.no_screenshot_tool_list = [
             tool
@@ -199,6 +270,63 @@ class BrowserAgent(AliasAgentBase):
             if tool.get("function", {}).get("name")
             not in ["browser_take_screenshot"]
         ]
+
+        # Register hooks (kwargs-only signature)
+        # compatible with directly using session service,
+        # add input msg to memory
+        self.register_instance_hook(
+            "pre_reply",
+            "get_user_input_to_mem_pre_reply_hook",
+            get_user_input_to_mem_pre_reply_hook,
+        )
+        self.register_instance_hook(
+            "pre_reply",
+            "browser_pre_reply_hook",
+            browser_pre_reply_hook,
+        )
+        self.register_instance_hook(
+            "post_acting",
+            "browser_post_acting_hook",
+            browser_post_acting_hook,
+        )
+
+    def _register_skill_tool(
+        self,
+        skill_func: Any,
+    ) -> None:
+        """Bind the browser agent to a skill function and register it as a tool."""
+
+        if asyncio.iscoroutinefunction(skill_func):
+
+            @wraps(skill_func)
+            async def tool(*args, **kwargs):
+                return await skill_func(
+                    browser_agent=self,
+                    *args,
+                    **kwargs,
+                )
+
+        else:
+
+            @wraps(skill_func)
+            async def tool(*args, **kwargs):
+                return skill_func(
+                    browser_agent=self,
+                    *args,
+                    **kwargs,
+                )
+
+        original_signature = inspect.signature(skill_func)
+        parameters = list(original_signature.parameters.values())
+        if parameters and parameters[0].name == "browser_agent":
+            parameters = parameters[1:]
+        try:
+            tool.__signature__ = original_signature.replace(
+                parameters=parameters,
+            )
+        except ValueError:
+            pass
+        self.toolkit.register_tool_function(tool)
 
     async def reply(
         self,
@@ -227,12 +355,6 @@ class BrowserAgent(AliasAgentBase):
             else ""
         )
 
-        if self.start_url and not self._has_initial_navigated:
-            await self._navigate_to_start_url()
-            self._has_initial_navigated = True
-        msg = await self._task_decomposition_and_reformat(msg)
-        # original reply function
-        await self.memory.add(msg)
         self._required_structured_model = structured_model
         # Record structured output model if provided
         if structured_model:
@@ -375,7 +497,6 @@ class BrowserAgent(AliasAgentBase):
 
             res = await self.model(
                 prompt,
-                # tools=self.toolkit.get_json_schemas(),
                 tools=self.no_screenshot_tool_list,
             )
             # handle output from the model
@@ -386,10 +507,12 @@ class BrowserAgent(AliasAgentBase):
                     msg = Msg(self.name, [], "assistant")
                     async for content_chunk in res:
                         msg.content = content_chunk.content
-                    await self.print(msg)
+                    # await self.print(msg)
+
                 else:
                     msg = Msg(self.name, list(res.content), "assistant")
-                    await self.print(msg)
+                    # await self.print(msg)
+                logger.info(msg.content)
 
             except asyncio.CancelledError as e:
                 interrupted_by_user = True
@@ -505,72 +628,6 @@ class BrowserAgent(AliasAgentBase):
             if b["type"] == "tool_use":
                 self.chunk_continue_status = False
 
-    async def _acting(self, tool_call: ToolUseBlock) -> Msg | None:
-        """Perform the acting process.
-
-        Args:
-            tool_call (`ToolUseBlock`):
-                The tool use block to be executed.
-
-        Returns:
-            `Union[Msg, None]`:
-                Return a message to the user if the `_finish_function` is
-                called, otherwise return `None`.
-        """
-        tool_res_msg = Msg(
-            "system",
-            [
-                ToolResultBlock(
-                    type="tool_result",
-                    id=tool_call["id"],
-                    name=tool_call["name"],
-                    output=[],
-                ),
-            ],
-            "system",
-        )
-        try:
-            # Execute the tool call
-            tool_res = await self.toolkit.call_tool_function(tool_call)
-
-            response_msg = None
-            # Async generator handling
-            async for chunk in tool_res:
-                # Turn into a tool result block
-                tool_res_msg.content[0][  # type: ignore[index]
-                    "output"
-                ] = chunk.content
-                # Return message if generate_response is called successfully
-
-                if tool_call[
-                    "name"
-                ] == self.finish_function_name and chunk.metadata.get(
-                    "success",
-                    True,
-                ):
-                    response_msg = chunk.metadata.get("response_msg")
-                elif chunk.is_interrupted:
-                    # TODO: monkey patch happens here
-                    response_msg = tool_res_msg
-                    if response_msg.metadata is None:
-                        response_msg.metadata = {"is_interrupted": True}
-                    else:
-                        response_msg.metadata["is_interrupted"] = True
-            return response_msg
-
-        finally:
-            # Record the tool result message in the memory
-            tool_res_msg = self._clean_tool_excution_content(tool_res_msg)
-            if tool_call["name"] == "browser_subtask_manager":
-                # remove the last tool call
-                mem_len = await self.memory.size()
-                if mem_len >= 1:
-                    await self.memory.delete(mem_len - 1)
-            else:
-                await self.memory.add(tool_res_msg)
-            if tool_call["name"] != self.finish_function_name:
-                await self.print(tool_res_msg)
-
     def _clean_tool_excution_content(
         self,
         output_msg: Msg,
@@ -619,11 +676,13 @@ class BrowserAgent(AliasAgentBase):
             async for content_chunk in res:
                 decompose_text = content_chunk.content[0]["text"]
                 print_msg.content = content_chunk.content
-                await self.print(print_msg, False)
+                # await self.print(print_msg, False)
         else:
             decompose_text = res.content[0]["text"]
         print_msg.content = [TextBlock(type="text", text=decompose_text)]
-        await self.print(print_msg, True)
+
+        # await self.print(print_msg, True)
+        logger.info(decompose_text)
 
         # Use path relative to this file for robustness
         reflection_prompt_path = os.path.join(
@@ -666,11 +725,12 @@ class BrowserAgent(AliasAgentBase):
             async for content_chunk in reflection_res:
                 reflection_text = content_chunk.content[0]["text"]
                 print_msg.content = content_chunk.content
-                await self.print(print_msg, last=False)
+                # await self.print(print_msg, last=False)
         else:
             reflection_text = reflection_res.content[0]["text"]
         print_msg.content = [TextBlock(type="text", text=reflection_text)]
-        await self.print(print_msg, last=True)
+        # await self.print(print_msg, last=True)
+        logger.info(reflection_text)
 
         subtasks = []
         try:
@@ -687,7 +747,7 @@ class BrowserAgent(AliasAgentBase):
         self.subtasks = subtasks
         self.current_subtask_idx = 0
         self.current_subtask = self.subtasks[0] if self.subtasks else None
-        self.original_task = original_task.content
+        self.original_task = original_task.get_text_content()
 
         formatted_task = "The original task is: " + self.original_task + "\n"
         try:
@@ -723,7 +783,7 @@ class BrowserAgent(AliasAgentBase):
         """
 
         tool_call = ToolUseBlock(
-            id=str(uuid.uuid4()),  # 添加唯一的 ID
+            id=str(uuid.uuid4()),  # Add the unique ID
             name="browser_tabs",
             input={"action": "list"},
             type="tool_use",
@@ -1161,6 +1221,7 @@ class BrowserAgent(AliasAgentBase):
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
         """Generate a response when the agent has completed all subtasks."""
+        # breakpoint()
         hint_msg = Msg(
             "user",
             _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT,
@@ -1197,6 +1258,7 @@ class BrowserAgent(AliasAgentBase):
 
             res_msg.content = summary_text
             await self.print(res_msg, False)
+            # logger.info(summary_text)
             # Validate finish status
             finish_status = await self._validate_finish_status(summary_text)
             logger.info(f"Finish status: {finish_status}")
@@ -1251,137 +1313,6 @@ class BrowserAgent(AliasAgentBase):
                 metadata={"success": False},
                 is_last=True,
             )
-
-    async def image_understanding(
-        self,
-        object_description: str,
-        task: str,
-    ) -> ToolResponse:
-        """
-        Find the object on the website that satisfies the description,
-        take screenshot with regard to the object, and return the solution to the task.
-        For example, solve OCR problems, identify small objects, etc.
-        Args:
-            object_description (str): Human-readable description of the target element (e.g., 'captcha').
-            task (str): The specific task to solve (e.g., 'find the text to fill in the captcha').
-        Returns:
-            ToolResponse: Contains screenshot and solution to the task.
-        """
-        # Step 1: Query the model to locate the element and its reference
-        sys_prompt = (
-            "You are a web page analysis expert. Given the following page snapshot and object description, "
-            "identify the exact element and its reference string (ref) that matches the description. "
-            'Return ONLY a JSON object: {"element": <element description>, "ref": <ref string>}'
-        )
-        # Get current page snapshot
-        snapshot_chunks = await self._get_snapshot_in_text()
-        page_snapshot = snapshot_chunks[0] if snapshot_chunks else ""
-        user_prompt = (
-            f"Object description: {object_description}\n"
-            f"Page snapshot:\n{page_snapshot}"
-        )
-        prompt = await self.formatter.format(
-            msgs=[
-                Msg("system", sys_prompt, role="system"),
-                Msg("user", user_prompt, role="user"),
-            ],
-        )
-        res = await self.model(prompt)
-        if self.model.stream:
-            async for chunk in res:
-                model_text = chunk.content[0]["text"]
-        else:
-            model_text = res.content[0]["text"]
-        # Parse model output for element/ref
-        try:
-            if "```json" in model_text:
-                model_text = model_text.replace("```json", "").replace(
-                    "```",
-                    "",
-                )
-            element_info = json.loads(model_text)
-            element = element_info.get("element", "")
-            ref = element_info.get("ref", "")
-        except Exception:
-            return ToolResponse(
-                content=[
-                    TextBlock(
-                        type="text",
-                        text="Failed to parse element/ref from model output.",
-                    ),
-                ],
-                metadata={"success": False},
-            )
-
-        # Step 2: Take screenshot of the element
-        screenshot_tool_call = ToolUseBlock(
-            id=str(uuid.uuid4()),
-            name="browser_take_screenshot",
-            input={"element": element, "ref": ref},
-            type="tool_use",
-        )
-        screenshot_response = await self.toolkit.call_tool_function(
-            screenshot_tool_call,
-        )
-        image_data = None
-        async for chunk in screenshot_response:
-            if (
-                chunk.content
-                and len(chunk.content) > 1
-                and "data" in chunk.content[1]
-            ):
-                image_data = chunk.content[1]["data"]
-
-        # Step 3: Query the model to solve the task using the screenshot and context
-        sys_prompt_task = (
-            "You are a web automation expert. Given the object description, screenshot, and page context, "
-            "solve the following task. Return ONLY the answer as plain text."
-        )
-        # Prepare content blocks for multimodal input
-        content_blocks = [
-            TextBlock(
-                type="text",
-                text=f"Object description: {object_description}\nTask: {task}\nPage snapshot:\n{page_snapshot}",
-            ),
-        ]
-        # Attach screenshot if available
-
-        if image_data:
-            image_block = ImageBlock(
-                type="image",
-                source=Base64Source(
-                    type="base64",
-                    media_type="image/png",
-                    data=image_data,
-                ),
-            )
-            content_blocks.append(image_block)
-
-        prompt_task = await self.formatter.format(
-            msgs=[
-                Msg("system", sys_prompt_task, role="system"),
-                Msg("user", content_blocks, role="user"),
-            ],
-        )
-        res_task = await self.model(prompt_task)
-        if self.model.stream:
-            async for chunk in res_task:
-                answer_text = chunk.content[0]["text"]
-        else:
-            answer_text = res_task.content[0]["text"]
-
-        # Step 4: Return ToolResponse with screenshot and answer
-        return ToolResponse(
-            content=[
-                TextBlock(
-                    type="text",
-                    text=(
-                        f"Screenshot taken for element: {element}\nref: {ref}\n"
-                        f"Task solution: {answer_text}"
-                    ),
-                ),
-            ],
-        )
 
     async def _validate_finish_status(self, summary: str) -> str:
         """Validate if the agent has completed its task based on the summary."""

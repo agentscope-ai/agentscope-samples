@@ -1,0 +1,100 @@
+services:
+  memory-service:
+    image: alias-memory-service-v1
+    ports:
+      - "6380:6380"
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+      # Backend service configuration (for InnerClient integration)
+      - BACKEND_HOST=${BACKEND_HOST:-host.docker.internal}
+      - BACKEND_PORT=${BACKEND_PORT:-8001}
+      - BACKEND_URL=${BACKEND_URL:-http://host.docker.internal:8001}
+      # DashScope API configuration
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - DASHSCOPE_API_BASE_URL=${DASHSCOPE_API_BASE_URL}
+      - DASHSCOPE_MODEL_4_MEMORY=${DASHSCOPE_MODEL_4_MEMORY}
+      - DASHSCOPE_MODEL=${DASHSCOPE_MODEL:-gpt-4o}
+      # Neo4j configuration
+      - NEO4J_URL=${NEO4J_URL:-bolt://localhost:7687}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-12345678}
+      # Redis configuration
+      - USER_PROFILING_REDIS_HOST=${USER_PROFILING_REDIS_HOST:-user-profiling-redis}
+      - USER_PROFILING_REDIS_PORT=${USER_PROFILING_REDIS_PORT:-6379}
+      - USER_PROFILING_REDIS_DB=${USER_PROFILING_REDIS_DB:-1}
+      - USER_PROFILING_REDIS_PASSWORD=${USER_PROFILING_REDIS_PASSWORD}
+      # Task expiration settings
+      - USER_PROFILING_TASK_EXPIRY_HOURS=${USER_PROFILING_TASK_EXPIRY_HOURS:-24}
+      - USER_PROFILING_CLEANUP_MAX_AGE_HOURS=${USER_PROFILING_CLEANUP_MAX_AGE_HOURS:-24}
+      # Qdrant vector store configuration
+      - QDRANT_HOST=${QDRANT_HOST:-user-profiling-qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME:-my_mem0_memory}
+      - QDRANT_EMBEDDING_MODEL_DIMS=${QDRANT_EMBEDDING_MODEL_DIMS:-1536}
+      # Logging configuration
+      - LOGGING_DIR=/app/logs
+    volumes:
+      - ../../../logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - alias-network
+    # Enable host.docker.internal on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+    depends_on:
+      user-profiling-redis:
+        condition: service_healthy   # ✅ wait for Redis to be healthy
+      user-profiling-qdrant:
+        condition: service_started   # ✅ wait for Qdrant to start
+  # Redis for user profiling service
+  user-profiling-redis:
+    image: redis:latest
+    ports:
+      - "7000:6379"
+    command: redis-server --appendonly yes 
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - alias-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+# Qdrant vector database for memory storage 
+  user-profiling-qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - alias-network
+
+
+volumes:
+  redis_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins: 
+
+networks:
+  alias-network:
+    driver: bridge
+
+  

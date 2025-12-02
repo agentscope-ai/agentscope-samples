@@ -1,0 +1,16 @@
+.chatInput {
+  :global {
+    .sps-sender-mode-select-display-flex {
+      .spark-icon {
+        display: none !important;
+      }
+    }
+  }
+}
+.badge {
+  background-color: #0b83f1;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+}

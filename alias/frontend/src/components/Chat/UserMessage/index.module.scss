@@ -1,0 +1,74 @@
+.userMessageFlex {
+  margin-bottom: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  .userMessageText {
+    width: 100%;
+  }
+  .userContentFlex {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sps-color-primary-bg);
+    padding: 12px 16px;
+    border-radius: 8px;
+    max-width: 80%;
+  }
+}
+
+.roadmapCard {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 6px 0 rgba(99, 102, 241, 0.06);
+  padding: 10px 18px;
+  min-width: 140px;
+  max-width: 260px;
+  margin-bottom: 0;
+  background-color: var(--sps-color-bg-base);
+  box-sizing: border-box;
+  border: 1px solid var(--sps-color-border-secondary);
+  &:hover,
+  &.selected {
+    box-shadow: 0 2px 12px 0 rgba(99, 102, 241, 0.12);
+  }
+}
+
+.roadmapLeft {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--sps-color-fill-tertiary);
+}
+
+.roadmapRight {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  .description {
+    color: var(--sps-color-text-quaternary);
+  }
+  .title {
+    font-size: 14px;
+    color: var(--sps-color-text);
+    font-weight: 500;
+  }
+}
+.diffRoadmap {
+  height: 600px;
+  border-top: 1px solid var(--sps-color-border-secondary);
+  .left {
+    border-right: 1px solid var(--sps-color-border-secondary);
+  }
+  .diffRoadmapJson {
+    width: 50%;
+    height: 100%;
+    overflow: auto;
+    padding: 20px 18px;
+  }
+}

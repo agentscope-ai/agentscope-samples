@@ -1,0 +1,227 @@
+.markdown {
+  // Basic text styles
+  font-size: 14px;
+  line-height: 1.4;
+  // Ensure container does not exceed parent width
+  width: 100%;
+  // Limit maximum width
+  max-width: 100%;
+  // overflow: 'hidden',
+
+  // Heading styles
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0.3em 0 0.1em;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 1.4em;
+  }
+
+  h2 {
+    font-size: 1.2em;
+  }
+
+  h3 {
+    font-size: 1.1em;
+  }
+
+  h4 {
+    font-size: 1em;
+  }
+
+  h5 {
+    font-size: 0.9em;
+  }
+
+  h6 {
+    font-size: 0.8em;
+  }
+
+  // Paragraph styles
+  p {
+    margin: 0;
+    line-height: 1.4;
+
+    &+p {
+      margin-top: 0.2em;
+    }
+  }
+
+  // List styles
+  ul,
+  ol {
+    margin: 0.1em 0;
+    padding-left: 1.2em;
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+
+    p {
+      margin: 0;
+      display: inline-block;
+    }
+
+    &+li {
+      margin-top: 0.1em;
+    }
+  }
+
+  // Code styles
+  code {
+    padding: 0.1em 0.2em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(175, 184, 193, 0.2);
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  }
+
+  pre {
+    padding: 8px;
+    margin: 0.2em 0;
+    font-size: 85%;
+    line-height: 1.4;
+    background-color: rgba(175, 184, 193, 0.2);
+    border-radius: 4px;
+
+    code {
+      padding: 0;
+      margin: 0;
+      background-color: transparent;
+      border: 0;
+    }
+  }
+
+  // Quote styles
+  blockquote {
+    margin: 0.2em 0;
+    padding: 0 0.5em;
+    color: #656d76;
+    border-left: 0.2em solid #d0d7de;
+  }
+
+  // Table styles
+  table {
+    margin: 0.2em 0;
+    border-spacing: 0;
+    border-collapse: collapse;
+    width: 100%;
+
+    th,
+    td {
+      padding: 4px 8px;
+      border: 1px solid #d0d7de;
+    }
+
+    tr {
+      background-color: #ffffff;
+      border-top: 1px solid #d0d7de;
+
+      &:nth-child(2n) {
+        background-color: #f6f8fa;
+      }
+    }
+  }
+
+  // Image styles
+  img {
+    max-width: 100%;
+    height: auto;
+    margin: 0.2em 0;
+  }
+
+  // Divider styles
+  hr {
+    height: 1px;
+    margin: 0.2em 0;
+    background-color: #d0d7de;
+    border: 0;
+  }
+
+  // Link styles
+  a {
+    color: #0969da;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // Specifically handle spaces created by line breaks
+  br {
+    // Changed to inline display
+    display: inline;
+    // Preserve line break effect
+    white-space: pre;
+    margin: 0;
+    padding: 0;
+    height: 0.3em;
+    visibility: visible;
+  }
+
+  // Handle consecutive line breaks
+  br+br {
+    display: none;
+  }
+
+  // Handle line breaks in paragraphs
+  p {
+    br {
+      display: inline;
+      white-space: pre;
+      height: 0.3em;
+    }
+  }
+
+  // Handle line breaks in list items
+  li {
+    br {
+      display: inline;
+      white-space: pre;
+      height: 0.3em;
+    }
+  }
+
+  // Task list styles
+  input[type="checkbox"] {
+    margin: 0 0.3em 0 0;
+    vertical-align: middle;
+  }
+
+  // Task list item styles
+  li:has(input[type="checkbox"]) {
+    list-style: none;
+    margin-left: -1.2em;
+    padding-left: 1.2em;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.2em;
+
+    p {
+      margin: 0;
+      flex: 1;
+    }
+  }
+
+  // Remove extra spacing from first and last elements
+  *:first-child {
+    margin-top: 0;
+  }
+
+  *:last-child {
+    margin-bottom: 0;
+  }
+}

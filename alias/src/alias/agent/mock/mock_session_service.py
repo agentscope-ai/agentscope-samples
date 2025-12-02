@@ -4,7 +4,7 @@
 # pylint: skip-file
 import uuid
 import os
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Literal
 import json
 from loguru import logger
 from datetime import datetime
@@ -41,10 +41,20 @@ class SessionEntity:
     upload_files: List = []
     is_chat: bool = False
 
-    def __init__(self):
+    def __init__(
+        self,
+        chat_mode: Literal[
+            "general",
+            "dr",
+            "browser",
+            "bi",
+            "finance",
+        ] = "general",
+    ):
         self.user_id: uuid.UUID = uuid.uuid4()
         self.conversation_id: uuid.UUID = uuid.uuid4()
         self.session_id: uuid.UUID = uuid.uuid4()
+        self.chat_mode = chat_mode
 
     def ids(self):
         return {
@@ -95,7 +105,7 @@ class MockSessionService:
             f"\n{json.dumps(self.plan.content, indent=4, ensure_ascii=False)}"
             "\n" + "==" * 10 + "\n"
         )
-        # logger.log("SEND_PLAN", content)
+        logger.log("SEND_PLAN", content)
         with open(self.log_storage_path, "a") as file:
             # Append the content
             file.write(content)

@@ -1,0 +1,4 @@
+<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="8" fill="#4285F4"/> <!-- Blue background -->
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#FFFFFF" font-size="14" font-family="Arial, sans-serif">DOC</text> <!-- Display 'DOC' text in the center -->
+</svg>

@@ -6,8 +6,6 @@ This module provides an improved read_file tool that wraps the
 original read_file functionality and adds support for
 reading specific line ranges from files.
 """
-
-import asyncio
 import os
 from typing import Optional
 
@@ -306,18 +304,3 @@ def _transfer_to_markdown_text(
         }
 
     return result
-
-
-if __name__ == "__main__":
-    from alias.agent.tools.sandbox_util import copy_local_file_to_workspace
-
-    with AliasSandbox() as box:
-        res = copy_local_file_to_workspace(
-            box,
-            "/Users/zitao.l/Downloads/22051_Which_LLM_Multi_Agent.pdf",
-            "/workspace/test.pdf",
-        )
-        print(res)
-        toolset = ImprovedFileOperations(box)
-        res = asyncio.run(toolset.read_file("/workspace/test.pdf"))
-        print(res)

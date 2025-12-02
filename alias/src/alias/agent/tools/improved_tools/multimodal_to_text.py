@@ -10,7 +10,6 @@ from agentscope.message import TextBlock
 
 from alias.agent.tools.sandbox_util import (
     get_workspace_file,
-    download_workspace_file_from_oss,
 )
 from alias.runtime.alias_sandbox import AliasSandbox
 
@@ -183,7 +182,7 @@ class DashScopeMultiModalTools:
                 operation failed.
         """
 
-        # Handle different types of audio file URLs
+        # Handle different types of image file URLs
         if image_url.startswith(("http://", "https://")):
             # For web URLs, use the URL directly
             image_source = image_url
@@ -194,10 +193,11 @@ class DashScopeMultiModalTools:
                 image_url,
             )
 
+            suffix = os.path.splitext(image_url)[1].lower() or ".png"
             # Create a temporary file
             with tempfile.NamedTemporaryFile(
                 delete=False,
-                suffix=".mp3",
+                suffix=suffix,
             ) as temp_file:
                 temp_file.write(image_buffer.getvalue())
                 image_source = temp_file.name
@@ -263,48 +263,3 @@ class DashScopeMultiModalTools:
                     ),
                 ],
             )
-
-
-if __name__ == "__main__":
-    with AliasSandbox() as box:
-        tool_result = box.call_tool(
-            "run_shell_command",
-            arguments={"command": "apt update"},
-        )
-        print(tool_result)
-        tool_result = box.call_tool(
-            "run_shell_command",
-            arguments={
-                "command": "apt install wget",
-            },
-        )
-        print(f"{tool_result}")
-
-        tool_result = box.call_tool(
-            "run_shell_command",
-            arguments={
-                "command": "pip install numpy pandas",
-            },
-        )
-        print(f"{tool_result}")
-
-        picture_path = "/workspace/5b2a14e8-6e59-479c-80e3-4696e8980152.jpg"
-        download_workspace_file_from_oss(
-            box,
-            oss_url=(
-                "https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/zitao_l/"
-                "GAIA/2023/validation/"
-                "5b2a14e8-6e59-479c-80e3-4696e8980152.jpg"
-            ),
-            to_path=picture_path,
-        )
-        toolset = DashScopeMultiModalTools(
-            sandbox=box,
-            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", ""),
-        )
-        result = toolset.dashscope_image_to_text(
-            image_url=picture_path,
-            prompt="Describe the image",
-        )
-
-        print(result)

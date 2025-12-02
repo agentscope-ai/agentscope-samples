@@ -1,0 +1,22 @@
+.container {
+  padding: 16px 0;
+}
+.share {
+  margin-bottom: 24px;
+  margin-top: 12px;
+}
+.urlContainer {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.urlInput {
+  flex: 1;
+}
+
+.description {
+  color: var(--sps-color-text-tertiary);
+  font-size: 14px;
+  margin: 0;
+}

@@ -1,0 +1,18 @@
+.toolCallMessage {
+  background-color: var(--sps-color-fill-tertiary);
+  border-radius: 8px;
+  .toolCallHeader {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+  .arguments {
+    border-left: solid 1px var(--sps-color-border-secondary);
+    margin: 0px 12px 12px 20px;
+  }
+  .contents {
+    white-space: pre-wrap;
+    margin-left: 16px;
+  }
+}

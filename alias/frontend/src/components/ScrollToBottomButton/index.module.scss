@@ -1,0 +1,54 @@
+// Key stylesheet section
+.scrollRoot {
+  position: relative;
+  height: 100%;
+  overflow: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  // Hide scrollbar but keep scroll functionality
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.scrollButton {
+  position: absolute;
+  right: 50%;
+  bottom: 20px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--scroll-button-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+
+  &:hover {
+    background: var(--scroll-button-bg-hover);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+  }
+
+
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

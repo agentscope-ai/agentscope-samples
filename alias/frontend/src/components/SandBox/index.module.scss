@@ -1,0 +1,22 @@
+.sandbox {
+  width: 100%;
+  height: calc(100vh - 134px);
+  overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  .title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 12px;
+    background-color: var(--sps-color-fill-tertiary);
+  }
+  .sandboxIframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    flex: 1;
+  }
+}

@@ -9,7 +9,7 @@ from typing import Optional
 
 from loguru import logger
 
-from agentscope_runtime.common.container_clients.docker_client import (  # noqa: E501  # pylint: disable=C0301
+from agentscope_runtime.sandbox.manager.container_clients.docker_client import (  # noqa: E501  # pylint: disable=C0301
     DockerClient,
 )
 from alias.runtime.alias_sandbox import AliasSandbox
@@ -420,40 +420,3 @@ def copy_local_file_to_workspace(
             },
         ],
     }
-
-
-if __name__ == "__main__":
-    with AliasSandbox() as box:
-        create_or_edit_workspace_file(
-            box,
-            "/workspace/test1.md",
-            "This is the content of test1.md",
-        )
-        create_workspace_directory(box, "/workspace/subdir")
-        create_or_edit_workspace_file(
-            box,
-            "/workspace/subdir/test2.md",
-            "This is the content of test2.md",
-        )
-        create_or_edit_workspace_file(
-            box,
-            "/workspace/subdir/test3.md",
-            "test3.md test3.md test3.md",
-        )
-        create_or_edit_workspace_file(
-            box,
-            "/workspace/test4.md",
-            "test4.md test4.md test4.md",
-        )
-        print("try to copy file")
-        copy_local_file_to_workspace(
-            sandbox=box,
-            local_path="/Users/zitao.l/Downloads/ms_online.png",
-            target_path="/workspace/ms_online.png",
-        )
-        print(list_workspace_directories(box, recursive=False))
-        # print(download_complete_workspace(box))
-        clean_workspace(box)
-        print(list_workspace_directories(box, recursive=False))
-        input("Press Enter to continue...")
-        print(json.dumps(box.list_tools(), indent=2))

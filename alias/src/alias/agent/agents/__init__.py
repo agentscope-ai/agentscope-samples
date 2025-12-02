@@ -3,8 +3,14 @@ from alias.agent.agents._alias_agent_base import AliasAgentBase
 from alias.agent.agents._meta_planner import MetaPlanner
 from alias.agent.agents._browser_agent import BrowserAgent
 from alias.agent.agents._react_worker import ReActWorker
-from alias.agent.agents._deep_research_agent import DeepResearchAgent
-from alias.agent.agents._planning_tools import share_tools
+from alias.agent.agents._deep_research_agent_v2 import (
+    DeepResearchAgent,
+    init_dr_toolkit,
+)
+from alias.agent.agents._data_science_agent import (
+    DataScienceAgent,
+    init_ds_toolkit,
+)
 
 __all__ = [
     "AliasAgentBase",
@@ -12,5 +18,7 @@ __all__ = [
     "BrowserAgent",
     "ReActWorker",
     "DeepResearchAgent",
-    "share_tools",
+    "DataScienceAgent",
+    "init_ds_toolkit",
+    "init_dr_toolkit",
 ]

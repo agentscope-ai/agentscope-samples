@@ -1,0 +1,34 @@
+.modalWrap {
+  display: grid;
+  place-items: center;
+  h1 {
+    color: var(--sps-color-text);
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+    text-align: center;
+  }
+  .tips {
+    width: 336px;
+    text-align: center;
+    color: var(--sps-color-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    margin-top: 5px;
+  }
+  .logBtn {
+    height: 2.5rem;
+    width: 336px;
+    margin-top: 30px;
+    font-size: 100%;
+    opacity: 1;
+  }
+  .registerBtn {
+    height: 2.5rem;
+    width: 336px;
+    margin-top: 10px;
+    font-size: 100%;
+    border-width: 1px;
+  }
+}

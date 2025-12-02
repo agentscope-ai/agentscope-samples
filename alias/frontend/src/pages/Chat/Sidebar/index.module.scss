@@ -1,0 +1,172 @@
+.sidebarWrapper {
+  @apply h-full max-h-screen relative flex flex-col;
+  width: 72px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-right: 1px solid var(--sps-color-border-secondary);
+  background: transparent;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  &.expanded {
+    width: 320px;
+  }
+}
+
+.sidebar {
+  @apply w-full h-full flex flex-col items-center;
+  padding: 16px;
+}
+
+.sidebarLogo {
+  @apply flex justify-between items-center space-x-2;
+  width: 100%;
+  height: 40px;
+  /* Explicit height to match mini sidebar item/logo area */
+  margin-bottom: 8px;
+  /* Consistent margin */
+}
+
+// @apply mb-8 transition-transform hover:scale-105;
+.sidebarNav {
+  @apply flex-1 flex flex-col items-center;
+  width: 100%;
+  overflow-y: auto;
+
+  /* Hide scrollbar but still scrollable */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+
+  /* Firefox */
+  .active {
+    background-color: var(--sps-color-fill-tertiary);
+  }
+}
+
+.sidebarItem {
+  @apply p-2 flex items-center space-x-2 mt-1 cursor-pointer rounded-md font-medium;
+  height: 40px;
+  /* Fixed height 40px */
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  /* Animate padding and other props */
+
+  &:hover {
+    background-color: var(--sps-color-fill-tertiary);
+  }
+
+  .itemText {
+    transition: opacity 0.2s ease-in-out, width 0.2s ease-in-out, margin 0.2s ease-in-out;
+    opacity: 1;
+    width: auto;
+  }
+}
+
+.collapsed {
+  .sidebarItem {
+    padding-left: 10px;
+    /* Center 20px icon in 40px width (10+20+10) */
+    padding-right: 10px;
+
+    .itemText {
+      opacity: 0;
+      width: 0;
+      margin-left: 0;
+      /* Remove space-x-2 margin */
+    }
+  }
+
+  .sidebarNav {
+    align-items: center;
+  }
+}
+
+.historyPopover {
+  :global {
+    .ant-popover-inner {
+      padding: 0;
+    }
+
+    .agent-scope-chat-history-panel-item {
+      margin: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      border-radius: 0 !important;
+
+      &:hover {
+        background-color: var(--sps-color-fill-tertiary);
+      }
+
+      &:not(:last-child) {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    .agent-scope-chat-history-panel,
+    .agent-scope-chat-history-panel-list,
+    [class*="agent-scope-chat-history"] {
+      gap: 0 !important;
+      row-gap: 0 !important;
+      column-gap: 0 !important;
+    }
+
+    // Remove all possible spacing
+    * {
+      &[class*="agent-scope-chat-history-panel-item"] {
+        margin: 0 !important;
+      }
+    }
+  }
+}
+
+.popoverContent {
+  width: 240px;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  // Ensure HistoryPanel has no extra spacing
+  >* {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.popoverHeader {
+  padding: 8px 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  /* No border-bottom as requested */
+}
+
+.siderBarHistory {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.iconButton {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}
+
+.sidebarFooter {
+  @apply mt-auto flex flex-col items-center gap-4 pt-4;
+  width: 100%;
+
+  .footerBox {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .footerLeft {
+    display: flex;
+    align-items: center;
+  }
+}

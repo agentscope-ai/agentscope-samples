@@ -6,7 +6,7 @@ import traceback
 
 import aiofiles
 
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, UploadFile, File
 from fastapi.responses import FileResponse
 
 workspace_router = APIRouter()
@@ -78,6 +78,7 @@ async def get_workspace_file(
         ) from e
 
 
+
 @workspace_router.post(
     "/workspace/files",
     summary="Create or edit a file within the /workspace directory",
@@ -102,6 +103,44 @@ async def create_or_edit_file(
         raise HTTPException(
             status_code=500,
             detail=f"Error creating or editing file: {str(e)}",
+        ) from e
+
+
+@workspace_router.post(
+    "/workspace/upload",
+    summary="Upload a binary file to the /workspace directory",
+)
+async def upload_file(
+    file: UploadFile = File(..., description="Binary file to upload"),
+):
+    """
+    Upload a binary file to the /workspace directory.
+    """
+    try:
+        full_path = ensure_within_workspace(file.filename)
+
+        # Ensure the directory exists
+        directory = os.path.dirname(full_path)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
+
+        # Write the binary file content
+        async with aiofiles.open(full_path, "wb") as f:
+            content = await file.read()
+            await f.write(content)
+
+        return {
+            "message": "File uploaded successfully.",
+            "file_path": full_path,
+            "file_size": len(content),
+        }
+    except Exception as e:
+        logger.error(
+            f"Error uploading file: {str(e)}:\n{traceback.format_exc()}",
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading file: {str(e)}",
         ) from e
 
 

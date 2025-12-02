@@ -1,15 +1,63 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# macOS
-.DS_Store
+# dependencies
+frontend/node_modules
+frontend/package-lock.json
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.env
+.env.*
+!.env.example
+__pycache__/
+*.db
+*.rdb
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Logs
-logs/
-src/alias/agent/agents/log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+openapi-ts*.log
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
 # Python
 *.py[cod]
 *$py.class
+uv.lock
 
-# Package
 alias.egg-info/
+
+# Logs
+logs/
+*.log
+dr_execution_trac/
+sessions_mount_dir/
+
+# Performance test
+tests/performance_test/tmp_runtime_config/runtime_example.json

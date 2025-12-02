@@ -1,0 +1,75 @@
+.container {
+  width: 100%;
+  height: 100vh;
+  background-color: var(--sps-color-bg-base);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .logWrap {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: #e3e3e3;
+    border-radius: 1rem;
+    // height: 544px;
+    // width: 448px;
+    // background-color: rgba(0, 0, 0, 0) 0px 0px 0px 0px;
+    // box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    .title {
+      font-weight: 500;
+      font-size: 1.5rem;
+      line-height: 2rem;
+      padding: 20px;
+    }
+  }
+  .logBtn{
+    opacity: 1;
+    background-color: rgb(97 92 237);
+    border-radius: 0.5rem;
+    height: 2.5rem;
+    cursor: pointer;
+    width: 336px;
+    margin-top: 30px;
+    color: rgb(255 255 255);
+    font-size: 100%;
+    &:hover {
+        background-color: rgb(97, 92, 237, 0.9);
+      }
+  }
+  .disablebBtn{
+    opacity: 1;
+    background-color: #f0f0f0;
+    border-radius: 0.5rem;
+    height: 2.5rem;
+    width: 336px;
+    margin-top: 30px;
+    font-size: 100%;
+    color: #999;
+    border-color: #d9d9d9;
+    cursor: not-allowed;
+  }
+  :global {
+    .sps-pro-form-login-container {
+      height: 100%;
+      background-color: none;
+      box-sizing: border-box;
+      border-width: 0;
+      border-style: solid;
+      border-color: #e3e3e3;
+      border-radius: 1rem;
+      width: 448px;
+      background-color: rgba(0, 0, 0, 0);
+      box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.1);
+    }
+    .sps-pro-form-login-main {
+      margin-top: 40px;
+      .ant-btn {
+        display: none;
+      }
+    }
+  }
+}

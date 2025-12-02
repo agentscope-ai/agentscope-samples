@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#FAFAFA] text-gray-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg;
+  }
+  
+  .btn-primary {
+    @apply bg-purple-600 text-white hover:bg-purple-700;
+  }
+} 
+
+*, ::before, ::after {
+  border-color: var(--filenode-selected-bg);
+}
+:root {
+  --page-bg: #FAFAFB;
+  --page-container: #EDEFF5;
+  --page-content: #F7F8FC;
+  --text-primary: #2C2C36;
+  --text-secondary: #585A73;
+  --text-tertiary: #8F91A8;
+  --border-input: #EDEFF5;
+  --border-option: #C8CAD9;
+  --border-divider: #E0E2EB;
+  --step-bg: #6BBCFF;
+  --step-control: #F2F3F7;
+  --step-progress: rgba(44, 44, 54, 0.8);
+  --message-content: #FFFFFF;
+  --message-border: #d9d9d9;
+  --message-text: #1F2937;
+  --message-fileItem-bg: #F8FAFC;
+  --message-fileItem-text: #222222;
+  --message-clarification-bg: #EDEFF5;
+  --message-option-bg: #FFFFFF;
+  --message-option-border: #C8CAD9;
+  --message-option-bg-hover: #F3F4F6;
+  --message-toolcall-bg: #EDEFF5;
+  --sender-bg: #ffffff;
+  --scroll-button-bg: rgba(255, 255, 255, 0.9);
+  --scroll-button-bg-hover: rgba(255, 255, 255, 1);
+  --task-overview-bg: linear-gradient(135deg, #f6f8ff 0%, #ffffff 100%);
+  --task-index-bg: #ffffff;
+  --card-border-bottom: #f0f0f0;
+  --artifacts-wrap-bg: #F5F5F5;
+  --filenode-selected-bg: #e5e7eb;
+  --sidebar-bg: #ffffff;
+  --sidebar-conversation-bg: #f9fafb;
+  --sidebar-conversation-hover-bg: #e1e2e6;
+  --sidebar-conversation-text: #6b7280;
+  --sidebar-conversation-hover-text: #374151;
+  --login-bg: rgba(0, 0, 0, 0);
+  --share-border: #e8e8e8;
+}
+.dark {
+  --page-bg: #141414;
+  --page-container:#141414; 
+  --page-content: #252525;
+  --text-primary: rgba(255, 255, 255, 0.85);
+  --text-secondary: #B0B0B0;
+  --text-tertiary: #7A7A7A;
+  --border-input: #3D3D3D;
+  --border-option: #4A4A4A;
+  --border-divider: #333333;
+  --step-bg: #3A7CA5;
+  --step-control: #3D3D3D;
+  --step-progress: rgba(255, 255, 255, 0.8);
+  --message-content: rgba(255, 255, 255, 0.12);
+  --message-border: rgba(255, 255, 255, 0.12);
+  --message-text: rgba(255, 255, 255, 0.85);
+  --message-fileItem-bg: #333333;
+  --message-fileItem-text: #CCCCCC;
+  --message-clarification-bg: #373a3d;
+  --message-option-bg: #1C1C1C;
+  --message-option-border: #333333;
+  --message-option-bg-hover: #4D4D4D;
+  --message-toolcall-bg: #484C54;
+  --sender-bg: #252525;
+  --scroll-button-bg: rgba(255, 255, 255, 0.4);
+  --scroll-button-bg-hover: rgba(255, 255, 255, 0.5);
+  --task-overview-bg: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  --task-index-bg: #111a2c;
+  --card-border-bottom: #2a2a2a;
+  --artifacts-wrap-bg: #131414;
+  --filenode-selected-bg: #374151;
+  --sidebar-bg: #1f1f1f;
+  --sidebar-conversation-bg: #111827;
+  --sidebar-conversation-hover-bg: #1f2937;
+  --sidebar-conversation-text: #9ca3af;
+  --sidebar-conversation-hover-text: #e5e7eb;
+  --login-bg: rgba(0, 0, 0, 1);
+  --share-border: #374151;
+}

@@ -3,26 +3,38 @@
 import os
 import traceback
 from datetime import datetime
+import asyncio
+from typing import Literal
 
 from loguru import logger
 
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.mcp import StdIOStatefulClient
 from agentscope.memory import InMemoryMemory
-from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
-from alias.agent.agents import BrowserAgent, DeepResearchAgent, MetaPlanner
-from alias.agent.agents._planning_tools._worker_manager import share_tools
-from alias.agent.mock import MockSessionService
+from alias.agent.agents import (
+    BrowserAgent,
+    DeepResearchAgent,
+    MetaPlanner,
+    DataScienceAgent,
+    init_ds_toolkit,
+    init_dr_toolkit,
+)
+from alias.agent.agents.meta_planner_utils._worker_manager import share_tools
+from alias.agent.mock import MockSessionService as SessionService
 from alias.agent.tools import AliasToolkit
-from alias.agent.tools.improved_tools import DashScopeMultiModalTools
-from alias.agent.tools.toolkit_hooks import LongTextPostHook
-from alias.agent.utils.constants import BROWSER_AGENT_DESCRIPTION
 
-# Open source version always uses mock services
-SessionService = MockSessionService
+from alias.agent.utils.constants import (
+    BROWSER_AGENT_DESCRIPTION,
+    DEFAULT_DEEP_RESEARCH_AGENT_NAME,
+    DEEPRESEARCH_AGENT_DESCRIPTION,
+    DS_AGENT_DESCRIPTION,
+)
+from alias.agent.tools.add_tools import add_tools
+from alias.agent.agents.ds_agent_utils import (
+    add_ds_specific_tool,
+)
 
 
 MODEL_FORMATTER_MAPPING = {
@@ -65,53 +77,7 @@ MODEL_CONFIG_NAME = os.getenv("MODEL", "qwen3-max")
 VL_MODEL_NAME = os.getenv("VISION_MODEL", "qwen-vl-max")
 
 
-async def add_tools(
-    toolkit: AliasToolkit,
-):
-    """
-    Adding additional MCP server to the toolkit for the application.
-    Currently added MCP:
-    - multimodal content to text tools (based on DashScope models)
-    - tavily search
-    """
-    try:
-        multimodal_tools = DashScopeMultiModalTools(
-            sandbox=toolkit.sandbox,
-            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", ""),
-        )
-        toolkit.register_tool_function(
-            multimodal_tools.dashscope_audio_to_text,
-        )
-        toolkit.register_tool_function(
-            multimodal_tools.dashscope_image_to_text,
-        )
-    except Exception as e:
-        print(traceback.format_exc())
-        raise e from None
-
-    try:
-        long_text_hook = LongTextPostHook(toolkit.sandbox)
-        tavily_mcp_client = StdIOStatefulClient(
-            name="tavily_mcp_client",
-            command="npx",
-            args=[
-                "-y",
-                "mcp-remote",
-                "https://mcp.tavily.com/mcp/"
-                f"?tavilyApiKey={os.getenv('TAVILY_API_KEY')}",
-            ],
-        )
-        await toolkit.add_and_connet_mcp_client(
-            tavily_mcp_client,
-            enable_funcs=["tavily_search", "tavily_extract"],
-            postprocess_func=long_text_hook.truncate_and_save_response,
-        )
-    except Exception as e:
-        print(traceback.format_exc())
-        raise e from None
-
-
-async def arun_agents(
+async def arun_meta_planner(
     session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
     enable_clarification: bool = True,
@@ -132,6 +98,12 @@ async def arun_agents(
         add_all=True,
     )
     logger.info("Init browser toolkit")
+
+    # Init deep research toolkit
+    deep_research_toolkit = init_dr_toolkit(worker_full_toolkit)
+
+    # Init BI agent toolkit
+    ds_toolkit = init_ds_toolkit(worker_full_toolkit)
 
     try:
         model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
@@ -163,6 +135,39 @@ async def arun_agents(
             description=BROWSER_AGENT_DESCRIPTION,
             worker_type="built-in",
         )
+        # == add deep research agent ===
+        dr_agent = DeepResearchAgent(
+            name=DEFAULT_DEEP_RESEARCH_AGENT_NAME,
+            model=model,
+            formatter=formatter,
+            memory=InMemoryMemory(),
+            toolkit=deep_research_toolkit,
+            session_service=session_service,
+            agent_working_dir="/workspace",
+            max_depth=2,
+            enforce_mode="auto",
+        )
+        meta_planner.worker_manager.register_worker(
+            dr_agent,
+            description=DEEPRESEARCH_AGENT_DESCRIPTION,
+            worker_type="built-in",
+        )
+        # === add BI agent ===
+        ds_agent = DataScienceAgent(
+            name="Data_Science_Agent",
+            model=model,
+            formatter=formatter,
+            memory=InMemoryMemory(),
+            toolkit=ds_toolkit,
+            max_iters=30,
+            session_service=session_service,
+        )
+        meta_planner.worker_manager.register_worker(
+            ds_agent,
+            description=DS_AGENT_DESCRIPTION,
+            worker_type="built-in",
+        )
+
         msg = await meta_planner()
     except Exception as e:
         print(traceback.format_exc())
@@ -172,17 +177,11 @@ async def arun_agents(
     return meta_planner, msg
 
 
-async def test_deepresearch_agent(
-    task_str: str,
+async def arun_deepresearch_agent(
     session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
+    enforce_mode: Literal["general", "finance", "auto"] = "auto",
 ):
-    instruction = Msg(
-        "user",
-        content=task_str,
-        role="user",
-    )
-
     global_toolkit = AliasToolkit(sandbox, add_all=True)
     await add_tools(global_toolkit)
     worker_toolkit = AliasToolkit(sandbox)
@@ -197,38 +196,166 @@ async def test_deepresearch_agent(
         "run_shell_command",
     ]
     share_tools(global_toolkit, worker_toolkit, test_tool_list)
+    worker_agent = DeepResearchAgent(
+        name="Deep_Research_Agent",
+        model=model,
+        formatter=formatter,
+        memory=InMemoryMemory(),
+        toolkit=worker_toolkit,
+        session_service=session_service,
+        agent_working_dir="/workspace",
+        max_depth=2,
+        enforce_mode=enforce_mode,
+    )
     try:
-        worker_agent = DeepResearchAgent(
-            name="Deep_Research_Assistant",
-            sys_prompt=(
-                "You are a helpful assistant that can use provided tools "
-                "to help finish tasks."
-            ),
+        await worker_agent()
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Deep Research Agent execution interrupted by user")
+        raise  # Re-raise so it can be handled in cli.py
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        logger.error(traceback.format_exc())
+        raise e from None
+    finally:
+        try:
+            await global_toolkit.close_mcp_clients()
+        except (RuntimeError, asyncio.CancelledError) as e:
+            # Event loop might be closed during shutdown
+            if "Event loop is closed" in str(e) or isinstance(
+                e,
+                asyncio.CancelledError,
+            ):
+                logger.info(f"Skipping MCP client cleanup: {e}")
+            else:
+                raise
+        except Exception as e:
+            # Log but don't fail on cleanup errors
+            logger.warning(f"Error during MCP client cleanup: {e}")
+
+
+async def arun_finance_agent(
+    session_service: SessionService,  # type: ignore[valid-type]
+    sandbox: Sandbox = None,
+):
+    global_toolkit = AliasToolkit(sandbox, add_all=True)
+    await add_tools(global_toolkit)
+    worker_toolkit = AliasToolkit(sandbox)
+    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
+    test_tool_list = [
+        "tavily_search",
+        "tavily_extract",
+        "write_file",
+        "create_directory",
+        "list_directory",
+        "read_file",
+        "run_shell_command",
+        "SearchHotTopic",
+        # "SearchFinancialNews",
+        "searchRealtimeAiAnalysis",
+        "tdx_wenda_quotes",
+        "tdx_PBHQInfo_quotes",
+    ]
+    share_tools(global_toolkit, worker_toolkit, test_tool_list)
+    worker_toolkit.create_tool_group(
+        group_name="finance",
+        description="Finance Analysis tools",
+        active=True,
+    )
+
+    worker_agent = DeepResearchAgent(
+        name="Deep_Research_Agent",
+        model=model,
+        formatter=formatter,
+        memory=InMemoryMemory(),
+        toolkit=worker_toolkit,
+        session_service=session_service,
+        agent_working_dir="/workspace",
+        max_depth=2,
+        enforce_mode="finance",
+    )
+    try:
+        await worker_agent()
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Deep Agent execution interrupted by user")
+        raise  # Re-raise so it can be handled in cli.py
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        logger.error(traceback.format_exc())
+        raise e from None
+    finally:
+        try:
+            await global_toolkit.close_mcp_clients()
+        except (RuntimeError, asyncio.CancelledError) as e:
+            # Event loop might be closed during shutdown
+            if "Event loop is closed" in str(e) or isinstance(
+                e,
+                asyncio.CancelledError,
+            ):
+                logger.info(f"Skipping MCP client cleanup: {e}")
+            else:
+                raise
+        except Exception as e:
+            # Log but don't fail on cleanup errors
+            logger.warning(f"Error during MCP client cleanup: {e}")
+
+
+async def arun_datascience_agent(
+    session_service: SessionService,  # type: ignore[valid-type]
+    sandbox: Sandbox = None,
+):
+    global_toolkit = AliasToolkit(sandbox, add_all=True)
+    # await add_tools(global_toolkit)
+    worker_toolkit = AliasToolkit(sandbox)
+    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
+    test_tool_list = [
+        "write_file",
+        "run_ipython_cell",
+        "run_shell_command",
+    ]
+    share_tools(global_toolkit, worker_toolkit, test_tool_list)
+    add_ds_specific_tool(worker_toolkit)
+
+    try:
+        worker_agent = DataScienceAgent(
+            name="Data_Science_Agent",
             model=model,
             formatter=formatter,
             memory=InMemoryMemory(),
             toolkit=worker_toolkit,
+            max_iters=30,
             session_service=session_service,
         )
-        await worker_agent(instruction)
+        await worker_agent()
+        # await worker_agent(instruction)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Data Science Agent execution interrupted by user")
+        raise  # Re-raise so it can be handled in cli.py
     except Exception as e:
-        logger.error(f"---> Error: {e}")
+        logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
+        raise e from None
     finally:
-        await global_toolkit.close_mcp_clients()
+        try:
+            await global_toolkit.close_mcp_clients()
+        except (RuntimeError, asyncio.CancelledError) as e:
+            # Event loop might be closed during shutdown
+            if "Event loop is closed" in str(e) or isinstance(
+                e,
+                asyncio.CancelledError,
+            ):
+                logger.info(f"Skipping MCP client cleanup: {e}")
+            else:
+                raise
+        except Exception as e:
+            # Log but don't fail on cleanup errors
+            logger.warning(f"Error during MCP client cleanup: {e}")
 
 
-async def test_browseruse_agent(
-    task_str: str,
+async def arun_browseruse_agent(
     session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
 ):
     time_str = datetime.now().strftime("%Y%m%d%H%M%S")
-    instruction = Msg(
-        "user",
-        content=task_str,
-        role="user",
-    )
 
     model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
     browser_toolkit = AliasToolkit(
@@ -244,13 +371,38 @@ async def test_browseruse_agent(
             memory=InMemoryMemory(),
             toolkit=browser_toolkit,
             max_iters=50,
-            start_url="https://www.google.com",
+            start_url="https://www.bing.com",
             session_service=session_service,
             state_saving_dir=f"./agent-states/run_browser-{time_str}",
         )
-        await browser_agent(instruction)
+        await browser_agent()
     except Exception as e:
         logger.error(f"---> Error: {e}")
         logger.error(traceback.format_exc())
     finally:
         await browser_toolkit.close_mcp_clients()
+
+
+async def arun_agents(
+    session_service: SessionService,  # type: ignore[valid-type]
+    sandbox: Sandbox = None,
+):
+    """
+    This is the entry point for backend service executing agents.
+    """
+    chat_mode = session_service.session_entity.chat_mode
+    if chat_mode == "dr":
+        await arun_deepresearch_agent(session_service, sandbox)
+    elif chat_mode == "browser":
+        await arun_browseruse_agent(session_service, sandbox)
+    elif chat_mode == "ds":
+        await arun_datascience_agent(session_service, sandbox)
+    elif chat_mode == "finance":
+        await arun_finance_agent(session_service, sandbox)
+    else:
+        if chat_mode != "general":
+            logger.warning(
+                f"Unknown chat mode: {chat_mode}."
+                "Invoke general mode instead.",
+            )
+        await arun_meta_planner(session_service, sandbox)

@@ -24,11 +24,27 @@ BROWSER_AGENT_DESCRIPTION = (
     "It is extremely useful for tasks requiring going through a website,"
     "requiring clicking to explore the links on the webpage. "
     "Thus, it is good for tasks that require exploring "
-    "the a webpage domain, a GitHub repo, "
+    "a webpage domain, a GitHub repo, "
     "or check the latest travel (e.g., flight, hotel) information."
     "However, when you have a general information gathering task"
     " or deep research which heavily depends on search engine, "
     "TRY TO CREATE/USE ANOTHER AGENT WITH SEARCH TOOL TO DO SO."
+)
+
+DEFAULT_DEEP_RESEARCH_AGENT_NAME = "Deep_Research_Agent"
+DEEPRESEARCH_AGENT_DESCRIPTION = (
+    "DO NOT INVOKE deep research agent in `execute_worker`."
+    "This is an agent that are designed to conduct deep research about "
+    "a specific topic. "
+    "If you really require to conduct in-depth information gathering, "
+    "use `enter_deep_research_mode` tool."
+)
+DEFAULT_DS_AGENT_NAME = "Data_Science_Agent"
+DS_AGENT_DESCRIPTION = (
+    "DO NOT INVOKE data analysis agent in `execute_worker`."
+    "This is an agent that are designed to perform data analysis tasks. "
+    "If you really want to perform data analysis tasks, "
+    "use `enter_data_analysis_mode` tool."
 )
 
 # tmp file dir

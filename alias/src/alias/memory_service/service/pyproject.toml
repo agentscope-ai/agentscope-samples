@@ -1,0 +1,52 @@
+[project]
+name = "alias-user-profiling-service"
+version = "0.1.0"
+description = "User Profiling Service for Alias"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.11.3",
+    "pydantic-settings>=2.9.1",
+    "httpx>=0.27.0",
+    "mem0ai>=0.1.48",
+    "python-dotenv>=1.0.1",
+    "loguru>=0.6.0",
+    "asyncio-mqtt>=0.16.1",
+    "redis>=6.0.0b2",
+    "celery[redis]>=5.3.1",
+    "aioredis>=2.0.1",
+    "elasticsearch>=9.0.0",
+    "psycopg2-binary>=2.9.10",
+    "sqlmodel>=0.0.24",
+    "tenacity>=8.5.0",
+    "apscheduler>=3.11.0",
+    "aiofiles>=23.2.1",
+    "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "neo4j>=5.0.0",
+    "mem0ai[graph]>=0.1.48",
+    "qdrant-client>=1.7.0",
+    "chromadb>=0.4.0",
+    "weaviate-client>=3.25.0",
+]
+
+[tool.setuptools]
+packages = { find = {} }
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "flake8>=7.0.0",
+] 

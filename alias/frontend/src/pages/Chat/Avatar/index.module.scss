@@ -1,0 +1,50 @@
+.headerButton {
+  @apply w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 ease-in-out;
+  img {
+    @apply opacity-60 transition-all duration-200;
+  }
+
+  &:hover img {
+    @apply opacity-100 scale-105;
+  }
+}
+.userPopover {
+  :global {
+    .sps-popover-content {
+      .sps-popover-inner {
+        padding: 0 !important;
+      }
+    }
+  }
+}
+.popoverAvatarContent {
+  min-width: 240px;
+  min-height: 106px;
+  padding: 5px;
+  .userInfo {
+    padding: 8px
+  }
+  .header {
+    @apply w-8 h-8 rounded-full bg-gray-200 overflow-hidden mr-4;
+  }
+  .name {
+    color: var(--sps-color-text);
+    font-size: 14px;
+  }
+  .email {
+    color: var(--sps-color-text-tertiary);
+    font-size: 12px;
+  }
+  .userButton {
+    border-top: solid 1px var(--sps-color-border-secondary);
+    padding: 12px 0;
+    .item {
+      height: 32px;
+      padding: 8px;
+      cursor: pointer;
+      &:hover {
+        background-color: var(--sps-color-fill-secondary);
+      }
+    }
+  }
+}

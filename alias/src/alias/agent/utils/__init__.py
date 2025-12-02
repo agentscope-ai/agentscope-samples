@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from alias.agent.utils.agent_save_state import AliasAgentStates
+from alias.agent.utils.send_msg import send_as_msg
 
 __all__ = [
-    "AliasAgentStates",
+    "send_as_msg",
 ]
