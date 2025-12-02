@@ -117,7 +117,7 @@ The Financial Analysis mode supports tree-structured search, decomposing complex
 
 At startup, the Data Science mode uses an intelligent router to assign the user's task to one of three core scenarios: Exploratory Data Analysis (EDA), Predictive Modeling, or Exact Data Computation. Each scenario is driven by a dedicated prompt template tailored to its analytical intent. Built on this foundation, it features a scalable file filtering pipeline to quickly locate relevant files in massive data lakes. It robustly parses irregular spreadsheets, including merged cells, multi-level headers, and embedded notes, into structured tables or semantic JSON. It also supports multimodal understanding, enabling summarization and natural-language question answering about visual content. For EDA tasks, it automatically generates interactive HTML reports that combine insights, visualizations, and executable code to ensure transparency and reproducibility.
 
-<!-- ### 🧠 Enhanced Memory System -->
+### 🧠 Enhanced Memory System
 
 <!-- - **Tool Memory (Long-term)**: Persistent storage for tool invocation traces via ReMe, enabling automated summarization and usage guidance. -->
 <!-- - **User Profiling (Long-term)**: Captures and refines user behavior through dynamic candidate scoring and promotion to stable profiles via mem0, seamlessly integrated with frontend interactions. -->
