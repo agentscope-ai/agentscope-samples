@@ -36,3 +36,12 @@ We aim for Alias to serve as an out-of-the-box solution that users can readily d
 
 We welcome more developers to join the community and contribute to ongoing innovation.
 
+## 📢 News
+- **[2025-12]** Five operational modes available: General, Browser Use, Deep Research, Financial Analysis, and Data Science modes.
+
+- **[2025-12]** Memory system upgrades: Tool Memory service for persistent tool invocation traces and User Profiling service for personalized user experiences.
+
+
+- **[2025-12]** Frontend UI redesign in progress with [Spark Design](https://sparkdesign.agentscope.io/) implementation, featuring interrupt controls and artifact editing capabilities.
+
+- **[2025-12]** Backend refactoring on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/): lightweight single-node deployment, simplified user management, and mode-specific bootstrapping.
