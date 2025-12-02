@@ -54,7 +54,7 @@ It provides five operational modes for diverse real-world tasks:
 - **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
 - **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
 <!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
-- **Data Science**: Specialized data science agent for business intelligence.
+- **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
 
 <!-- <!-- #### General Mode
 
@@ -106,11 +106,11 @@ In financial analysis scenarios, complex reasoning and traceable logic chains ar
 <!-- The Financial Analysis mode supports tree-structured search, decomposing complex financial research questions into verifiable sub-hypotheses through deep hierarchical exploration. This mode integrates with financial MCP tools (API keys can be configured for easy use) and optimizes report visualization. In addition to generating comprehensive final reports, the system supports visualization of the entire tree search process and produces interactive HTML files optimized for presentation, making complex financial analyses more accessible and interpretable.  -->
 
 
-<!-- #### Data Science Mode ([Detailed Docs](docs/data_science.md))
+#### Data Science Mode ([Detailed Docs](docs/data_science.md))
 
 <div align="center" style="margin: 20px 0;">
   <img src="docs/figures/alias-ds-overall.png" width="80%" style="max-width: 800px; height: auto;">
-</div> -->
+</div> 
 
 
 <!-- In Data Science mode, Alias-Agent serves as an autonomous, end-to-end assistant that transforms high-level analytical questions into executable data science workflows. It seamlessly handles the full pipeline from data acquisition and cleaning to modeling, visualization, and narrative reporting with minimal human intervention, enabling users to move efficiently from intent to insight in real-world scenarios. -->
