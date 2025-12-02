@@ -127,9 +127,9 @@ At startup, the Data Science mode uses an intelligent router to assign the user'
 #### CLI Deployment
 - **Command-Line Interface**: Direct execution via `alias_agent run` command with mode selection and configuration options.
 
-<!-- #### Full-Stack Deployment
+#### Full-Stack Deployment
 - **Frontend**: [Spark Design](https://sparkdesign.agentscope.io/)-based React application with runtime interrupt controls, artifact inspectors, and editable outputs.
-- **Backend**: Lightweight single-node deployment on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) with simplified user management and mode-specific bootstrapping. -->
+- **Backend**: Lightweight single-node deployment on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) with simplified user management and mode-specific bootstrapping.
 
 ## 🚀 Quickstart
 
