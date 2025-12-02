@@ -103,7 +103,7 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 #### 数据科学（Data Science）模式 ([详细文档](docs/data_science.md))
 
 <div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="100%" style="max-width: 800px; height: auto;">
+  <img src="docs/figures/alias-ds-overall.png" width="90%" style="max-width: 800px; height: auto;">
 </div>
 
 

@@ -103,7 +103,7 @@ The Financial Analysis mode supports tree-structured search, decomposing complex
 #### Data Science Mode ([Detailed Docs](docs/data_science.md))
 
 <div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="100%" style="max-width: 800px; height: auto;">
+  <img src="docs/figures/alias-ds-overall.png" width="90%" style="max-width: 800px; height: auto;">
 </div>
 
 
