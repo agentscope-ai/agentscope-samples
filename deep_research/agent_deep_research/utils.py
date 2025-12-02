@@ -3,13 +3,14 @@
 import os
 import json
 import re
-from typing import Union, Sequence, Any, Type
+from typing import Union, Sequence, Any, Type, Optional
 from pydantic import BaseModel
+from datetime import datetime, timedelta
 
 from agentscope.tool import Toolkit, ToolResponse
 
 
-TOOL_RESULTS_MAX_WORDS = 5000
+TOOL_RESULTS_MAX_WORDS = 500
 
 
 def get_prompt_from_file(
@@ -324,3 +325,81 @@ def load_prompt_dict() -> dict:
     )
 
     return prompt_dict
+
+
+def upload_to_aliyun_oss(
+    file_path: str,
+    object_name: Optional[str] = None,
+    expiration_hours: int = 24,
+) -> Optional[str]:
+    """Upload a file to Aliyun OSS and return a temporary accessible URL.
+
+    This function uploads a file to Aliyun OSS and generates a signed URL
+    that allows temporary public access to the file.
+
+    Args:
+        file_path (str): The local file path to upload.
+        object_name (Optional[str]): The object name in OSS bucket.
+            If None, uses the basename of file_path.
+        expiration_hours (int): URL expiration time in hours. Defaults to 24.
+
+    Returns:
+        Optional[str]: The temporary accessible URL if upload succeeds,
+            None if OSS credentials are not configured or upload fails.
+
+    Environment Variables Required:
+        OSS_ACCESS_KEY_ID: Aliyun OSS access key ID
+        OSS_ACCESS_KEY_SECRET: Aliyun OSS access key secret
+        OSS_ENDPOINT: Aliyun OSS endpoint (e.g., oss-cn-hangzhou.aliyuncs.com)
+        OSS_BUCKET_NAME: Aliyun OSS bucket name
+
+    Example:
+        url = upload_to_aliyun_oss(
+            "/path/to/report.md",
+            "reports/report_20250101.md",
+            expiration_hours=48
+        )
+    """
+    # Check if OSS credentials are configured
+    access_key_id = os.getenv("OSS_ACCESS_KEY_ID")
+    access_key_secret = os.getenv("OSS_ACCESS_KEY_SECRET")
+    endpoint = os.getenv("OSS_ENDPOINT")
+    bucket_name = os.getenv("OSS_BUCKET_NAME")
+
+    if not all([access_key_id, access_key_secret, endpoint, bucket_name]):
+        return None
+
+    try:
+        import oss2
+    except ImportError:
+        return None
+
+    try:
+        # Initialize OSS auth and bucket
+        auth = oss2.Auth(access_key_id, access_key_secret)
+        bucket = oss2.Bucket(auth, endpoint, bucket_name)
+
+        # Use file basename if object_name is not provided
+        if object_name is None:
+            object_name = os.path.basename(file_path)
+
+        # Upload file
+        with open(file_path, "rb") as f:
+            bucket.put_object(object_name, f)
+
+        # Generate signed URL with expiration
+        expiration_seconds = expiration_hours * 3600
+        url = bucket.sign_url(
+            "GET",
+            object_name,
+            expiration_seconds,
+            slash_safe=True,
+        )
+
+        return url
+
+    except Exception as e:
+        import logging
+        logging.warning("Failed to upload to Aliyun OSS: %s", str(e))
+        return None
+

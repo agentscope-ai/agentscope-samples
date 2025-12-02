@@ -60,6 +60,8 @@ uv.lock
 
 # Logs
 logs/
+log/
+deepresearch_agent_demo_env/
 *.log
 
 # Agent-generated files
