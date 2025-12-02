@@ -5,15 +5,33 @@
 
 </div>
 
-## Project introduction
-*Alias-Agent* (short for *Alias*) is an LLM-empowered agent built on [AgentScope](https://github.com/agentscope-ai/agentscope) and [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), designed to serve as an intelligent assistant for responding to user queries. Alias excels at decomposing complicated problems, constructing roadmaps, and applying appropriate strategies to tackle diverse real-world tasks.
+<p align="center">
+    <a href="https://pypi.org/project/alias-agent/">
+        <img
+            src="https://img.shields.io/badge/python-3.10+-blue?logo=python"
+            alt="python"
+        />
+    </a>
+    <a href="./LICENSE">
+        <img
+            src="https://img.shields.io/badge/license-Apache--2.0-black"
+            alt="license"
+        />
+    </a>
+    <a href="https://github.com/agentscope-ai/agentscope">
+        <img
+            src="https://img.shields.io/badge/built--on-AgentScope-blue?logo=github"
+            alt="agentscope"
+        />
+    </a>
+</p>
 
-Specifically, Alias provides three operational modes for flexible task execution:
-- **Simple React**: Employs vanilla reasoning-acting loops to iteratively solve problems and execute tool calls.
-- **Planner-Worker**: Uses intelligent planning to decompose complex tasks into manageable subtasks, with dedicated worker agents handling each subtask independently.
-- **Built-in Agents**: Leverages specialized agents tailored for specific domains, including *Deep Research Agent* for comprehensive analysis and *Browser-use Agent* for web-based interactions. More details can refer to the following "Basic Usage" section.
 
-We aim for Alias to serve as an out-of-the-box solution that users can readily deploy for various tasks.
+*Alias-Agent* (short for *Alias*) is an LLM-empowered agent built on [AgentScope](https://github.com/agentscope-ai/agentscope) and [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), designed to serve as a general-purpose intelligent assistant for responding to user queries. Alias excels at decomposing complicated problems, constructing roadmaps, and applying appropriate strategies to tackle diverse real-world tasks.
+
+
+
+Alias employs a multi-mode operational mechanism for flexible task execution, including `General`, `Browser Use`, `Deep Research`, `Financial Analysis`, and `Data Science`. When switching between different operational modes, Alias is equipped with tailored instructions, specialized tool sets, and the capability to orchestrate various expert agents. This allows Alias to better adapt to the specific requirements of diverse downstream tasks. For example, when handling financial analysis, Alias employs traceable reasoning chains and generates explainable results to increase user trust in its decision-making, along with optimized report visualizations; When resolving data science tasks, Alias can access user-associated databases and is designed to facilitate efficient data analysis, processing, and prediction.
 
 ## Coming soon
 
