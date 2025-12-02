@@ -185,16 +185,16 @@ export DASHSCOPE_MCP_API_KEY=你的_dashscope_api_密钥_在此
 
 ```bash
 # 通用模式
-alias_agent run --mode general --task "分析 Meta 2025年第一季度股票表现"
+alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025"
 
 # 浏览器使用模式
-alias_agent run --mode browser --task "搜索关于浏览器使用智能体的五篇最新研究论文"
+alias_agent run --mode browser --task "Search five latest research papers about browser-use agent"
 
 # 深度研究模式
-alias_agent run --mode dr --task "研究 AI 对医疗保健的影响"
+alias_agent run --mode dr --task "Research the impact of AI on healthcare"
 
 # 金融分析模式
-alias_agent run --mode finance --task "分析特斯拉 2024年第四季度财务表现"
+alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial performance"
 
 # 数据科学模式
 alias_agent run --mode ds \
