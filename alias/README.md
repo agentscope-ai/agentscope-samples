@@ -56,9 +56,9 @@ It provides five operational modes for diverse real-world tasks:
 <!-- - **Financial Analysis**: Hypothesis-driven financial analysis agent. -->
 - **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
 
-<!-- <!-- #### General Mode
+#### General Mode
 
-The General mode features the Meta Planner, which orchestrates task execution with automatic mode switching and comprehensive interrupt support. The Meta Planner intelligently routes tasks to appropriate specialized agents based on context, while maintaining robust state preservation throughout the execution lifecycle. This enables seamless transitions between different operational modes (such as deep research and data science) and ensures continuity even when tasks are interrupted or redirected. -->
+The General mode features the Meta Planner, which orchestrates task execution with automatic mode switching and comprehensive interrupt support. The Meta Planner intelligently routes tasks to appropriate specialized agents based on context, while maintaining robust state preservation throughout the execution lifecycle. This enables seamless transitions between different operational modes (such as deep research and data science) and ensures continuity even when tasks are interrupted or redirected.
 
 The general mode also provides an out-of-the-box AgentScope-specific QA Agent ([more details](docs/qa_agent.md)), pre-configured with high-frequency AgentScope-related Q&A pairs. By integrating RAG and GitHub MCP tools, the QA agent can dynamically retrieve the latest source code structure, official tutorial, and community discussions, and combine them with relevant information flexibly matched from a private knowledge base to deliver accurate answers.
 
@@ -90,7 +90,7 @@ The Deep Research mode introduces user-centric enhancements that transform resea
 
 This mode also features a tree-structure research process that is driven by diving deeper and deeper by information gathering. Users can also dynamically interrupt the deep research process and steer the research direction. The consolidated execution path provides a unified codebase with configurable prompts, SOPs, and toolkits, allowing the Deep Research agent to adapt to different domains while maintaining a consistent, extensible architecture.
 
-<!-- #### Financial Analysis Mode ([Detailed Docs](docs/financial_analysis.md))
+ #### Financial Analysis Mode ([Detailed Docs](docs/financial_analysis.md))
 
 <p align="center">
   <img
@@ -101,9 +101,9 @@ This mode also features a tree-structure research process that is driven by divi
   />
 </p>
 
-In financial analysis scenarios, complex reasoning and traceable logic chains are crucial for building user trust in model conclusions. To achieve *explainability*, *traceability*, and *intervenability*, Alias-Agent adopts a hypothesis-driven agent architecture that explicitly transforms task execution into a “propose hypothesis → collect evidence → verify hypothesis → update state” loop, as a variant of the general deep research process. This architecture enables analysis logic to be recorded, examined, and iterated upon, systematically addressing the financial domain's need for transparent evidence chains and clear, controllable logic. -->
+In financial analysis scenarios, complex reasoning and traceable logic chains are crucial for building user trust in model conclusions. To achieve *explainability*, *traceability*, and *intervenability*, Alias-Agent adopts a hypothesis-driven agent architecture that explicitly transforms task execution into a “propose hypothesis → collect evidence → verify hypothesis → update state” loop, as a variant of the general deep research process. This architecture enables analysis logic to be recorded, examined, and iterated upon, systematically addressing the financial domain's need for transparent evidence chains and clear, controllable logic.
 
-<!-- The Financial Analysis mode supports tree-structured search, decomposing complex financial research questions into verifiable sub-hypotheses through deep hierarchical exploration. This mode integrates with financial MCP tools (API keys can be configured for easy use) and optimizes report visualization. In addition to generating comprehensive final reports, the system supports visualization of the entire tree search process and produces interactive HTML files optimized for presentation, making complex financial analyses more accessible and interpretable.  -->
+The Financial Analysis mode supports tree-structured search, decomposing complex financial research questions into verifiable sub-hypotheses through deep hierarchical exploration. This mode integrates with financial MCP tools (API keys can be configured for easy use) and optimizes report visualization. In addition to generating comprehensive final reports, the system supports visualization of the entire tree search process and produces interactive HTML files optimized for presentation, making complex financial analyses more accessible and interpretable.
 
 
 #### Data Science Mode ([Detailed Docs](docs/data_science.md))
