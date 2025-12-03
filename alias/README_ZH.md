@@ -185,19 +185,19 @@ export DASHSCOPE_MCP_API_KEY=your_dashscope_api_key_here
 使用不同模式执行智能体任务：
 
 ```bash
-# 通用模式
+# 通用（General）模式
 alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025"
 
-# 浏览器使用模式
+# 浏览器使用（Browser Use）模式
 alias_agent run --mode browser --task "Search five latest research papers about browser-use agent"
 
-# 深度研究模式
+# 深度研究（Deep Research）模式
 alias_agent run --mode dr --task "Research the impact of AI on healthcare"
 
-# 金融分析模式
+# 金融分析（Financial Analysis）模式
 alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial performance"
 
-# 数据科学模式
+# 数据科学（Data Science）模式
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
   --files ./docs/data/incident_records.csv
