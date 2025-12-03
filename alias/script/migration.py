@@ -3,6 +3,7 @@
 # pylint: disable=W0401, R0912, R0915, W0614
 import asyncio
 from alias.server.services.database_service import DatabaseService
+from alias.server.models import *  # noqa: F403, F401
 
 
 async def main():

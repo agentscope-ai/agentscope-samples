@@ -5,6 +5,7 @@ from ._common_agent_hooks import (
     save_post_action_state,
     generate_response_post_action_hook,
     get_user_input_to_mem_pre_reply_hook,
+    alias_post_print_hook,
 )
 from ._common_models import (
     WorkerResponse,
@@ -19,4 +20,5 @@ __all__ = [
     "get_user_input_to_mem_pre_reply_hook",
     "WorkerResponse",
     "AliasAgentStates",
+    "alias_post_print_hook",
 ]
