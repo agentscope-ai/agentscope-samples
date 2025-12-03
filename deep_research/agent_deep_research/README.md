@@ -26,9 +26,20 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
     ```bash
    python main.py
    ```
+3. **Deploy the Deepresearch as service**:
+    ```bash
+   python deploy.py
+   ```
+
+Once run the deploy script, the deepresearch will run at `http://0.0.0.0:8090/process` with sync manner, 
+and a webui will start at `http://localhost:5173/`, then user could test the service at the webui.
+
 
 ## Connect to Web Search MCP client
-The DeepResearch Agent only supports web search through the Tavily MCP client currently. To use this feature, you need to start the MCP server locally and establish a connection to it.
+The DeepResearch Agent supports web search from Tavily MCP client and modelstudio web search currently.
+The default search tool is modelstudio web search.
+
+To use Tavily MCP, you need to start the MCP server locally and establish a connection to it, which has been fulfilled.
 ```
 from agentscope.mcp import StdIOStatefulClient
 
@@ -40,6 +51,8 @@ tavily_search_client= StdIOStatefulClient(
 )
 await tavily_search_client.connect()
 ```
+and make sure disable modelstudio_web_search, and enable tavily-search, in `deep_research_agent.py` at line 170 and line 177, respectively.
+
 
 > Note: The example is built with DashScope chat model. If you want to change the model in this example, don't forget
 > to change the formatter at the same time! The corresponding relationship between built-in models and formatters are

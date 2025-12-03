@@ -113,6 +113,6 @@ async def query_func(
 
 if __name__ == "__main__":
     try:
-        agent_app.run()
+        agent_app.run(web_ui=True)
     except Exception as e:
         logger.exception(e)
