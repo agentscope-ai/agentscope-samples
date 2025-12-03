@@ -262,7 +262,7 @@ class DeepResearchAgent(AliasAgentBase):
 
     def _get_next_executables(self) -> list[DeepResearchTreeNode]:
         # [for all deep research agents]
-        # DFS to get the next active/unfinished subtask/hypothesis
+        # Tree exploration to get the next active/unfinished subtask/hypothesis
         # from self.deep_research_tree, where whose parent nodes are done or
         # abandoned (already taken care of)
         if self.deep_research_tree is None:

@@ -22,7 +22,7 @@ In high-stakes financial scenarios, simple task execution is insufficient. Alias
 Financial problems are rarely one-dimensional. To handle complexity, Alias-Finance Analysis utilizes a **Tree Search** strategy similar to deep research algorithms but adapted for financial logic.
 
 + **Decomposition:** A complex query (e.g., "Is Company X a buy?") is broken down into a tree of sub-hypotheses (e.g., "Revenue Growth," "Market Risk," "Competitive Moat").
-+ **DFS Exploration:** The agent systematically explores these branches to ensure no critical factor is overlooked before aggregating the results into a final conclusion.
++ **Tree Exploration:** The agent systematically explores these branches to ensure no critical factor is overlooked before aggregating the results into a final conclusion.
 
 
 ### Enhanced Financial Tool Integration
