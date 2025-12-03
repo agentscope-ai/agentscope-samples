@@ -42,7 +42,8 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
 )
-
+from agentscope_runtime.tools.searches.modelstudio_search_lite import ModelstudioSearchLite
+from agentscope_runtime.adapters.agentscope.tool.tool import agentscope_tool_adapter
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
 
@@ -161,11 +162,24 @@ class DeepResearchAgent(ReActAgent):
         # register all necessary tools for deep research agent
         self.toolkit.register_tool_function(view_text_file)
         self.toolkit.register_tool_function(write_text_file)
-        asyncio.get_running_loop().create_task(
-            self.toolkit.register_mcp_client(search_mcp_client),
-        )
+        self.toolkit.register_tool_function(self.generate_response)
 
-        self.search_function = "tavily-search"
+        # register modelstudiolite
+        modelstudio_search = ModelstudioSearchLite()
+        modelstudio_search_tool = agentscope_tool_adapter(modelstudio_search)
+        self.toolkit.tools[modelstudio_search_tool.name] = modelstudio_search_tool
+
+        loop = asyncio.get_running_loop()
+
+        async def _init_mcp_client():
+            await self.toolkit.register_mcp_client(search_mcp_client)
+            # using modelstudio web search
+            self.toolkit.tools.pop("tavily-search")
+
+        loop.create_task(_init_mcp_client())
+
+
+        self.search_function = "modelstudio_web_search"
         self.extract_function = "tavily-extract"
         self.read_file_function = "view_text_file"
         self.write_file_function = "write_text_file"
@@ -330,6 +344,7 @@ class DeepResearchAgent(ReActAgent):
                 # ):
                 await self.print(tool_res_msg, chunk.is_last)
 
+                logger.info(f"chunk: {chunk}")
                 # Return message if generate_response is called successfully
                 if tool_call[
                     "name"
