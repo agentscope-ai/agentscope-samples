@@ -187,14 +187,14 @@ async def form_filling(
     )
 
     try:
-        sub_agentresponse_msg = await sub_agent.reply(init_msg)
+        sub_agent_response_msg = await sub_agent.reply(init_msg)
 
         return ToolResponse(
-            metadata=sub_agentresponse_msg.metadata,
+            metadata=sub_agent_response_msg.metadata,
             content=[
                 TextBlock(
                     type="text",
-                    text=sub_agentresponse_msg.content[0]["text"]
+                    text=sub_agent_response_msg.content[0]["text"]
                     or (
                         "Form filling agent finished"
                         "without a textual summary."
