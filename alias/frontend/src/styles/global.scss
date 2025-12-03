@@ -12,11 +12,11 @@
   .btn {
     @apply px-4 py-2 rounded-lg;
   }
-  
+
   .btn-primary {
     @apply bg-purple-600 text-white hover:bg-purple-700;
   }
-} 
+}
 
 *, ::before, ::after {
   border-color: var(--filenode-selected-bg);
@@ -62,7 +62,7 @@
 }
 .dark {
   --page-bg: #141414;
-  --page-container:#141414; 
+  --page-container:#141414;
   --page-content: #252525;
   --text-primary: rgba(255, 255, 255, 0.85);
   --text-secondary: #B0B0B0;

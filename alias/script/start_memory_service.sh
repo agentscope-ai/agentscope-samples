@@ -22,12 +22,12 @@ print_error() {
 load_env_file() {
     local env_file="$1"
     local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-    
+
     # If no custom path provided, use default: parent directory (.env file)
     if [ -z "$env_file" ]; then
         env_file="$(dirname "$script_dir")/.env"
     fi
-    
+
     if [ -f "$env_file" ]; then
         print_info "Loading environment variables from $env_file"
         # Export variables from .env file, ignoring comments and empty lines
@@ -36,7 +36,7 @@ load_env_file() {
             # Skip comments and empty lines
             [[ "$line" =~ ^[[:space:]]*# ]] && continue
             [[ -z "${line// }" ]] && continue
-            
+
             # Export the variable
             export "$line" 2>/dev/null || true
         done < "$env_file"
@@ -133,7 +133,7 @@ check_docker() {
 # Function to start Redis using Docker
 start_redis_docker() {
     print_info "Starting Redis container..."
-    
+
     # Check if container exists
     if docker ps -a --format '{{.Names}}' | grep -q "^${REDIS_CONTAINER_NAME}$"; then
         # Container exists, check if it's running
@@ -154,7 +154,7 @@ start_redis_docker() {
             redis:latest \
             redis-server --appendonly yes
     fi
-    
+
     # Wait for Redis to be ready
     print_info "Waiting for Redis to be ready..."
     max_retries=30
@@ -168,7 +168,7 @@ start_redis_docker() {
             print_warn "Still waiting for Redis... ($i/$max_retries)"
         fi
     done
-    
+
     print_error "Redis failed to start within $max_retries seconds."
     return 1
 }
@@ -176,7 +176,7 @@ start_redis_docker() {
 # Function to start Qdrant using Docker
 start_qdrant_docker() {
     print_info "Starting Qdrant container..."
-    
+
     # Check if port is already in use by another process/container
     if check_port "$QDRANT_HOST" "$QDRANT_PORT"; then
         print_warn "Port $QDRANT_PORT is already in use. Checking if it's a Qdrant service..."
@@ -193,11 +193,11 @@ start_qdrant_docker() {
         print_warn "Port $QDRANT_PORT is in use but not by our container. Please check manually."
         return 1
     fi
-    
+
     # Create storage directory if it doesn't exist
     QDRANT_STORAGE_DIR="${HOME}/.qdrant_storage"
     mkdir -p "$QDRANT_STORAGE_DIR"
-    
+
     # Check if container exists
     if docker ps -a --format '{{.Names}}' | grep -q "^${QDRANT_CONTAINER_NAME}$"; then
         # Container exists, check if it's running
@@ -218,7 +218,7 @@ start_qdrant_docker() {
             -v "${QDRANT_STORAGE_DIR}:/qdrant/storage" \
             qdrant/qdrant:latest
     fi
-    
+
     # Wait for Qdrant to be ready
     print_info "Waiting for Qdrant to be ready..."
     max_retries=30
@@ -232,7 +232,7 @@ start_qdrant_docker() {
             print_warn "Still waiting for Qdrant... ($i/$max_retries)"
         fi
     done
-    
+
     print_error "Qdrant failed to start within $max_retries seconds."
     return 1
 }
@@ -241,7 +241,7 @@ start_qdrant_docker() {
 main() {
     print_info "Starting Memory Service..."
     print_info "Checking dependencies..."
-    
+
     # Check Redis
     print_info "Checking Redis at $REDIS_HOST:$REDIS_PORT..."
     if check_redis; then
@@ -255,7 +255,7 @@ main() {
             exit 1
         fi
     fi
-    
+
     # Check Qdrant
     print_info "Checking Qdrant at $QDRANT_HOST:$QDRANT_PORT..."
     if check_qdrant; then
@@ -269,17 +269,17 @@ main() {
             exit 1
         fi
     fi
-    
+
     # Start the memory service
     print_info "All dependencies are ready. Starting memory service..."
     print_info "Running: python -m alias.memory_service.service.app.server"
-    
+
     # Set environment variables if not already set
     export USER_PROFILING_REDIS_SERVER="${USER_PROFILING_REDIS_SERVER:-localhost}"
     export USER_PROFILING_REDIS_PORT="${USER_PROFILING_REDIS_PORT:-6379}"
     export QDRANT_HOST="${QDRANT_HOST:-localhost}"
     export QDRANT_PORT="${QDRANT_PORT:-6333}"
-    
+
     # Run the service
     python -m alias.memory_service.service.app.server
 }

@@ -40,7 +40,9 @@ export const ClarificationMessage: React.FC<ClarificationMessageProps> = ({
   return (
     // <BaseMessage message={message} onFeedback={onFeedback}>
     <div className={styles.clarificationMessage}>
-      {message.content && <div className={styles.question}>{message.content}</div>}
+      {message.content && (
+        <div className={styles.question}>{message.content}</div>
+      )}
       {Array.isArray(message?.options) && message.options.length > 0 && (
         <div className={styles.options}>
           {message.options?.map((option, index) => (

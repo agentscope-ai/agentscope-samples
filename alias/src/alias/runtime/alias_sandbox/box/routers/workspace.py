@@ -78,7 +78,6 @@ async def get_workspace_file(
         ) from e
 
 
-
 @workspace_router.post(
     "/workspace/files",
     summary="Create or edit a file within the /workspace directory",

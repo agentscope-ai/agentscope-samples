@@ -87,6 +87,7 @@ class SecurityConfig(BaseSettings):
 
 class ServerConfig(BaseSettings):
     """Server configuration - Core server settings"""
+
     BACKEND_URL: Optional[str] = Field(
         default="http://localhost:8000",
         description="Backend URL",

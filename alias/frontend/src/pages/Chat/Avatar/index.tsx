@@ -37,8 +37,8 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
               />
             </div>
             <div>
-              <div className={styles.name}>{userInfo?.userName || ''}</div>
-              <div className={styles.email}>{userInfo?.email || ''}</div>
+              <div className={styles.name}>{userInfo?.userName || ""}</div>
+              <div className={styles.email}>{userInfo?.email || ""}</div>
             </div>
           </Flex>
           <Flex vertical className={styles.userButton}>

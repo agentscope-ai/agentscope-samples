@@ -24,7 +24,9 @@ const WelcomeView: React.FC = ({}) => {
           <Button
             className={styles.button}
             onClick={() => {
-              goGitHub("https://github.com/agentscope-ai/agentscope-samples/tree/main/alias");
+              goGitHub(
+                "https://github.com/agentscope-ai/agentscope-samples/tree/main/alias",
+              );
             }}
           >
             Alias Github

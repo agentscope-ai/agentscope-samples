@@ -42,7 +42,7 @@ const SharePage: React.FC = () => {
   const { setDisplayedContent } = useWorkspace();
   const totalSteps = messages.length;
   const [activeTab, setActiveTab] = useState<"workspace" | "roadmap">(
-    "workspace"
+    "workspace",
   );
   const timerIdRef = useRef<NodeJS.Timeout | null>(null);
   const ScrollToBottomButtonRef = useRef<any>(null);
@@ -59,7 +59,7 @@ const SharePage: React.FC = () => {
       const progress = ((step - 1) / (totalSteps - 1)) * 100;
       return `${Math.min(Math.max(progress, 0), 100)}%`;
     },
-    [totalSteps]
+    [totalSteps],
   );
 
   const onNextStep = useCallback(() => {
@@ -86,7 +86,7 @@ const SharePage: React.FC = () => {
       );
       setCurrentStep(newStep);
     },
-    [totalSteps]
+    [totalSteps],
   );
 
   const handleProgressDrag = useCallback(
@@ -94,7 +94,7 @@ const SharePage: React.FC = () => {
       if (e.buttons !== 1) return; // Only handle when left mouse button is pressed
       handleProgressClick(e);
     },
-    [handleProgressClick]
+    [handleProgressClick],
   );
 
   useEffect(() => {
@@ -245,7 +245,7 @@ const SharePage: React.FC = () => {
         // }
         const res = await conversationApi.getShareConversations(
           userId,
-          sessionId
+          sessionId,
         );
         if (res.status === true && res.payload) {
           const apiMessages = res.payload?.messages || [];
@@ -256,7 +256,7 @@ const SharePage: React.FC = () => {
             apiMessages.length > 0
           ) {
             const mappedMessages = apiMessages.map(
-              mapApiMessageToChatMessage
+              mapApiMessageToChatMessage,
             ) as Message[];
             setMessages(mappedMessages);
           }
@@ -289,7 +289,9 @@ const SharePage: React.FC = () => {
     <div className={styles.sharePage}>
       <div className={styles.mainContent}>
         <div className={styles.messageList} style={{ flex: 1 }}>
-          <div className={styles.conversationName}>Conversation Name: {conversationName}</div>
+          <div className={styles.conversationName}>
+            Conversation Name: {conversationName}
+          </div>
           <ScrollToBottomButton
             className={styles.scrollWrapper}
             autoScrollThreshold={5}

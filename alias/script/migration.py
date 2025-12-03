@@ -3,7 +3,6 @@
 # pylint: disable=W0401, R0912, R0915, W0614
 import asyncio
 from alias.server.services.database_service import DatabaseService
-from alias.server.models import *
 
 
 async def main():
@@ -94,7 +93,6 @@ async def main():
         elif args.command == "upgrade":
             if args.dry_run:
                 logger.info("🔍 Dry run mode - showing what would be upgraded")
-                # Here you can add logic to display migrations that would be executed
                 return
 
             success = await service.upgrade(args.revision)
@@ -109,7 +107,6 @@ async def main():
                 logger.info(
                     "🔍 Dry run mode - showing what would be downgraded",
                 )
-                # Here you can add logic to display downgrades that would be executed
                 return
 
             success = await service.downgrade(args.steps)

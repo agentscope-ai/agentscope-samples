@@ -9,7 +9,7 @@ import {
   SparkMagicWandLine,
   SparkReplaceLine,
   SparkReplayLine,
-  SparkRoboticsLine
+  SparkRoboticsLine,
 } from "@agentscope-ai/icons";
 import { Col, Flex, Row } from "antd";
 import { debounce } from "lodash";
@@ -81,8 +81,8 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
       const previousIndices = previousPrompts
         .map((prompt) =>
           modeSpecificPrompts.findIndex(
-            (item: PromptsModeProps) => item.title === prompt.title
-          )
+            (item: PromptsModeProps) => item.title === prompt.title,
+          ),
         )
         .filter((index) => index !== -1);
 
@@ -108,7 +108,7 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
       return shuffledIndices.map((index) => {
         // Randomly select one from remaining icons
         const randomIconIndex = Math.floor(
-          Math.random() * Math.min(selectedIcons.length, icons.length)
+          Math.random() * Math.min(selectedIcons.length, icons.length),
         );
         const icon = selectedIcons[randomIconIndex];
 
@@ -123,12 +123,12 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
         };
       });
     },
-    [modeSpecificPrompts]
+    [modeSpecificPrompts],
   );
 
   // Use state to manage random prompt items
   const [randomPrompts, setRandomPrompts] = useState<any[]>(() =>
-    generateRandomPrompts()
+    generateRandomPrompts(),
   );
 
   // Function to update random prompt items
@@ -140,7 +140,7 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
     debounce((title: string, describe: string) => {
       handleSendMessage(title, describe);
     }, 300),
-    [handleSendMessage]
+    [handleSendMessage],
   );
 
   return (

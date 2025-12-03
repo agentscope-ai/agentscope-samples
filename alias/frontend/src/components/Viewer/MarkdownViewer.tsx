@@ -12,7 +12,7 @@ export const MarkdownViewer: React.FC<BaseViewerProps> = ({
   const processed = content?.match(markdownRegex)?.[1] || content;
   return (
     <div style={style}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{processed}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{processed}</ReactMarkdown>
     </div>
   );
 };

@@ -76,7 +76,10 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
     }
     // If not share page, need to add authentication header
     if (!isSharePage) {
-      const token = localStorage.getItem("access_token") || import.meta.env.VITE_API_ACCESS_TOKEN || import.meta.env.VITE_API_TOKEN;
+      const token =
+        localStorage.getItem("access_token") ||
+        import.meta.env.VITE_API_ACCESS_TOKEN ||
+        import.meta.env.VITE_API_TOKEN;
       if (!token) {
         console.error("No access token available");
         return;
@@ -85,22 +88,22 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
       // Create a request with authentication header
       fetch(url, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-        .then(response => response.blob())
-        .then(blob => {
+        .then((response) => response.blob())
+        .then((blob) => {
           const objectUrl = URL.createObjectURL(blob);
-          window.open(objectUrl, '_blank');
+          window.open(objectUrl, "_blank");
           // Clean up URL
           setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Failed to preview file:", error);
         });
     } else {
       // Share page opens link directly
-      window.open(url, '_blank');
+      window.open(url, "_blank");
     }
   };
 
@@ -110,24 +113,25 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
         <div key={index} className={styles.fileItem}>
           <div className={styles.fileLeft}>
             <img
-              src={getFileIcon(file?.filename || '')}
+              src={getFileIcon(file?.filename || "")}
               className={styles.fileIcon}
               alt="file icon"
             />
           </div>
           <div className={styles.fileInfoBlock}>
             <div className={styles.fileName} title={file?.filename}>
-              {file?.filename || 'Unknown file'}
+              {file?.filename || "Unknown file"}
             </div>
             <div className={styles.fileSize}>
-              {getFileTypeText(file?.filename || '')} {formatFileSize(file?.size || 0)}
+              {getFileTypeText(file?.filename || "")}{" "}
+              {formatFileSize(file?.size || 0)}
             </div>
           </div>
           {file?.id && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handlePreview(file)
+                handlePreview(file);
               }}
               className={styles.downloadBtn}
             >

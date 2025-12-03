@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """The services exceptions"""
 
-from .base import NotSetError  # pylint: disable=unused-import
 from .base import (
     AccessDeniedError,
     AlreadyExistsError,

@@ -1,14 +1,17 @@
-import React from 'react';
-import { SubThoughtMessage as SubThoughtMessageType } from '@/types/message';
-import { BaseMessage } from './BaseMessage';
-import styles from './Message.module.scss';
+import React from "react";
+import { SubThoughtMessage as SubThoughtMessageType } from "@/types/message";
+import { BaseMessage } from "./BaseMessage";
+import styles from "./Message.module.scss";
 
 interface SubThoughtMessageProps {
   message: SubThoughtMessageType;
-  onFeedback?: (messageId: string, feedback: 'like' | 'dislike' | null) => void;
+  onFeedback?: (messageId: string, feedback: "like" | "dislike" | null) => void;
 }
 
-export const SubThoughtMessage: React.FC<SubThoughtMessageProps> = ({ message, onFeedback }) => {
+export const SubThoughtMessage: React.FC<SubThoughtMessageProps> = ({
+  message,
+  onFeedback,
+}) => {
   return (
     <BaseMessage message={message} onFeedback={onFeedback}>
       <div className={styles.subThoughtMessage}>
@@ -16,4 +19,4 @@ export const SubThoughtMessage: React.FC<SubThoughtMessageProps> = ({ message, o
       </div>
     </BaseMessage>
   );
-}; 
+};

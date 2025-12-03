@@ -9,12 +9,10 @@ interface FilesMessageProps {
   onFeedback?: (messageId: string, feedback: "like" | "dislike" | null) => void;
 }
 
-
 export const FilesMessage: React.FC<FilesMessageProps> = ({
   message,
   onFeedback,
 }) => {
-
   return (
     <BaseMessage message={message} onFeedback={onFeedback}>
       <div className={styles.filesMessage}>

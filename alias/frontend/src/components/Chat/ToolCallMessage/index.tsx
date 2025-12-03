@@ -27,7 +27,7 @@ export const ToolCallMessage: React.FC<ToolCallMessageProps> = memo(
       setMessageList((prev) => {
         // Filter out old messages with same id
         const filtered = prev.filter(
-          (m) => m.id !== message.id && m.content !== message.content
+          (m) => m.id !== message.id && m.content !== message.content,
         );
         // Add new message
         return [...filtered, message];
@@ -37,7 +37,10 @@ export const ToolCallMessage: React.FC<ToolCallMessageProps> = memo(
     const getIcon = () => {
       // Determine icon based on tool name if icon is not specified
       if (!message.icon) {
-        const toolName = ('tool_name' in message ? message.tool_name : undefined) || message.name || "";
+        const toolName =
+          ("tool_name" in message ? message.tool_name : undefined) ||
+          message.name ||
+          "";
         if (toolName.toLowerCase().includes("browser")) {
           return <SparkBrowseLine />;
         }
@@ -114,5 +117,5 @@ export const ToolCallMessage: React.FC<ToolCallMessageProps> = memo(
         )}
       </Flex>
     );
-  }
+  },
 );

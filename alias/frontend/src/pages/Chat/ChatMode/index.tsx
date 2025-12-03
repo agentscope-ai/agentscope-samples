@@ -22,21 +22,21 @@ const ChatMode: React.FC<ChatModeProps> = ({
   setChatModeValue,
 }) => {
   const getIcon = (value: string) => {
-      switch (value) {
-        case ChatModeType.GENERAL:
-          return <SparkSingleStarLine />;
-        case ChatModeType.BROWSER:
-          return <SparkBrowseLine />;
-        case ChatModeType.DEEPREASONING:
-          return <SparkPaperLine />;
-        case ChatModeType.FINANCE:
-          return <SparkUsdLine />;
-        case ChatModeType.DATASCIENCE:
-          return <SparkDataLine />;
-        default:
-          return null; // or returning a default icon.
-      }
-    };
+    switch (value) {
+      case ChatModeType.GENERAL:
+        return <SparkSingleStarLine />;
+      case ChatModeType.BROWSER:
+        return <SparkBrowseLine />;
+      case ChatModeType.DEEPREASONING:
+        return <SparkPaperLine />;
+      case ChatModeType.FINANCE:
+        return <SparkUsdLine />;
+      case ChatModeType.DATASCIENCE:
+        return <SparkDataLine />;
+      default:
+        return null; // or returning a default icon.
+    }
+  };
   return (
     <Flex
       gap="small"
@@ -51,7 +51,9 @@ const ChatMode: React.FC<ChatModeProps> = ({
               [styles.chatTag]: item.value === chatModeValue,
             })}
             key={item.value}
-            onClick={() => { setChatModeValue(item.value) }}
+            onClick={() => {
+              setChatModeValue(item.value);
+            }}
           >
             {getIcon(item.value)}
             {item.label}

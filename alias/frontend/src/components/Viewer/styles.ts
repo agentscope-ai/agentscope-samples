@@ -242,15 +242,15 @@ export const COMMON_STYLES = `
 `;
 
 export const HIGHLIGHT_STYLES = {
-    tomorrow: {
-        "hljs-comment": {
-            color: "#999999"
-        },
-        "hljs-keyword": {
-            color: "#cc99cd"
-        },
-        "hljs-string": {
-            color: "#7ec699"
-        },
-    }
+  tomorrow: {
+    "hljs-comment": {
+      color: "#999999",
+    },
+    "hljs-keyword": {
+      color: "#cc99cd",
+    },
+    "hljs-string": {
+      color: "#7ec699",
+    },
+  },
 };

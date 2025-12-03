@@ -78,7 +78,7 @@ export const Chat = () => {
       Array.isArray(roadmapData?.subtasks)
     ) {
       const subtasks = roadmapData?.subtasks.filter(
-        (item) => item.state === RoadMapType.TODO
+        (item) => item.state === RoadMapType.TODO,
       );
       if (
         subtasks.length > 0 &&
@@ -122,7 +122,11 @@ export const Chat = () => {
     };
     loadConversationFromStorage();
   }, []);
-  const createNewConversation = async (name: string, description: string, chatMode: string) => {
+  const createNewConversation = async (
+    name: string,
+    description: string,
+    chatMode: string,
+  ) => {
     try {
       const defaultName = `Conversation ${dayjs().format("YYYY-MM-DD HH:mm")}`;
       const response = await conversationApi.create(
@@ -165,13 +169,13 @@ export const Chat = () => {
   const resetThinkingState = () => {
     setIsThinking(false);
     setThinkingConversationId(null);
-  }
+  };
   const sendMessageWithHandling = async (
     conversationId: string,
     content: string,
     parentMessageId: string,
     fileIds?: string[],
-    roadmap?: RoadMapMessage
+    roadmap?: RoadMapMessage,
   ) => {
     setIsThinking(true);
     setThinkingConversationId(conversationId);
@@ -195,7 +199,7 @@ export const Chat = () => {
               const updatedMessages = prevMessages.slice();
               newMessages.forEach((newMsg) => {
                 const index = updatedMessages.findIndex(
-                  (existingMsg) => existingMsg.id === newMsg.id
+                  (existingMsg) => existingMsg.id === newMsg.id,
                 );
                 if (index !== -1) {
                   updatedMessages[index] = newMsg;
@@ -243,7 +247,7 @@ export const Chat = () => {
         languageType,
         chatMode,
         abortController,
-        roadmap
+        roadmap,
       );
     } catch (error: any) {
       // Don't show error message if it's a cancel operation
@@ -306,7 +310,7 @@ export const Chat = () => {
           historyMessages.sort(
             (a, b) =>
               new Date(a.create_time).getTime() -
-              new Date(b.create_time).getTime()
+              new Date(b.create_time).getTime(),
           );
           setMessages(historyMessages);
         } else {
@@ -351,7 +355,7 @@ export const Chat = () => {
   const handleSendMessage = async (
     directMessage?: string,
     describe?: string,
-    roadmap?: RoadMapMessage
+    roadmap?: RoadMapMessage,
   ) => {
     const messageContent = directMessage || input.trim();
     if (!messageContent) return;
@@ -417,7 +421,7 @@ export const Chat = () => {
         describe || currentInput,
         userMessage.id,
         fileIds, // Pass all file IDs
-        roadmap
+        roadmap,
       );
     } catch (error) {
       setIsGenerating(false);
@@ -523,7 +527,10 @@ export const Chat = () => {
               filePreview={filePreview}
             />
             <ChatMode chatModeValue={chatMode} setChatModeValue={setChatMode} />
-            <Prompts handleSendMessage={handleSendMessage} chatMode={chatMode} />
+            <Prompts
+              handleSendMessage={handleSendMessage}
+              chatMode={chatMode}
+            />
           </section>
         </div>
       )}

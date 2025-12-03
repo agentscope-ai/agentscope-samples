@@ -11,4 +11,4 @@ interface ImportMeta {
     dispose(cb: (data: any) => void): void;
     data: any;
   };
-} 
+}

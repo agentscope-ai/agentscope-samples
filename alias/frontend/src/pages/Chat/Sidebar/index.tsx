@@ -7,12 +7,7 @@ import { loginApi } from "@/services/api/login";
 import type { ApiResponse, ListResponsePayload } from "@/types/api";
 import { Conversation } from "@/types/api";
 import { HistoryPanel } from "@agentscope-ai/chat";
-import {
-  AlertDialog,
-  Button,
-  message,
-  Popover,
-} from "@agentscope-ai/design";
+import { AlertDialog, Button, message, Popover } from "@agentscope-ai/design";
 import {
   SparkChatTabFill,
   SparkDeleteLine,
@@ -76,7 +71,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         order_direction: "desc",
       });
       if (response.status && response.payload) {
-        const listResponse = response as unknown as ApiResponse<ListResponsePayload<Conversation>>;
+        const listResponse = response as unknown as ApiResponse<
+          ListResponsePayload<Conversation>
+        >;
         // Ensure structure matches expected format before accessing
         const payloadItems = listResponse.payload?.items;
         if (Array.isArray(payloadItems)) {
@@ -158,10 +155,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           const reslut = await conversationApi.delete(id);
           if (reslut.status) {
             setConversations(
-              conversations.filter((item) => item.id !== id) || []
+              conversations.filter((item) => item.id !== id) || [],
             );
             message.success(
-              reslut.message || "Conversation deleted successfully"
+              reslut.message || "Conversation deleted successfully",
             );
             if (conversationId === id) goNewChat();
           }
@@ -221,7 +218,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     // Show empty state if there are no conversations (only when expanded)
     if (filteredConversations.length === 0) {
-      return isExpanded && !isCollected ? <div>No conversation records</div> : null;
+      return isExpanded && !isCollected ? (
+        <div>No conversation records</div>
+      ) : null;
     }
 
     return (
@@ -295,7 +294,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className={styles.sidebarLogo}>
         <div
           className={classNames(
-            "transition-transform hover:scale-105 w-10 h-10 cursor-pointer relative"
+            "transition-transform hover:scale-105 w-10 h-10 cursor-pointer relative",
           )}
           onClick={conversationId ? goHome : expandSidebar}
           onMouseEnter={isHomePage ? onMouseEnterLogo : undefined}
@@ -306,7 +305,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               "w-full h-full object-cover transition-opacity",
               {
                 "opacity-0": isHomePage && !isExpanded && enterLogo,
-              }
+              },
             )}
           />
           {/* When on homepage and not expanded, show expand icon on hover, overlay on logo */}

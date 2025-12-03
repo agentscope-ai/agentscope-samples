@@ -1,4 +1,3 @@
-
 import { ApiMessage } from "@/types/api";
 import {
   FeedbackType,
@@ -12,7 +11,7 @@ import {
 // Map API message to chat message
 const mapApiMessageToChatMessage = (
   msg: ApiMessage,
-  generating: boolean = false
+  generating: boolean = false,
 ): Message => {
   const baseMessage = {
     ...msg?.message,
