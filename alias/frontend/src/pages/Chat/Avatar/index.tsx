@@ -1,9 +1,9 @@
-import React, { memo } from "react";
-import { Flex } from "antd";
-import { useNavigate } from "react-router-dom";
-import { Popover } from "@agentscope-ai/design";
-import { SparkSwitchLine, SparkEscapeLine } from "@agentscope-ai/icons";
 import UserHeader from "@/assets/icons/avatar/avatar.svg";
+import { Popover } from "@agentscope-ai/design";
+import { SparkEscapeLine, SparkSwitchLine } from "@agentscope-ai/icons";
+import { Flex } from "antd";
+import React, { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
 
 interface UserInfoProps {

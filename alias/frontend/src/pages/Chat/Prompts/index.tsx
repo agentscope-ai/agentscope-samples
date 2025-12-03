@@ -1,4 +1,5 @@
 import { originalPromptsList, promptJson } from "@/assets/json/prompt";
+import { RoadMapMessage } from "@/types/roadmap";
 import { ChatModeList, ChatModeType } from "@/utils/constant";
 import { Button, Card } from "@agentscope-ai/design";
 import {
@@ -15,18 +16,23 @@ import { Col, Flex, Row } from "antd";
 import { debounce } from "lodash";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./index.module.scss";
-
 interface PromptsProps {
-  handleSendMessage: (value: string, description: string) => void;
+  handleSendMessage: (
+    value?: string,
+    description?: string,
+    roadmap?: RoadMapMessage | null,
+    files?: string | string[],
+  ) => void;
   chatMode: ChatModeType;
 }
 interface PromptsModeProps {
   title: string;
   describe: string;
-  files?: string;
+  files?: string[] | string;
+  icon?: React.ReactNode;
 }
 
-const PromptCard: React.FC<{ item: any }> = ({ item }) => {
+const PromptCard: React.FC<{ item: PromptsModeProps }> = ({ item }) => {
   const [isHovered, setIsHovered] = useState(false);
   return (
     <Card
@@ -127,7 +133,7 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
   );
 
   // Use state to manage random prompt items
-  const [randomPrompts, setRandomPrompts] = useState<any[]>(() =>
+  const [randomPrompts, setRandomPrompts] = useState<PromptsModeProps[]>(() =>
     generateRandomPrompts(),
   );
 
@@ -137,12 +143,19 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
   }, [generateRandomPrompts]);
 
   const debouncedHandleSendMessage = useCallback(
-    debounce((title: string, describe: string) => {
-      handleSendMessage(title, describe);
-    }, 300),
+    debounce(
+      (
+        title: string,
+        describe: string,
+        roadmap: RoadMapMessage | null,
+        files: string | string[] | undefined,
+      ) => {
+        handleSendMessage(title, describe, roadmap, files);
+      },
+      300,
+    ),
     [handleSendMessage],
   );
-
   return (
     <div className={styles.prompts}>
       <Flex align="center" justify="space-between" className={styles.header}>
@@ -164,7 +177,12 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
               key={item.title}
               onClick={() => {
                 if (item.title)
-                  debouncedHandleSendMessage(item.title, item.describe);
+                  debouncedHandleSendMessage(
+                    item.title,
+                    item.describe,
+                    null,
+                    item.files,
+                  );
               }}
             >
               <PromptCard item={item} />

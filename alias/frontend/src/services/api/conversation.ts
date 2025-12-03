@@ -16,8 +16,7 @@ import {
   StopChatResponse,
 } from "@/types/api";
 import { RoadMap, RoadMapDataProps, RoadMapMessage } from "@/types/roadmap";
-import { LANGUAGETYPE } from "@/utils/constant";
-import { ChatModeType } from "@/utils/constant";
+import { ChatModeType, LANGUAGETYPE } from "@/utils/constant";
 import { request } from "./request";
 
 export const conversationApi = {
@@ -41,7 +40,7 @@ export const conversationApi = {
     language_type: string = LANGUAGETYPE.en_US,
     chatMode: ChatModeType = ChatModeType.GENERAL,
     abortController?: AbortController,
-    roadmap?: RoadMapMessage,
+    roadmap?: RoadMapMessage | null,
   ) => {
     const requestBody = {
       query: message,

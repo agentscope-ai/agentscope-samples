@@ -35,7 +35,7 @@ import styles from "./index.module.scss";
 import Prompts from "./Prompts";
 import RoadmapButton from "./RoadmapButton";
 import Sidebar from "./Sidebar";
-import { mapApiMessageToChatMessage } from "./utils";
+import { mapApiMessageToChatMessage, getPromptFile } from "./utils";
 import WelcomeView from "./WelcomeView";
 
 export const Chat = () => {
@@ -175,7 +175,7 @@ export const Chat = () => {
     content: string,
     parentMessageId: string,
     fileIds?: string[],
-    roadmap?: RoadMapMessage,
+    roadmap?: RoadMapMessage | null,
   ) => {
     setIsThinking(true);
     setThinkingConversationId(conversationId);
@@ -355,14 +355,15 @@ export const Chat = () => {
   const handleSendMessage = async (
     directMessage?: string,
     describe?: string,
-    roadmap?: RoadMapMessage,
+    roadmap?: RoadMapMessage | null,
+    files?: string | string[],
   ) => {
     const messageContent = directMessage || input.trim();
     if (!messageContent) return;
     const currentInput = messageContent.trim();
     if (!messageContent && !filePreview.length) return;
     // Get all successfully uploaded file IDs
-    const fileIds = filePreview
+    let fileIds = filePreview
       .filter((file) => file.status === "success" && file.id)
       .map((file) => file.id);
     if (ScrollToBottomButtonRef.current) {
@@ -413,7 +414,24 @@ export const Chat = () => {
       }
       // Create and add user message
       const userMessage = createUserMessage(targetConversationId);
-      setMessages((prev) => [...(prev || []), userMessage]);
+      if (files) {
+        try {
+          const promptFiles = await getPromptFile(files);
+          if (promptFiles?.length) {
+            fileIds = promptFiles.map((item) => item.id);
+            setMessages((prev) => [
+              ...(prev || []),
+              { ...userMessage, files: promptFiles },
+            ]);
+          } else {
+            setMessages((prev) => [...(prev || []), userMessage]);
+          }
+        } catch (error) {
+          setMessages((prev) => [...(prev || []), userMessage]);
+        }
+      } else {
+        setMessages((prev) => [...(prev || []), userMessage]);
+      }
       setIsThinking(true);
       setThinkingConversationId(targetConversationId);
       await sendMessageWithHandling(
