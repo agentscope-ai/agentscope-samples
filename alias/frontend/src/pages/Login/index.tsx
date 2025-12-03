@@ -1,6 +1,10 @@
 import { loginApi } from "@/services/api/login";
 import { message } from "@agentscope-ai/design";
-import { SparkEmailLine, SparkLockLine, SparkUserLine } from "@agentscope-ai/icons";
+import {
+  SparkEmailLine,
+  SparkLockLine,
+  SparkUserLine,
+} from "@agentscope-ai/icons";
 import type { ProFormInstance } from "@ant-design/pro-components";
 import {
   LoginForm,
@@ -27,15 +31,19 @@ export const Login = () => {
         message.success("Registration successful");
         navigate("/login?mode=login");
         const { payload } = register;
-        if(payload?.access_token) localStorage.setItem("access_token", payload?.access_token);
-        if(payload?.refresh_token) localStorage.setItem("refresh_token", payload?.refresh_token);
+        if (payload?.access_token)
+          localStorage.setItem("access_token", payload?.access_token);
+        if (payload?.refresh_token)
+          localStorage.setItem("refresh_token", payload?.refresh_token);
         // console.log(register, "register");
       }
       if (mode === "login") {
         const login = await loginApi.login(values);
         const { payload } = login;
-        if(payload?.access_token) localStorage.setItem("access_token", payload?.access_token);
-        if(payload?.refresh_token) localStorage.setItem("refresh_token", payload?.refresh_token);
+        if (payload?.access_token)
+          localStorage.setItem("access_token", payload?.access_token);
+        if (payload?.refresh_token)
+          localStorage.setItem("refresh_token", payload?.refresh_token);
         navigate("/");
       }
     } catch (errorInfo: any) {
@@ -43,7 +51,9 @@ export const Login = () => {
         message.error(errorInfo?.response?.data?.detail || "Login failed");
       }
       if (mode === "register") {
-        message.error(errorInfo?.response?.data?.detail || "Registration failed");
+        message.error(
+          errorInfo?.response?.data?.detail || "Registration failed",
+        );
       }
     }
   };
@@ -125,7 +135,7 @@ export const Login = () => {
                           return Promise.resolve();
                         }
                         return Promise.reject(
-                          new Error("Passwords do not match, please re-enter")
+                          new Error("Passwords do not match, please re-enter"),
                         );
                       },
                     }),

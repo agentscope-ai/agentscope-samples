@@ -35,7 +35,8 @@ const LoginModal = () => {
         <div className={styles.modalWrap}>
           <h1>Welcome</h1>
           <p className={styles.tips}>
-            Login or register to chat with AgentScope, upload files and images, generate images or videos, etc.
+            Login or register to chat with AgentScope, upload files and images,
+            generate images or videos, etc.
           </p>
           <Button
             type="primary"

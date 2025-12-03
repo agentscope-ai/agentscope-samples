@@ -1,9 +1,9 @@
-import React, { memo } from "react";
-import { Flex } from "antd";
-import { useNavigate } from "react-router-dom";
-import { Popover } from "@agentscope-ai/design";
-import { SparkSwitchLine, SparkEscapeLine } from "@agentscope-ai/icons";
 import UserHeader from "@/assets/icons/avatar/avatar.svg";
+import { Popover } from "@agentscope-ai/design";
+import { SparkEscapeLine, SparkSwitchLine } from "@agentscope-ai/icons";
+import { Flex } from "antd";
+import React, { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
 
 interface UserInfoProps {
@@ -37,8 +37,8 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
               />
             </div>
             <div>
-              <div className={styles.name}>{userInfo?.userName || ''}</div>
-              <div className={styles.email}>{userInfo?.email || ''}</div>
+              <div className={styles.name}>{userInfo?.userName || ""}</div>
+              <div className={styles.email}>{userInfo?.email || ""}</div>
             </div>
           </Flex>
           <Flex vertical className={styles.userButton}>

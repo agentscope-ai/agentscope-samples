@@ -1,7 +1,4 @@
-import {
-  MessageState,
-  Message as MessageType
-} from "@/types/message";
+import { MessageState, Message as MessageType } from "@/types/message";
 import { isAtBottom } from "@/utils/sharedRefs";
 import React, {
   memo,
@@ -38,7 +35,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   currentStep,
   currentConversationId,
   ScrollToBottomButtonRef = useRef<any>(),
-  startTimer = () => { },
+  startTimer = () => {},
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [displayedMessages, setDisplayedMessages] = useState<MessageType[]>([]);

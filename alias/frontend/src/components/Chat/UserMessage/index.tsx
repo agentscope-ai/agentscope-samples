@@ -67,7 +67,9 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
             />
             <div className={styles.roadmapRight}>
               <div className={styles.title}>Roadmap</div>
-              <div className={styles.description}>{`${roadmap.current?.subtasks?.length || 0} Tasks`}</div>
+              <div className={styles.description}>{`${
+                roadmap.current?.subtasks?.length || 0
+              } Tasks`}</div>
             </div>
           </div>
         </Flex>
@@ -87,11 +89,15 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           <Flex className={styles.diffRoadmap}>
             <div className={`${styles.left} ${styles.diffRoadmapJson}`}>
               <div>Previous JSON</div>
-              {roadmap.previous && <CodeView value={JSON.stringify(roadmap.previous, null, 2)} />}
+              {roadmap.previous && (
+                <CodeView value={JSON.stringify(roadmap.previous, null, 2)} />
+              )}
             </div>
             <div className={styles.diffRoadmapJson}>
               <div>Current JSON</div>
-              {roadmap.current && <CodeView value={JSON.stringify(roadmap.current, null, 2)} />}
+              {roadmap.current && (
+                <CodeView value={JSON.stringify(roadmap.current, null, 2)} />
+              )}
             </div>
           </Flex>
         </Modal>

@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--message-border); 
+  background-color: var(--message-border);
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -22,13 +22,13 @@
     z-index: 10;
     font-size: 16px;
     padding: 12px 16px;
-    background-color: var(--artifacts-wrap-bg); 
+    background-color: var(--artifacts-wrap-bg);
     box-shadow: 0 2px 4px var(--sidebar-conversation-hover-bg);
     color: var(--text-secondary);
-    display: inline-block; 
+    display: inline-block;
     white-space: nowrap;
-    max-width: 100%; 
-    overflow: hidden; 
+    max-width: 100%;
+    overflow: hidden;
     text-overflow: ellipsis;
   }
   .messageList {

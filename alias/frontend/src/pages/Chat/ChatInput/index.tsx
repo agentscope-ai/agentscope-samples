@@ -48,11 +48,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
   filePreview,
 }) => {
   const [attachedFiles, setAttachedFiles] = React.useState<AttachmentItem[]>(
-    []
+    [],
   );
   const options = useMemo(() => {
     const getChatModeLabel = () => {
-      const mode = ChatModeList.find(mode => mode.value === chatMode);
+      const mode = ChatModeList.find((mode) => mode.value === chatMode);
       return mode ? `${mode.label} · Ready` : "General Mode · Ready";
     };
 
@@ -71,8 +71,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
       },
     ];
   }, [chatMode]);
-  const handleCustomRequest = async (options: { file: File; onSuccess: Function; onError: Function; onProgress: Function; }) => {
-      const { file, onSuccess, onError, onProgress } = options;
+  const handleCustomRequest = async (options: {
+    file: File;
+    onSuccess: Function;
+    onError: Function;
+    onProgress: Function;
+  }) => {
+    const { file, onSuccess, onError, onProgress } = options;
     try {
       // Merge file names from server file list and local preview list
       let existingFiles: string[] = [];
@@ -87,7 +92,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         existingFiles = [
           ...(response.payload.items || []),
           ...attachedFiles.map(
-            (fp) => `conversations/${conversationId}/${fp.name}`
+            (fp) => `conversations/${conversationId}/${fp.name}`,
           ),
         ];
       }
@@ -101,8 +106,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
       // Check if this file already exists locally (including files being uploaded)
       const isUploading = attachedFiles.some((fp) => fp.name === file.name);
       if (isUploading) {
-        message.error(`File ${file.name} is being uploaded, please do not upload again.`);
-        onError(new Error(`File ${file.name} is being uploaded, please do not upload again`));
+        message.error(
+          `File ${file.name} is being uploaded, please do not upload again.`,
+        );
+        onError(
+          new Error(
+            `File ${file.name} is being uploaded, please do not upload again`,
+          ),
+        );
         return;
       }
 
@@ -138,14 +149,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
       // Create upload progress callback
       const progressCallback = (progressEvent: ProgressEvent) => {
         const progress = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
+          (progressEvent.loaded * 100) / progressEvent.total,
         );
 
         // Update progress
         setAttachedFiles((prev) =>
           prev.map((fp) =>
-            fp.name === uniqueFileName ? { ...fp, progress } : fp
-          )
+            fp.name === uniqueFileName ? { ...fp, progress } : fp,
+          ),
         );
 
         onProgress({ percent: progress });
@@ -154,7 +165,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       // Execute upload
       const uploadResponse: any = await fileApi.uploadFile(
         renamedFile,
-        progressCallback
+        progressCallback,
       );
 
       if (uploadResponse.status && uploadResponse.payload) {
@@ -164,25 +175,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
           prev.map((fp) =>
             fp.name === uniqueFileName
               ? {
-                ...fp,
-                uid: fileId,
-                status: "done",
-                progress: 100,
-              }
-              : fp
-          )
+                  ...fp,
+                  uid: fileId,
+                  status: "done",
+                  progress: 100,
+                }
+              : fp,
+          ),
         );
         setFilePreview((prev) =>
           prev.map((fp) =>
             fp.name === uniqueFileName
               ? {
-                ...fp,
-                id: fileId,
-                status: "success",
-                progress: 100,
-              }
-              : fp
-          )
+                  ...fp,
+                  id: fileId,
+                  status: "success",
+                  progress: 100,
+                }
+              : fp,
+          ),
         );
         message.success(`File ${uniqueFileName} uploaded successfully`);
         onSuccess(uploadResponse.payload, file);
@@ -192,23 +203,23 @@ const ChatInput: React.FC<ChatInputProps> = ({
           prev.map((fp) =>
             fp.name === uniqueFileName
               ? {
-                ...fp,
-                status: "error",
-                progress: 0,
-              }
-              : fp
-          )
+                  ...fp,
+                  status: "error",
+                  progress: 0,
+                }
+              : fp,
+          ),
         );
         setFilePreview((prev) =>
           prev.map((fp) =>
             fp.name === uniqueFileName
               ? {
-                ...fp,
-                status: "error",
-                progress: 0,
-              }
-              : fp
-          )
+                  ...fp,
+                  status: "error",
+                  progress: 0,
+                }
+              : fp,
+          ),
         );
         message.error(`File ${uniqueFileName} upload failed`);
         onError(new Error("Upload failed"));
@@ -264,7 +275,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <Input.ModeSelect
         options={options}
         value={isGenerating ? "isGenerating" : chatMode}
-        onChange={() => { }}
+        onChange={() => {}}
       />
       <Input
         placeholder="Please type here..."

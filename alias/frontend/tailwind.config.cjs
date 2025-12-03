@@ -51,4 +51,4 @@ module.exports = {
     require('tailwind-scrollbar-hide'),
     require('tailwind-scrollbar')
   ],
-} 
+}

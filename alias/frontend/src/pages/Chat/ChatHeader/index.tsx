@@ -18,16 +18,18 @@ interface ChatHeaderProps {
   setCurrentConversation: (con: Conversation) => void;
 }
 const iconStyle = {
-    fontSize: "20px",
-    cursor: "pointer",
-    marginRight: "12px",
-  };
+  fontSize: "20px",
+  cursor: "pointer",
+  marginRight: "12px",
+};
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   currentConversation,
   languageType,
   setCurrentConversation,
 }) => {
-  const [nowConversation, setNowConversation] = useState<Conversation | null>(null);
+  const [nowConversation, setNowConversation] = useState<Conversation | null>(
+    null,
+  );
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
     if (!nowConversation) return;
     const response = await conversationApi.collect(
       nowConversation.id,
-      !nowConversation.collected
+      !nowConversation.collected,
     );
     if (response?.payload) {
       setCurrentConversation(response?.payload as Conversation);
@@ -46,18 +48,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   };
   const shareHandle = () => {
     setIsShareModalOpen(true);
-  }
-  
+  };
+
   return (
     <>
       <Flex className="h-[56px] pt-4 ml-4 mr-6" justify="space-between">
         <Flex className="p-2 w-4/5">
-          <SparkMessageLine style={{ fontSize: 20 }}/>
+          <SparkMessageLine style={{ fontSize: 20 }} />
           <div className="ml-2 mr-2">{nowConversation?.name}</div>
           <div onClick={collectedHandle}>
             {!nowConversation?.collected && <SparkStarLine style={iconStyle} />}
             {nowConversation?.collected && (
-              <SparkStarFill  style={{ ...iconStyle, color: "#ED7E2F" }} />
+              <SparkStarFill style={{ ...iconStyle, color: "#ED7E2F" }} />
             )}
           </div>
         </Flex>

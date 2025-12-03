@@ -1,21 +1,21 @@
 .messageList {
   flex: 1;
   overflow-y: auto;
-  
+
   &::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background-color: #e5e7eb;
     border-radius: 3px;
-    
+
     &:hover {
       background-color: #d1d5db;
     }
   }
-} 
+}

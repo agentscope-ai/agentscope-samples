@@ -1,9 +1,9 @@
-import React from 'react';
-import { ThoughtMessage as ThoughtMessageType } from '@/types/message';
+import React from "react";
+import { ThoughtMessage as ThoughtMessageType } from "@/types/message";
 
 interface ThoughtMessageProps {
   message: ThoughtMessageType;
-  onFeedback?: (messageId: string, feedback: 'like' | 'dislike' | null) => void;
+  onFeedback?: (messageId: string, feedback: "like" | "dislike" | null) => void;
 }
 
 export const ThoughtMessage: React.FC<ThoughtMessageProps> = ({ message }) => {
@@ -13,4 +13,4 @@ export const ThoughtMessage: React.FC<ThoughtMessageProps> = ({ message }) => {
       <div className="whitespace-pre-wrap">{message.content}</div>
     </div>
   );
-}; 
+};

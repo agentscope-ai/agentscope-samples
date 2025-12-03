@@ -1,11 +1,7 @@
 import { useTheme } from "@/context/ThemeContext";
 import { useWorkspace } from "@/context/WorkspaceContext.tsx";
 import { Message, MessageType, ToolCallMessage } from "@/types/message";
-import {
-  Collapse,
-  CollapseProps,
-  Select
-} from "@agentscope-ai/design";
+import { Collapse, CollapseProps, Select } from "@agentscope-ai/design";
 import { SparkComputerLine } from "@agentscope-ai/icons";
 import type { SelectProps } from "antd";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -29,40 +25,44 @@ const Workspace = () => {
     type: string;
   }>({ name: "", arguments: "", type: "" });
   type LabelRender = SelectProps["labelRender"];
-const updateToolInfo = (toolMsg?: ToolCallMessage) => {
-  if (toolMsg && toolMsg.arguments && Object.keys(toolMsg.arguments).length > 0) {
-    setUseToolInfo({
-      name: toolMsg.tool_name || "",
-      arguments: JSON.stringify(toolMsg.arguments, null, 2),
-      type: toolMsg.type,
-    });
-  } else {
-    setUseToolInfo({
-      name: "",
-      arguments: "",
-      type: "",
-    });
-  }
-};
-
-useEffect(() => {
-  if (displayedContent) {
-    const selectedMessage = messageList.find(
-      (msg: Message) => msg.content === displayedContent
-    );
-    if (selectedMessage) {
-      findIndex(selectedMessage.id);
-      if ((selectedMessage as ToolCallMessage).arguments) {
-        const toolMsg = selectedMessage as ToolCallMessage;
-        updateToolInfo(toolMsg);
-      } else {
-        updateToolInfo(); // Set to null
-      }
+  const updateToolInfo = (toolMsg?: ToolCallMessage) => {
+    if (
+      toolMsg &&
+      toolMsg.arguments &&
+      Object.keys(toolMsg.arguments).length > 0
+    ) {
+      setUseToolInfo({
+        name: toolMsg.tool_name || "",
+        arguments: JSON.stringify(toolMsg.arguments, null, 2),
+        type: toolMsg.type,
+      });
+    } else {
+      setUseToolInfo({
+        name: "",
+        arguments: "",
+        type: "",
+      });
     }
-  } else {
-    updateToolInfo(); // Set to null
-  }
-}, [displayedContent, messageList]);
+  };
+
+  useEffect(() => {
+    if (displayedContent) {
+      const selectedMessage = messageList.find(
+        (msg: Message) => msg.content === displayedContent,
+      );
+      if (selectedMessage) {
+        findIndex(selectedMessage.id);
+        if ((selectedMessage as ToolCallMessage).arguments) {
+          const toolMsg = selectedMessage as ToolCallMessage;
+          updateToolInfo(toolMsg);
+        } else {
+          updateToolInfo(); // Set to null
+        }
+      }
+    } else {
+      updateToolInfo(); // Set to null
+    }
+  }, [displayedContent, messageList]);
 
   const customStyle = {
     borderTopRightRadius: 0,
@@ -117,7 +117,7 @@ useEffect(() => {
       return [];
     }
     const currentMessage = messageList.find(
-      (msg: Message) => msg.content === displayedContent
+      (msg: Message) => msg.content === displayedContent,
     );
     if (currentMessage) {
       findIndex(currentMessage.id);
@@ -269,14 +269,14 @@ useEffect(() => {
           children: renderMarkdown(useToolInfo.arguments),
         });
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return base;
   }, [displayedContent, args, theme, useToolInfo]);
 
   const selectOnchange = (v: string) => {
-  // v is now id, need to find corresponding message based on id
-  const selectedMessage = messageList.find((msg: Message) => msg.id === v);
+    // v is now id, need to find corresponding message based on id
+    const selectedMessage = messageList.find((msg: Message) => msg.id === v);
     if (selectedMessage && selectedMessage.content !== displayedContent) {
       findIndex(v);
       setDisplayedContent(selectedMessage.content);
@@ -287,10 +287,10 @@ useEffect(() => {
       } else {
         updateToolInfo(); // Set to null
       }
-      
+
       setTimeout(() => {
         const element = document.getElementById(
-          `message-toolcall-${selectedMessage.id}`
+          `message-toolcall-${selectedMessage.id}`,
         );
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -344,7 +344,7 @@ useEffect(() => {
               }
               value={
                 messageList.find(
-                  (msg: Message) => msg.content === displayedContent
+                  (msg: Message) => msg.content === displayedContent,
                 )?.id
               }
               onChange={(v) => {

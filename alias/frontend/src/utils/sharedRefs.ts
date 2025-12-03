@@ -1,2 +1,2 @@
-export const isAtBottom = { current: true }
-export const isManualScrolling = { current: true }
+export const isAtBottom = { current: true };
+export const isManualScrolling = { current: true };

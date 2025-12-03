@@ -107,7 +107,7 @@ export const Message: React.FC<MessageProps> = ({
     messages.find(
       (msg) =>
         msg.role === MessageRole.ASSISTANT &&
-        msg.parent_message_id === message.parent_message_id
+        msg.parent_message_id === message.parent_message_id,
     )?.id === message.id;
 
   if (!isFirstMessage) {
@@ -141,7 +141,7 @@ export const Message: React.FC<MessageProps> = ({
 
   const renderSingleMessage = (
     msg: MessageType,
-    allMessages: MessageType[]
+    allMessages: MessageType[],
   ) => {
     switch (msg.type) {
       case MsgType.RESPONSE:
@@ -202,7 +202,8 @@ export const Message: React.FC<MessageProps> = ({
         );
 
       case MsgType.CLARIFICATION:
-        if(!msg.content && (msg?.options?.length === 0 || !msg?.options)) return null;
+        if (!msg.content && (msg?.options?.length === 0 || !msg?.options))
+          return null;
         return (
           <div key={msg.id} className={styles.clarificationMessage}>
             <ClarificationMessageComponent
@@ -229,7 +230,7 @@ export const Message: React.FC<MessageProps> = ({
     const filteredMessages = messages.filter(
       (msg) =>
         msg.role === MessageRole.ASSISTANT &&
-        msg.parent_message_id === message.parent_message_id
+        msg.parent_message_id === message.parent_message_id,
     );
 
     // Deduplicate messages
@@ -248,17 +249,16 @@ export const Message: React.FC<MessageProps> = ({
         {relatedMessages.map((msg, index) => {
           return (
             <div
-              className={`${styles.messageItem} ${openPopoverId === msg.id ? styles.selectedMessage : ""
-                }`}
+              className={`${styles.messageItem} ${
+                openPopoverId === msg.id ? styles.selectedMessage : ""
+              }`}
               key={msg.id}
             >
               {renderSingleMessage(msg, relatedMessages)}
             </div>
           );
         })}
-        <div className={styles.messageFooter}>
-          {renderStatus()}
-        </div>
+        <div className={styles.messageFooter}>{renderStatus()}</div>
       </div>
     </div>
   );

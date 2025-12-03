@@ -493,7 +493,7 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
       type: "navigation",
       pageId: activeTabId,
       event: action === "url" ? { url } : { action },
-    }); 
+    });
 
     // TODO: push event
     console.warn("Navigation Event:", {
@@ -537,8 +537,8 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
               {connectionStatus === "online"
                 ? "Session Online"
                 : connectionStatus === "offline"
-                  ? "Session Offline"
-                  : "Session Connecting..."}
+                ? "Session Offline"
+                : "Session Connecting..."}
             </span>
           </div>
           {tabOrder.map((id) => {
@@ -546,8 +546,9 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
             return (
               <div
                 key={id}
-                className={`tab${activeTabId === id ? " active" : ""}${tab.isLoading ? " loading" : ""
-                  }`}
+                className={`tab${activeTabId === id ? " active" : ""}${
+                  tab.isLoading ? " loading" : ""
+                }`}
                 onClick={() => setActiveTabId(id)}
               >
                 <img
@@ -603,8 +604,9 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
           </div>
           <form className="url-bar" onSubmit={handleUrlSubmit}>
             <div
-              className={`url-security-icon${isSecure(tabs[activeTabId || ""]?.url || "") ? " secure" : ""
-                }`}
+              className={`url-security-icon${
+                isSecure(tabs[activeTabId || ""]?.url || "") ? " secure" : ""
+              }`}
               id="url-security-icon"
             >
               <svg
@@ -660,8 +662,9 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
             <div
               key={id}
               ref={tab.containerRef}
-              className={`canvas-container${activeTabId === id ? " active" : ""
-                }${tab.isLoading ? " loading" : ""}${tab.error ? " error" : ""}`}
+              className={`canvas-container${
+                activeTabId === id ? " active" : ""
+              }${tab.isLoading ? " loading" : ""}${tab.error ? " error" : ""}`}
               style={{
                 display: activeTabId === id ? "flex" : "none",
                 width: "100%",

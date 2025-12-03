@@ -1,45 +1,45 @@
-import { RoadMap, RoadMapMessage } from './roadmap';
+import { RoadMap, RoadMapMessage } from "./roadmap";
 export enum MessageRole {
-  USER = 'user',
-  ASSISTANT = 'assistant',
-  SYSTEM = 'system'
+  USER = "user",
+  ASSISTANT = "assistant",
+  SYSTEM = "system",
 }
 
 export enum FeedbackType {
-  LIKE = 'like',
-  DISLIKE = 'dislike'
+  LIKE = "like",
+  DISLIKE = "dislike",
 }
 
 export enum MessageType {
-  RESPONSE = 'response',
-  THOUGHT = 'thought',
-  SUB_RESPONSE = 'sub_response',
-  SUB_THOUGHT = 'sub_thought',
-  TOOL_CALL = 'tool_call',
-  CLARIFICATION = 'clarification',
-  FILES = 'files',
-  USER = 'user',
-  SYSTEM = 'system',
-  TOOL_USE = 'tool_use',
-  TOOL_RESULT = 'tool_result'
+  RESPONSE = "response",
+  THOUGHT = "thought",
+  SUB_RESPONSE = "sub_response",
+  SUB_THOUGHT = "sub_thought",
+  TOOL_CALL = "tool_call",
+  CLARIFICATION = "clarification",
+  FILES = "files",
+  USER = "user",
+  SYSTEM = "system",
+  TOOL_USE = "tool_use",
+  TOOL_RESULT = "tool_result",
 }
 
 export enum ToolIconType {
-  TOOL = 'tool',
-  BROWSER = 'browser',
-  FILE = 'file'
+  TOOL = "tool",
+  BROWSER = "browser",
+  FILE = "file",
 }
 
 export enum SelectionType {
-  SINGLE = 'single',
-  MULTIPLE = 'multiple'
+  SINGLE = "single",
+  MULTIPLE = "multiple",
 }
 
 export enum MessageState {
-  RUNNING = 'running',
-  WAITING = 'waiting',
-  FINISHED = 'finished',
-  ERROR = 'error'
+  RUNNING = "running",
+  WAITING = "waiting",
+  FINISHED = "finished",
+  ERROR = "error",
 }
 
 export interface FileItem {
