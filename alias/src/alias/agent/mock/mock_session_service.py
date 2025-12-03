@@ -118,6 +118,9 @@ class MockSessionService:
             f"Update plan {self.plan_update_counter}:\n"
             f"\n{json.dumps(self.plan.content, indent=4, ensure_ascii=False)}"
             "\n" + "==" * 10 + "\n"
+            'Type "continue" if the program halts and you are satisfied with '
+            "the plan; otherwise, you can type your suggestion."
+            "\n" + "==" * 10 + "\n"
         )
         # logger.log("SEND_PLAN", content)
         with open(self.log_storage_path, "a") as file:
