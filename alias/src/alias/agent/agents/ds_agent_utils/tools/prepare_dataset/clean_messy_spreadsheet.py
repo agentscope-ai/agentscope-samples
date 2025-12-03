@@ -157,7 +157,7 @@ def get_excel_file_from_workspace(sandbox: Sandbox, file_path: str) -> dict:
 
     # Call underlying function to get base64-encoded content
     b64_content = get_workspace_file(sandbox, file_path)
-    clean_b64 = b64_content.strip().replace(b"\n", b"").replace(b"\r", b"")
+    clean_b64 = b64_content.strip().replace("\n", "").replace("\r", "")
     excel_bytes = base64.b64decode(clean_b64)
 
     # Read all sheets
