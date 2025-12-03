@@ -12,7 +12,7 @@ import { MessageProvider } from "@/context/MessageContext";
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme();
-  const theme = currentTheme === 'dark' ? carbonDarkTheme : carbonTheme;
+  const theme = currentTheme === "dark" ? carbonDarkTheme : carbonTheme;
   const prefix = "sps";
   return (
     <ConfigProvider

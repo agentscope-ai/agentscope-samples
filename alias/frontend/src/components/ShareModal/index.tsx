@@ -69,12 +69,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         />
         <span></span>
         <div className={styles.urlContainer}>
-          <Input disabled={!isShared} value={shareUrl} readOnly className={styles.urlInput} />
-          <Button
-            type="primary"
+          <Input
             disabled={!isShared}
-            onClick={handleCopy}
-          >
+            value={shareUrl}
+            readOnly
+            className={styles.urlInput}
+          />
+          <Button type="primary" disabled={!isShared} onClick={handleCopy}>
             {copied ? "Copied" : "Copy Link"}
           </Button>
         </div>

@@ -60,7 +60,7 @@ const fontSize = { fontSize: 20 };
 const SortableListItemContext = createContext<SortableListItemContextProps>({});
 const DragHandle: React.FC = () => {
   const { setActivatorNodeRef, listeners, attributes } = useContext(
-    SortableListItemContext
+    SortableListItemContext,
   );
   return (
     <Button
@@ -97,7 +97,7 @@ const SortableListItem: React.FC<
 
   const memoizedValue = useMemo<SortableListItemContextProps>(
     () => ({ setActivatorNodeRef, listeners, attributes }),
-    [setActivatorNodeRef, listeners, attributes]
+    [setActivatorNodeRef, listeners, attributes],
   );
 
   return (
@@ -191,7 +191,7 @@ const Roadmap: React.FC<RoadmapProps> = ({
           try {
             const response: any = await conversationApi.setRoadmap(
               conversationId,
-              newData
+              newData,
             );
             if (response.status && response?.payload) {
               onSave(response?.payload);
@@ -240,23 +240,21 @@ const Roadmap: React.FC<RoadmapProps> = ({
       return;
     }
     if (taskKey) {
-          setList(
-            list.map((item) => 
-              item.key === taskKey 
-                ? { ...item, description: taskValue }
-                : item
-            )
-          );
-        } else {
-          setList([
-            ...list,
-            {
-              key: new Date().getTime(),
-              state: RoadMapType.TODO,
-              description: taskValue.trim(),
-            },
-          ]);
-        }
+      setList(
+        list.map((item) =>
+          item.key === taskKey ? { ...item, description: taskValue } : item,
+        ),
+      );
+    } else {
+      setList([
+        ...list,
+        {
+          key: new Date().getTime(),
+          state: RoadMapType.TODO,
+          description: taskValue.trim(),
+        },
+      ]);
+    }
     onCancel();
   };
   // const renderReadItem =

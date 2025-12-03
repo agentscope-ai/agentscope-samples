@@ -141,7 +141,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
     if (!searchKeyword) return dataList;
 
     return dataList.filter((item) =>
-      item.content.toLowerCase().includes(searchKeyword.toLowerCase())
+      item.content.toLowerCase().includes(searchKeyword.toLowerCase()),
     );
   }, [dataList, searchKeyword]);
 
@@ -181,7 +181,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } catch (error) {
-        message.error('Download failed');
+        message.error("Download failed");
       }
     }
   };
@@ -227,7 +227,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
           uid,
           pid,
           contentBefore,
-          habbitContent
+          habbitContent,
         );
         if (result) {
           getProfilingData();
@@ -254,9 +254,9 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         if (res) getProfilingData();
       });
     } catch (error) {
-          console.error("Error confirming profiling:", error);
-          message.error("Failed to confirm habit");
-        }
+      console.error("Error confirming profiling:", error);
+      message.error("Failed to confirm habit");
+    }
   };
   return (
     <>

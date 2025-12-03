@@ -2,12 +2,17 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { ApiResponse } from "../types/conversation";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const USER_PROFILING_URL = import.meta.env.VITE_USER_PROFILING_API_URL || "http://localhost:6380";
+const USER_PROFILING_URL =
+  import.meta.env.VITE_USER_PROFILING_API_URL || "http://localhost:6380";
 const MAX_RETRIES = Number(import.meta.env.VITE_MAX_RETRIES) || 3;
 const RETRY_DELAY = Number(import.meta.env.VITE_RETRY_DELAY) || 1000;
 
-let onDoneCallback: ((conversationId: string, taskId: string, messageId: string) => void) | null = null;
-export const setOnDoneCallback = (callback: (conversationId: string, taskId: string, messageId: string) => void) => {
+let onDoneCallback:
+  | ((conversationId: string, taskId: string, messageId: string) => void)
+  | null = null;
+export const setOnDoneCallback = (
+  callback: (conversationId: string, taskId: string, messageId: string) => void,
+) => {
   onDoneCallback = callback;
 };
 
@@ -30,9 +35,11 @@ class Request {
     this.setupInterceptors();
   }
   private getUserProfilingUrl(url: string): string {
-    const USER_PROFILING_PATH = '/alias_memory_service/user_profiling';
+    const USER_PROFILING_PATH = "/alias_memory_service/user_profiling";
     if (url.includes(USER_PROFILING_PATH)) {
-      return url.startsWith('/') ? `${USER_PROFILING_URL}${url}` : `${USER_PROFILING_URL}/${url}`;;
+      return url.startsWith("/")
+        ? `${USER_PROFILING_URL}${url}`
+        : `${USER_PROFILING_URL}/${url}`;
     }
     return url;
   }
@@ -139,9 +146,8 @@ class Request {
         config,
       );
       return response.data;
-    }, 0);  // no retry
+    }, 0); // no retry
   }
-
 
   async put<T>(
     url: string,
@@ -197,9 +203,9 @@ class Request {
 
         let buffer = "";
 
-        let task_id = '';
-        let conversation_id = '';
-        let message_id = '';
+        let task_id = "";
+        let conversation_id = "";
+        let message_id = "";
 
         while (true) {
           if (abortController?.signal.aborted) {
@@ -227,9 +233,9 @@ class Request {
               }
               try {
                 const parsed = JSON.parse(data);
-                task_id = parsed?.task_id || '';
-                conversation_id = parsed?.conversation_id || '';
-                message_id = parsed?.conversamessage_idtion_id || '';
+                task_id = parsed?.task_id || "";
+                conversation_id = parsed?.conversation_id || "";
+                message_id = parsed?.message_id || "";
                 if (parsed?.code && parsed?.message) {
                   onError?.(parsed);
                   return;
@@ -276,7 +282,7 @@ class Request {
           }
         }
       } catch (error: any) {
-        if (error.name === 'AbortError' || abortController?.signal.aborted) {
+        if (error.name === "AbortError" || abortController?.signal.aborted) {
           return;
         }
         if (retries > 0) {

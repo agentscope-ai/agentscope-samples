@@ -12,7 +12,7 @@ const CollapsibleMessage: React.FC<{ message: MessageType }> = ({
   const messageContent = message.content;
 
   const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const handleExpand = (messageId: string) => {
     setExpandedStates((prev) => ({
@@ -27,7 +27,7 @@ const CollapsibleMessage: React.FC<{ message: MessageType }> = ({
   if (typeof messageContent !== "string") {
     return JSON.stringify(messageContent, null, 2);
   }
-  
+
   let content = messageContent;
 
   if (markdownRegex.test(messageContent)) {
@@ -39,16 +39,14 @@ const CollapsibleMessage: React.FC<{ message: MessageType }> = ({
   const lines = content.split("\n");
   const showLines = 10;
   const isExpanded = expandedStates[message.id];
-  
+
   // Determine if we should show full content
-  const shouldShowFullContent = 
-    message.isGenerating || 
-    lines.length <= showLines || 
-    isExpanded;
+  const shouldShowFullContent =
+    message.isGenerating || lines.length <= showLines || isExpanded;
 
   // Calculate visible content
-  const visibleContent = shouldShowFullContent 
-    ? content 
+  const visibleContent = shouldShowFullContent
+    ? content
     : lines.slice(0, showLines).join("\n");
 
   return (
@@ -59,7 +57,11 @@ const CollapsibleMessage: React.FC<{ message: MessageType }> = ({
         </ReactMarkdown>
       </div>
       {!shouldShowFullContent && (
-        <div className={`${styles.gradientWrapper} ${isExpanded ? styles.expanded : ""}`}>
+        <div
+          className={`${styles.gradientWrapper} ${
+            isExpanded ? styles.expanded : ""
+          }`}
+        >
           <button
             className={styles.collapseButton}
             onClick={(e) => {
@@ -68,7 +70,9 @@ const CollapsibleMessage: React.FC<{ message: MessageType }> = ({
             }}
           >
             <SparkDoubleRightLine
-              className={`${styles.arrow} ${isExpanded ? styles.up : styles.down}`}
+              className={`${styles.arrow} ${
+                isExpanded ? styles.up : styles.down
+              }`}
             />
           </button>
         </div>

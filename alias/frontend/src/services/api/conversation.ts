@@ -16,8 +16,7 @@ import {
   StopChatResponse,
 } from "@/types/api";
 import { RoadMap, RoadMapDataProps, RoadMapMessage } from "@/types/roadmap";
-import { LANGUAGETYPE } from "@/utils/constant";
-import { ChatModeType } from "@/utils/constant";
+import { ChatModeType, LANGUAGETYPE } from "@/utils/constant";
 import { request } from "./request";
 
 export const conversationApi = {
@@ -41,7 +40,7 @@ export const conversationApi = {
     language_type: string = LANGUAGETYPE.en_US,
     chatMode: ChatModeType = ChatModeType.GENERAL,
     abortController?: AbortController,
-    roadmap?: RoadMapMessage,
+    roadmap?: RoadMapMessage | null,
   ) => {
     const requestBody = {
       query: message,
@@ -123,39 +122,51 @@ export const conversationApi = {
 
   getFiles: (conversationId: string) => {
     return request.get<ConversationFilesResponse>(
-      `/api/v1/conversations/${conversationId}/files`
+      `/api/v1/conversations/${conversationId}/files`,
     );
   },
 
   collect: (conversationId: string, collect: boolean) => {
-    return request.post(
-      `/api/v1/conversations/${conversationId}/collect`,
-      { collect },
-    );
+    return request.post(`/api/v1/conversations/${conversationId}/collect`, {
+      collect,
+    });
   },
   feedback: (messageId: string, feedback: string | null) => {
     return request.post(`/api/v1/messages/${messageId}/feedback`, { feedback });
   },
 
-  conversationFeedback: (conversationId: string, params: ConversationFeedbackParams) => {
-    return request.post(`/api/v1/conversations/${conversationId}/feedback`, params);
-  },
-  getConversationFeedback: (conversationId: string, params?: FeedbackConversationParams) => {
-    return request.get(
+  conversationFeedback: (
+    conversationId: string,
+    params: ConversationFeedbackParams,
+  ) => {
+    return request.post(
       `/api/v1/conversations/${conversationId}/feedback`,
-      { params },
+      params,
     );
   },
+  getConversationFeedback: (
+    conversationId: string,
+    params?: FeedbackConversationParams,
+  ) => {
+    return request.get(`/api/v1/conversations/${conversationId}/feedback`, {
+      params,
+    });
+  },
   updateConversationName: (conversationId: string, name: string) => {
-    return request.post(`/api/v1/conversations/${conversationId}/name`, { name });
+    return request.post(`/api/v1/conversations/${conversationId}/name`, {
+      name,
+    });
   },
 
   shareConversations: (conversationId: string, share: boolean) => {
-    return request.post(`/api/v1/conversations/${conversationId}/share`, { share });
+    return request.post(`/api/v1/conversations/${conversationId}/share`, {
+      share,
+    });
   },
 
   getShareConversations: (userId: string, conversationId: string) => {
-    return request.get<ShareConversationsProps>(`/api/v1/share/conversations/${userId}/${conversationId}`);
+    return request.get<ShareConversationsProps>(
+      `/api/v1/share/conversations/${userId}/${conversationId}`,
+    );
   },
-
 };

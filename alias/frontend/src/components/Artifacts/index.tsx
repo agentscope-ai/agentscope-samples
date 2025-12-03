@@ -77,7 +77,7 @@ const Artifacts = (Props: {
   const handleOutput = (data: string) => {
     if (terminalElementRef.current) {
       const terminal = terminalElementRef.current.querySelector(
-        ".xterm"
+        ".xterm",
       ) as any;
       if (terminal && terminal.terminal) {
         terminal.terminal.write(data);
@@ -95,7 +95,7 @@ const Artifacts = (Props: {
         },
       });
     } catch (error) {
-      console.error('Failed to connect to WebSocket:', error);
+      console.error("Failed to connect to WebSocket:", error);
       // Handle connection failures, such as displaying an error message to the user
     }
     // socket = io("http://localhost:4500/artifacts");
@@ -356,7 +356,7 @@ const Artifacts = (Props: {
   }, [theme]);
   const onClose = () => {
     setModal(false);
-  }
+  };
   const modalTitle = (
     <div className={styles.modalTitle}>
       <span
@@ -393,8 +393,9 @@ const Artifacts = (Props: {
         <div className={styles.modalContent}>
           {fileName.split(".").slice(-1)[0] === "md" ? (
             <div
-              className={`markdown-body ${theme === "dark" ? "markdown-dark" : "markdown-light"
-                }`}
+              className={`markdown-body ${
+                theme === "dark" ? "markdown-dark" : "markdown-light"
+              }`}
             >
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
@@ -498,23 +499,23 @@ const Artifacts = (Props: {
                   </div>
                   {(fileName.split(".").slice(-1)[0] === "md" ||
                     fileName.split(".").slice(-1)[0] === "html") && (
-                      <Button
-                        type="link"
-                        style={{ flexShrink: 0 }}
-                        onClick={() => {
-                          // Update preview content before opening preview
-                          const fileExt = fileName.split(".").slice(-1)[0];
-                          if (fileExt === "md") {
-                            setMarkdownValue(codeValue);
-                          } else if (fileExt === "html") {
-                            setHtmlModal(codeValue);
-                          }
-                          setModal(true);
-                        }}
-                      >
-                        Preview
-                      </Button>
-                    )}
+                    <Button
+                      type="link"
+                      style={{ flexShrink: 0 }}
+                      onClick={() => {
+                        // Update preview content before opening preview
+                        const fileExt = fileName.split(".").slice(-1)[0];
+                        if (fileExt === "md") {
+                          setMarkdownValue(codeValue);
+                        } else if (fileExt === "html") {
+                          setHtmlModal(codeValue);
+                        }
+                        setModal(true);
+                      }}
+                    >
+                      Preview
+                    </Button>
+                  )}
                 </div>
               </PanelHeader>
               <div className={styles.codeWrap}>

@@ -104,8 +104,8 @@ export interface RuntimeResponse {
 
 export interface DeleteConversationResponse {
   conversation_id: string;
-} 
-export interface  Register {
+}
+export interface Register {
   email: string;
   username: string;
   avatar?: string | null;
@@ -120,7 +120,6 @@ export interface  Register {
   access_token?: string;
   refresh_token?: string;
 }
-
 
 export interface FilesShareResponse {
   id: string;
@@ -146,7 +145,8 @@ export interface ConversationFilesPayload {
   items: FileInfo[];
 }
 
-export interface ConversationFilesResponse extends ApiResponse<ConversationFilesPayload> {}
+export interface ConversationFilesResponse
+  extends ApiResponse<ConversationFilesPayload> {}
 
 export interface UploadFileResponse extends ApiResponse<UploadFilePayload> {}
 
@@ -197,12 +197,12 @@ export interface NotificationProps {
   visible: boolean;
 }
 export interface FeedbackContentProps {
-  score?: number,
+  score?: number;
   comment?: string;
   allFeedback?: string[];
   selectedFeedback?: string[];
   mode?: string;
-  previous?: RoadMap; 
+  previous?: RoadMap;
   current?: RoadMap;
 }
 export interface ConversationFeedbackParams {
@@ -219,7 +219,7 @@ export interface FeedbackConversationPropos {
 export interface FeedbackConversationParams {
   type?: string;
   message_id?: string;
-  task_id?:  string;
+  task_id?: string;
 }
 export interface ShareConversationsProps {
   name: string;

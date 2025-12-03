@@ -11,7 +11,8 @@ const MessageContext = createContext<MessageContextType | undefined>(undefined);
 export const MessageProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+  const [currentConversation, setCurrentConversation] =
+    useState<Conversation | null>(null);
   return (
     <MessageContext.Provider
       value={{

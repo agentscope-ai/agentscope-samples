@@ -2,7 +2,7 @@ export interface Conversation {
   id: string;
   name: string;
   description?: string;
-  status: 'running' | 'stopped';
+  status: "running" | "stopped";
   create_time: string;
   update_time: string;
   user_id: string;
@@ -12,12 +12,12 @@ export interface Conversation {
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   name?: string;
   create_time: string;
   update_time: string;
-  feedback?: 'like' | 'dislike';
+  feedback?: "like" | "dislike";
   conversation_id: string;
   parent_message_id?: string;
 }
@@ -36,7 +36,7 @@ export interface PaginationRequest {
   page?: number;
   page_size?: number;
   order_by?: string;
-  order_direction?: 'asc' | 'desc';
+  order_direction?: "asc" | "desc";
 }
 
 export interface PaginationResponse<T> {
@@ -58,4 +58,4 @@ export interface ChatResponse {
   data: {
     content: string;
   };
-} 
+}

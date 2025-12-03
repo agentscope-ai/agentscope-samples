@@ -1,4 +1,5 @@
 import { originalPromptsList, promptJson } from "@/assets/json/prompt";
+import { RoadMapMessage } from "@/types/roadmap";
 import { ChatModeList, ChatModeType } from "@/utils/constant";
 import { Button, Card } from "@agentscope-ai/design";
 import {
@@ -9,24 +10,29 @@ import {
   SparkMagicWandLine,
   SparkReplaceLine,
   SparkReplayLine,
-  SparkRoboticsLine
+  SparkRoboticsLine,
 } from "@agentscope-ai/icons";
 import { Col, Flex, Row } from "antd";
 import { debounce } from "lodash";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./index.module.scss";
-
 interface PromptsProps {
-  handleSendMessage: (value: string, description: string) => void;
+  handleSendMessage: (
+    value?: string,
+    description?: string,
+    roadmap?: RoadMapMessage | null,
+    files?: string | string[],
+  ) => void;
   chatMode: ChatModeType;
 }
 interface PromptsModeProps {
   title: string;
   describe: string;
-  files?: string;
+  files?: string[] | string;
+  icon?: React.ReactNode;
 }
 
-const PromptCard: React.FC<{ item: any }> = ({ item }) => {
+const PromptCard: React.FC<{ item: PromptsModeProps }> = ({ item }) => {
   const [isHovered, setIsHovered] = useState(false);
   return (
     <Card
@@ -81,8 +87,8 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
       const previousIndices = previousPrompts
         .map((prompt) =>
           modeSpecificPrompts.findIndex(
-            (item: PromptsModeProps) => item.title === prompt.title
-          )
+            (item: PromptsModeProps) => item.title === prompt.title,
+          ),
         )
         .filter((index) => index !== -1);
 
@@ -108,7 +114,7 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
       return shuffledIndices.map((index) => {
         // Randomly select one from remaining icons
         const randomIconIndex = Math.floor(
-          Math.random() * Math.min(selectedIcons.length, icons.length)
+          Math.random() * Math.min(selectedIcons.length, icons.length),
         );
         const icon = selectedIcons[randomIconIndex];
 
@@ -123,12 +129,12 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
         };
       });
     },
-    [modeSpecificPrompts]
+    [modeSpecificPrompts],
   );
 
   // Use state to manage random prompt items
-  const [randomPrompts, setRandomPrompts] = useState<any[]>(() =>
-    generateRandomPrompts()
+  const [randomPrompts, setRandomPrompts] = useState<PromptsModeProps[]>(() =>
+    generateRandomPrompts(),
   );
 
   // Function to update random prompt items
@@ -137,12 +143,19 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
   }, [generateRandomPrompts]);
 
   const debouncedHandleSendMessage = useCallback(
-    debounce((title: string, describe: string) => {
-      handleSendMessage(title, describe);
-    }, 300),
-    [handleSendMessage]
+    debounce(
+      (
+        title: string,
+        describe: string,
+        roadmap: RoadMapMessage | null,
+        files: string | string[] | undefined,
+      ) => {
+        handleSendMessage(title, describe, roadmap, files);
+      },
+      300,
+    ),
+    [handleSendMessage],
   );
-
   return (
     <div className={styles.prompts}>
       <Flex align="center" justify="space-between" className={styles.header}>
@@ -164,7 +177,12 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
               key={item.title}
               onClick={() => {
                 if (item.title)
-                  debouncedHandleSendMessage(item.title, item.describe);
+                  debouncedHandleSendMessage(
+                    item.title,
+                    item.describe,
+                    null,
+                    item.files,
+                  );
               }}
             >
               <PromptCard item={item} />
