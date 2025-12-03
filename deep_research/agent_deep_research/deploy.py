@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """The main entry point of the Deep Research agent example."""
-import asyncio
 import os
 import shutil
 
@@ -25,6 +24,7 @@ agent_app = AgentApp(
     app_name="Friday",
     app_description="A helpful assistant",
 )
+
 
 @agent_app.init
 async def init_func(self):
@@ -67,7 +67,9 @@ async def query_func(
         user_id=user_id,
     )
 
-    local_temp_dir_name = "deepresearch_agent_local_temp_" +  session_id + "_" + user_id
+    local_temp_dir_name = (
+        "deepresearch_agent_local_temp_" + session_id + "_" + user_id
+    )
     agent_working_dir = os.path.join(
         os.path.dirname(__file__),
         local_temp_dir_name,
@@ -108,7 +110,6 @@ async def query_func(
 
     # delete the temp working dir immediately after finish the task
     shutil.rmtree(agent_working_dir, ignore_errors=True)
-
 
 
 if __name__ == "__main__":

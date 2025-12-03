@@ -42,8 +42,12 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
 )
-from agentscope_runtime.tools.searches.modelstudio_search_lite import ModelstudioSearchLite
-from agentscope_runtime.adapters.agentscope.tool.tool import agentscope_tool_adapter
+from agentscope_runtime.tools.searches.modelstudio_search_lite import (
+    ModelstudioSearchLite,
+)
+from agentscope_runtime.adapters.agentscope.tool.tool import (
+    agentscope_tool_adapter,
+)
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
 
@@ -167,7 +171,9 @@ class DeepResearchAgent(ReActAgent):
         # register modelstudiolite
         modelstudio_search = ModelstudioSearchLite()
         modelstudio_search_tool = agentscope_tool_adapter(modelstudio_search)
-        self.toolkit.tools[modelstudio_search_tool.name] = modelstudio_search_tool
+        self.toolkit.tools[
+            modelstudio_search_tool.name
+        ] = modelstudio_search_tool
 
         loop = asyncio.get_running_loop()
 
@@ -177,7 +183,6 @@ class DeepResearchAgent(ReActAgent):
             self.toolkit.tools.pop("tavily-search")
 
         loop.create_task(_init_mcp_client())
-
 
         self.search_function = "modelstudio_web_search"
         self.extract_function = "tavily-extract"
@@ -219,7 +224,9 @@ class DeepResearchAgent(ReActAgent):
         # Identify the expected output and generate a plan
         await self.decompose_and_expand_subtask()
         if isinstance(message.content, list):
-            message.content[0]['text'] += (
+            message.content[0][
+                "text"
+            ] += (
                 f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
             )
         else:
@@ -958,7 +965,10 @@ class DeepResearchAgent(ReActAgent):
 
         # Try to upload to Aliyun OSS if credentials are configured
         oss_url = ""
-        oss_object_name = f"deep_research_reports/{self.report_path_based}_detailed_report.md"
+        oss_object_name = (
+            f"deep_research_reports/"
+            f"{self.report_path_based}_detailed_report.md"
+        )
         try:
             uploaded_url = upload_to_aliyun_oss(
                 detailed_report_path,
@@ -1136,7 +1146,7 @@ class DeepResearchAgent(ReActAgent):
         if len(self.current_subtask) == 0:
             (
                 summarized_content,
-                local_path,
+                _,
                 oss_url,
             ) = await self._generate_deepresearch_report(
                 checklist=checklist,

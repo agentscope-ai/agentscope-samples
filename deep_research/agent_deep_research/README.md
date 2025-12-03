@@ -31,7 +31,7 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
    python deploy.py
    ```
 
-Once run the deploy script, the deepresearch will run at `http://0.0.0.0:8090/process` with sync manner, 
+Once run the deploy script, the deepresearch will run at `http://0.0.0.0:8090/process` with sync manner,
 and a webui will start at `http://localhost:5173/`, then user could test the service at the webui.
 
 

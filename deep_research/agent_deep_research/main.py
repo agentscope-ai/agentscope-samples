@@ -66,9 +66,7 @@ async def run(user_query: str) -> None:
 
 
 if __name__ == "__main__":
-    query = (
-        "孔子对中国历史的贡献如何？"
-    )
+    query = "孔子对中国历史的贡献如何？"
     try:
         asyncio.run(run(query))
     except Exception as e:

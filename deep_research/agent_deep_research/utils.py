@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """The utilities for deep research agent"""
-import os
 import json
+import os
 import re
 from typing import Union, Sequence, Any, Type, Optional
-from pydantic import BaseModel
-from datetime import datetime, timedelta
 
 from agentscope.tool import Toolkit, ToolResponse
-
+from pydantic import BaseModel
 
 TOOL_RESULTS_MAX_WORDS = 500
 
@@ -400,6 +398,6 @@ def upload_to_aliyun_oss(
 
     except Exception as e:
         import logging
+
         logging.warning("Failed to upload to Aliyun OSS: %s", str(e))
         return None
-
