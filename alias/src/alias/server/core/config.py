@@ -56,7 +56,7 @@ class ApplicationConfig(BaseSettings):
     """Application basic configuration - Core system identity"""
 
     PROJECT_NAME: str = Field(default="Alias", description="Project name")
-    VERSION: str = Field(default="0.1.0", description="Project version")
+    VERSION: str = Field(default="0.2.0", description="Project version")
     ENVIRONMENT: Literal["local", "dev", "staging", "production"] = Field(
         default="local",
         description="Runtime environment",

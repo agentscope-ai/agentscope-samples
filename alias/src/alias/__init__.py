@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Alias - Beta version"""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = ["agent", "runtime", "__version__"]
 

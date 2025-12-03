@@ -308,7 +308,7 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version="Alias 0.1.0",
+        version="Alias 0.2.0",
     )
 
     args = parser.parse_args()
