@@ -79,7 +79,7 @@ Send content to the memory service, which will be processed and stored. Submits 
       "content": "User message content"
     },
     {
-      "role": "assistant", 
+      "role": "assistant",
       "content": "Assistant response content"
     }
   ]
@@ -573,7 +573,7 @@ async def add_memory(uid: str, content: list):
             "uid": uid,
             "content": content
         }
-        
+
         async with session.post(url, json=data) as response:
             result = await response.json()
             return result
@@ -585,7 +585,7 @@ async def retrieve_memory(uid: str, query: str):
             "uid": uid,
             "query": query
         }
-        
+
         async with session.post(url, json=data) as response:
             result = await response.json()
             return result
@@ -593,7 +593,7 @@ async def retrieve_memory(uid: str, query: str):
 async def check_task_status(submit_id: str):
     async with aiohttp.ClientSession() as session:
         url = f"http://localhost:8000/alias_memory_service/task_status/{submit_id}"
-        
+
         async with session.get(url) as response:
             result = await response.json()
             return result
@@ -606,7 +606,7 @@ async def record_action(uid: str, session_id: str, action_type: str):
             "session_id": session_id,
             "action_type": action_type
         }
-        
+
         async with session.post(url, json=data) as response:
             result = await response.json()
             return result
@@ -618,10 +618,10 @@ async def main():
         {"role": "user", "content": "I like sci-fi movies"},
         {"role": "assistant", "content": "Sci-fi movies are interesting! Which one do you like best?"}
     ]
-    
+
     result = await add_memory("user123", content)
     submit_id = result["submit_id"]
-    
+
     # Check task status
     while True:
         status = await check_task_status(submit_id)
@@ -629,7 +629,7 @@ async def main():
             print(f"Task completed, status: {status['status']}")
             break
         await asyncio.sleep(5)
-    
+
     # Retrieve memory
     retrieve_result = await retrieve_memory("user123", "What type of movies do I like")
     print(f"Retrieved memories: {retrieve_result}")

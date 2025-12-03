@@ -59,22 +59,22 @@ create_logs_dir() {
 # Function to check environment variables
 check_env_vars() {
     print_status "Checking environment variables..."
-    
+
     # Check for required environment variables
     local missing_vars=()
-    
+
     if [ -z "${DASHSCOPE_API_KEY:-}" ]; then
         missing_vars+=("DASHSCOPE_API_KEY")
     fi
-    
+
     if [ -z "${DASHSCOPE_API_BASE_URL:-}" ]; then
         missing_vars+=("DASHSCOPE_API_BASE_URL")
     fi
-    
+
     if [ -z "${DASHSCOPE_MODEL_4_MEMORY:-}" ]; then
         missing_vars+=("DASHSCOPE_MODEL_4_MEMORY")
     fi
-    
+
     if [ ${#missing_vars[@]} -gt 0 ]; then
         print_warning "Missing environment variables: ${missing_vars[*]}"
         print_status "Please set these variables in your .env file or environment:"
@@ -178,7 +178,7 @@ show_logs() {
 show_status() {
     print_status "Service status:"
     docker compose ps
-    
+
     print_status "Container logs (last 10 lines):"
     docker compose logs --tail=10 "$SERVICE_NAME"
 }
@@ -200,7 +200,7 @@ cleanup() {
 # Function to install dependencies
 install_deps() {
     print_status "Installing Python dependencies..."
-    
+
     if [ "$1" = "graph" ]; then
         print_status "Installing with graph support..."
         pip install -e .[graph]
@@ -211,7 +211,7 @@ install_deps() {
         print_status "Installing basic dependencies..."
         pip install -e .
     fi
-    
+
     print_success "Dependencies installed successfully"
 }
 
@@ -259,7 +259,7 @@ show_help() {
 # Main script logic
 main() {
     check_docker
-    
+
     case "${1:-help}" in
         build)
             build_image
@@ -306,4 +306,4 @@ main() {
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@"

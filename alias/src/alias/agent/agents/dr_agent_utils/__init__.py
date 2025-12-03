@@ -25,4 +25,5 @@ __all__ = [
     "BasicTask",
     "HypothesisDrivenTask",
     "DEEP_RESEARCH_SYSTEM_PROMPT",
+    "get_deep_research_worker_builder",
 ]

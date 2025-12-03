@@ -15,7 +15,7 @@ An autonomous agent that runs your entire data science workflow.
 ### 🔍 Scalable File Filtering
 To handle massive data files commonly found in enterprise data lakes, Alias-DataScience combines parallelized grep operations with Retrieval-Augmented Generation (RAG) to build a low-latency, high-throughput file filtering pipeline. This preprocessing step enables accurate identification of relevant files, significantly expanding our scope and applicability.
 
-### 🧠 Context-Aware Prompt Engineering  
+### 🧠 Context-Aware Prompt Engineering
 Rather than relying on generic instructions, Alias-DataScience employs three specialized prompt templates, each fine-tuned for a dominant data science workflow:
 
 - **Exploratory Data Analysis (EDA)**: Surfaces trends, anomalies, and relationships to answer "what's happening?" and "why?"
@@ -24,14 +24,14 @@ Rather than relying on generic instructions, Alias-DataScience employs three spe
 
 An intelligent **prompt selector** routes tasks to the best template based on user intent.
 
-### 📊 Handling of Messy Tabular Data  
+### 📊 Handling of Messy Tabular Data
 Alias-DataScience parses irregular spreadsheets (merged cells, embedded notes, multi-level headers) and converts them into structured tables. For large files, it outputs a semantic-preserving JSON representation, enabling reliable analysis of human-crafted inputs.
 
-### 👁️ Multimodal Understanding of Visual Content  
+### 👁️ Multimodal Understanding of Visual Content
 - **Image Understanding**: Interprets charts, diagrams, and general images to extract numerical data, trends, and domain-specific entities
 - **Visual QA**: Answers natural-language questions about visual elements (e.g., "What was the peak value in Q3?").
 
-### 📑 Automated Reporting  
+### 📑 Automated Reporting
 For EDA tasks, Alias-DataScience generates an interactive HTML report featuring:
 - Actionable insights backed by statistics and visuals,
 - Executable code snippets for transparency and reuse.
@@ -42,7 +42,7 @@ This bridges the gap between data scientists and stakeholders like business user
 
 Alias-DataScience achieves **state-of-the-art (SOTA)** across major data science agent benchmarks.
 
-### [DSBench](https://github.com/LiqiangJing/DSBench)  
+### [DSBench](https://github.com/LiqiangJing/DSBench)
 *Realistic tasks from ModelOff & Kaggle; includes multimodal inputs, multi-source data, and large-scale modeling.*
 
 <table style="border-collapse: collapse; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; margin: 16px 0;">
@@ -139,7 +139,7 @@ Alias-DataScience achieves **state-of-the-art (SOTA)** across major data science
 
 ---
 
-### [DABench](https://github.com/InfiAgent/InfiAgent)  
+### [DABench](https://github.com/InfiAgent/InfiAgent)
 *End-to-end data analysis from real-world CSVs.*
 
 <table style="border-collapse: collapse; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; margin: 16px 0;">
@@ -197,7 +197,7 @@ Alias-DataScience achieves **state-of-the-art (SOTA)** across major data science
 </div>
 
 
-### 3. Exploratory Data Analysis 
+### 3. Exploratory Data Analysis
 
 <div align="center" style="margin: 20px 0;">
   <img src="./figures/alias-ds-case3.png" width="80%" height: auto;">
