@@ -132,8 +132,9 @@ At startup, the Data Science mode uses an intelligent router to assign the user'
 
 > Alias requires **Python 3.10** or higher.
 
+First, install the package in development mode
 ```bash
-# Install the package in development mode
+# From the project root directory
 pip install -e .
 ```
 
@@ -213,6 +214,7 @@ To run Alias-Agent with the full-stack deployment (frontend + backend), follow t
 
 1. **Install Frontend Dependencies**:
 ```bash
+# From the project root directory
 cd frontend
 npm install
 ```
@@ -247,7 +249,7 @@ For full functionality including code execution and file operations, start the s
 
 ```bash
 # From the project root directory
-runtime-sandbox-server --extension alias/runtime/alias_sandbox/alias_sandbox.py
+runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
 ```
 
 The sandbox server enables secure code execution in isolated containers, which is essential for Data Science mode and other features that require code execution.
@@ -273,6 +275,7 @@ Verify the server is running by visiting `http://localhost:8000/api/v1/monitor/h
 In a separate terminal, start the frontend development server:
 
 ```bash
+# From the project root directory
 cd frontend
 npm run dev
 ```
@@ -281,6 +284,14 @@ The frontend will start on `http://localhost:5173` (or the port specified in `vi
 
 
 #### Start the Memory Service Server
+
+First install the Memory Service package in development mode
+
+```bash
+# From the project root directory
+cd src/alias/memory_service
+pip install -e .
+```
 
 To use the Memory Service, you have two deployment options:
 
@@ -301,16 +312,19 @@ QDRANT_EMBEDDING_MODEL_DIMS=1536
 # DashScope Configuration
 DASHSCOPE_EMBEDDER=text-embedding-v4
 DASHSCOPE_MODEL_4_MEMORY=qwen3-max
+DASHSCOPE_API_KEY=your_dashscope_api_key_here
+DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# User Profiling Configuration
+USER_PROFILING_BASE_URL=http://localhost:6382
+USER_PROFILING_SERVICE_PORT=6382
 ```
 
 2. Then run the startup script:
 
 ```bash
 # From the project root directory
-./script/start_memory_service.sh
-
-# Or from the alias directory
-../../script/start_memory_service.sh
+bash script/start_memory_service.sh
 ```
 
 The script will automatically check and start Redis and Qdrant services (via Docker if available) before starting the memory service.

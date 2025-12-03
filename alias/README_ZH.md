@@ -132,8 +132,9 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 
 > Alias 需要 **Python 3.10** 或更高版本。
 
+首先，以开发模式安装包
 ```bash
-# 以开发模式安装包
+# From the project root directory
 pip install -e .
 ```
 
@@ -159,24 +160,24 @@ docker pull agentscope/runtime-sandbox-alias:latest
 
 ```bash
 # 必需：模型 API 密钥（默认：DashScope）
-export DASHSCOPE_API_KEY=你的_dashscope_api_密钥_在此
+export DASHSCOPE_API_KEY=your_dashscope_api_key_here
 
 # 必需：搜索 API 密钥（用于深度研究模式）
-export TAVILY_API_KEY=你的_tavily_api_密钥_在此
+export TAVILY_API_KEY=your_tavily_api_key_here
 
 # 可选：金融 MCP 工具 API 密钥（用于金融分析模式）。在以下地址激活 MCP 工具：
 #  https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/Qieman
 # https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/tendency-software
-export DASHSCOPE_MCP_API_KEY=你的_dashscope_api_密钥_在此
+export DASHSCOPE_MCP_API_KEY=your_dashscope_api_key_here
 
 
 # 可选：GitHub token（用于问答智能体访问 GitHub 仓库）
-# export GITHUB_TOKEN=你的_github_token
+# export GITHUB_TOKEN=your_github_token
 
 # 可选：使用其他模型（例如 OpenAI）
 # 首先，在 alias/agent/run.py 的 MODEL_FORMATTER_MAPPING 中添加你的模型
 # export MODEL=gpt-4
-# export OPENAI_API_KEY=你的_openai_api_密钥_在此
+# export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### 📝 基础用法 -- CLI 部署
@@ -213,6 +214,7 @@ alias_agent run --mode ds \
 
 1. **安装前端依赖**：
 ```bash
+# 从项目根目录
 cd frontend
 npm install
 ```
@@ -247,7 +249,7 @@ redis-server
 
 ```bash
 # 从项目根目录
-runtime-sandbox-server --extension alias/runtime/alias_sandbox/alias_sandbox.py
+runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
 ```
 
 沙盒服务器能够在隔离的容器中安全地执行代码，这对于数据科学模式和其他需要代码执行的功能至关重要。
@@ -273,6 +275,7 @@ python -m uvicorn alias.server.main:app --host 0.0.0.0 --port 8000 --reload
 在另一个单独的终端中，启动前端开发服务器：
 
 ```bash
+# 从项目根目录
 cd frontend
 npm run dev
 ```
@@ -281,6 +284,14 @@ npm run dev
 
 
 #### 启动记忆服务服务器
+
+首先，以开发模式安装 Memory Service 包
+
+```bash
+# 从项目根目录
+cd src/alias/memory_service
+pip install -e .
+```
 
 要使用记忆服务，您有两种部署选项：
 
@@ -301,16 +312,19 @@ QDRANT_EMBEDDING_MODEL_DIMS=1536
 # DashScope 配置
 DASHSCOPE_EMBEDDER=text-embedding-v4
 DASHSCOPE_MODEL_4_MEMORY=qwen3-max
+DASHSCOPE_API_KEY=your_dashscope_api_key_here
+DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# User Profiling 配置
+USER_PROFILING_BASE_URL=http://localhost:6382
+USER_PROFILING_SERVICE_PORT=6382
 ```
 
 2. 然后运行启动脚本：
 
 ```bash
 # 从项目根目录
-./script/start_memory_service.sh
-
-# 或从 alias 目录
-../../script/start_memory_service.sh
+bash script/start_memory_service.sh
 ```
 
 该脚本将在启动记忆服务之前自动检查并启动 Redis 和 Qdrant 服务（如果 Docker 可用则通过 Docker 启动）。
