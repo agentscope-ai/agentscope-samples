@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
-from typing import Optional, Tuple
+from typing import Optional, Union, Tuple
 
 from loguru import logger
 from agentscope_runtime.sandbox.utils import build_image_uri
@@ -37,7 +37,7 @@ class AliasSandbox(GUIMixin, BaseSandbox):
     def download_file(
         self,
         file_path: str,
-    ) -> Optional[Tuple[bytes, str]]:
+    ) -> Optional[Union[Tuple[bytes, str], dict]]:
         """
         Retrieve a file from the /workspace directory.
 
@@ -45,7 +45,7 @@ class AliasSandbox(GUIMixin, BaseSandbox):
             file_path: Path to the file within /workspace
         """
         try:
-            # pylint: disable=W0212
+            # pylint: disable=protected-access
             client = self.manager_api._establish_connection(
                 self.sandbox_id,
             )
@@ -82,10 +82,14 @@ class AliasSandbox(GUIMixin, BaseSandbox):
             bool: True if upload was successful, False otherwise
         """
         try:
-            # pylint: disable=W0212
-            client = self.manager_api._establish_connection(self.sandbox_id)
+            # pylint: disable=protected-access
+            client = self.manager_api._establish_connection(
+                self.sandbox_id,
+            )
 
             endpoint = f"{client.base_url}/workspace/upload"
+            # Use the full file_path as filename
+            # since backend uses file.filename
             # Ensure path is relative to /workspace
             if file_path.startswith("/workspace/"):
                 filename = file_path[len("/workspace/") :]

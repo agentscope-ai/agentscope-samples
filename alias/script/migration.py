@@ -93,6 +93,7 @@ async def main():
         elif args.command == "upgrade":
             if args.dry_run:
                 logger.info("🔍 Dry run mode - showing what would be upgraded")
+                # Here add logic to display migrations that would be executed
                 return
 
             success = await service.upgrade(args.revision)
@@ -107,6 +108,7 @@ async def main():
                 logger.info(
                     "🔍 Dry run mode - showing what would be downgraded",
                 )
+                # Here add logic to display downgrades that would be executed
                 return
 
             success = await service.downgrade(args.steps)

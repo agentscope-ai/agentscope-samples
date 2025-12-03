@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# mypy: disable-error-code=no-redef
 from typing import List, Dict, Any, Optional, Tuple, Union
 import json
 import re
