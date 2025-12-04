@@ -708,9 +708,8 @@ class BrowserAgent(ReActAgent):
             formatted_task += (
                 "use the decomposed subtasks to complete the original task.\n"
             )
-        except Exception:
-            # If JSON serialization fails, continue with basic task format
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to format subtasks: {e}")
         formatted_task = Msg(
             name=original_task.name,
             content=formatted_task,
@@ -752,7 +751,7 @@ class BrowserAgent(ReActAgent):
                 input={"action": "close", "index": 0},
                 type="tool_use",
             )
-            response = await self.toolkit.call_tool_function(tool_call)
+            await self.toolkit.call_tool_function(tool_call)
         tool_call = ToolUseBlock(
             id=str(uuid.uuid4()),
             type="tool_use",
@@ -831,8 +830,8 @@ class BrowserAgent(ReActAgent):
                 "1. What has been completed so far.\n"
                 "2. What key information has been found.\n"
                 "3. What remains to be done.\n"
-                "Ensure that your summary is clear, concise, and t"
-                "hat no tasks are repeated or skipped."
+                "Ensure that your summary is clear, concise, and"
+                "that no tasks are repeated or skipped."
             ),
             role="user",
         )

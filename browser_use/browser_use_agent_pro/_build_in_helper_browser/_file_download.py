@@ -189,8 +189,6 @@ async def file_download(
         target_description=target_description,
         snapshot_text=snapshot_text,
     )
-    # print(snapshot_text)
-    # breakpoint()
 
     init_msg = Msg(
         name="user",
