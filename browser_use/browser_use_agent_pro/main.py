@@ -74,12 +74,13 @@ async def run_browser_agent(
         try:
             await browser_client.close()
         except Exception:
+            # Ignore errors when closing failed client connection
             pass
         raise
 
     try:
         browser_agent = BrowserAgent(
-            name="BrowserBot",
+            name="BrowserUseAgentPro",
             model=model,
             formatter=formatter,
             memory=InMemoryMemory(),

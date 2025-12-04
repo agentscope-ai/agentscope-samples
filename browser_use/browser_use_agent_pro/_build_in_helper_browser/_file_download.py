@@ -57,17 +57,19 @@ class FileDownloadAgent(ReActAgent):
             try:
                 self.toolkit.remove_tool_function("browser_pdf_save")
             except Exception:
+                # Tool may not exist, ignore removal errors
                 pass
             try:
                 self.toolkit.remove_tool_function("file_download")
             except Exception:
+                # Tool may not exist, ignore removal errors
                 pass
 
     async def file_download_final_response(
         self,  # pylint: disable=W0613
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
-        """Summarise the file download outcome."""
+        """Summarize the file download outcome."""
         hint_msg = Msg(
             "user",
             (

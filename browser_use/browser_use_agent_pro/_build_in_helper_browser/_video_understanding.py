@@ -153,6 +153,8 @@ def extract_frames(
         try:
             existing.unlink()
         except OSError:
+            # Ignore errors during cleanup;
+            # leftover files will be overwritten or do not affect frame extractio
             pass
 
     duration = _probe_video_duration(video_path)

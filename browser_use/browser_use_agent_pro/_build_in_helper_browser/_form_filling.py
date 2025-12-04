@@ -55,7 +55,7 @@ class FormFillingAgent(ReActAgent):
         self,  # pylint: disable=W0613
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
-        """Summarise the form filling outcome."""
+        """Summarize the form filling outcome."""
         hint_msg = Msg(
             "user",
             (

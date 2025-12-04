@@ -22,7 +22,6 @@ from agentscope.message import (
     Msg,
     ToolUseBlock,
     TextBlock,
-    ToolResultBlock,
     ImageBlock,
     Base64Source,
 )
@@ -335,6 +334,7 @@ class BrowserAgent(ReActAgent):
                 parameters=parameters,
             )
         except ValueError:
+            # Ignore errors during tool signature replacement
             pass
         self.toolkit.register_tool_function(tool)
 
@@ -436,50 +436,18 @@ class BrowserAgent(ReActAgent):
             tools=self.no_screenshot_tool_list,
         )
         # handle output from the model
-        interrupted_by_user = False
         msg = None
-        try:
-            if self.model.stream:
-                msg = Msg(self.name, [], "assistant")
-                async for content_chunk in res:
-                    msg.content = content_chunk.content
-                await self.print(msg)
-            else:
-                msg = Msg(self.name, list(res.content), "assistant")
-                await self.print(msg)
-            return msg
+        if self.model.stream:
+            msg = Msg(self.name, [], "assistant")
+            async for content_chunk in res:
+                msg.content = content_chunk.content
+            await self.print(msg)
+        else:
+            msg = Msg(self.name, list(res.content), "assistant")
+            await self.print(msg)
 
-        except asyncio.CancelledError as e:
-            interrupted_by_user = True
-            raise e from None
-
-        finally:
-            await self.memory.add(msg)
-            tool_use_blocks: list = (
-                msg.get_content_blocks(  # pylint: disable=E1133
-                    "tool_use",
-                )
-            )
-
-            # Post-process for user interruption
-            if interrupted_by_user and msg:
-                for tool_call in tool_use_blocks:  # pylint: disable=E1133
-                    msg_res = Msg(
-                        "system",
-                        [
-                            ToolResultBlock(
-                                type="tool_result",
-                                id=tool_call["id"],
-                                name=tool_call["name"],
-                                output="The tool call has been interrupted "
-                                "by the user.",
-                            ),
-                        ],
-                        "system",
-                    )
-
-                    await self.memory.add(msg_res)
-                    await self.print(msg_res)
+        await self.memory.add(msg)
+        return msg
 
     async def _reasoning_with_observation(
         self,
@@ -510,53 +478,21 @@ class BrowserAgent(ReActAgent):
                 tools=self.no_screenshot_tool_list,
             )
             # handle output from the model
-            interrupted_by_user = False
             msg = None
-            try:
-                if self.model.stream:
-                    msg = Msg(self.name, [], "assistant")
-                    async for content_chunk in res:
-                        msg.content = content_chunk.content
-                    # await self.print(msg)
+            if self.model.stream:
+                msg = Msg(self.name, [], "assistant")
+                async for content_chunk in res:
+                    msg.content = content_chunk.content
+                # await self.print(msg)
 
-                else:
-                    msg = Msg(self.name, list(res.content), "assistant")
-                    # await self.print(msg)
-                logger.info(msg.content)
-
-            except asyncio.CancelledError as e:
-                interrupted_by_user = True
-                raise e from None
-
-            tool_use_blocks: list = (
-                msg.get_content_blocks(  # pylint: disable=E1133
-                    "tool_use",
-                )
-            )
+            else:
+                msg = Msg(self.name, list(res.content), "assistant")
+                # await self.print(msg)
+            logger.info(msg.content)
 
             await self._update_chunk_observation_status(
                 output_msg=msg,
             )
-            # Post-process for user interruption
-            if interrupted_by_user and msg:
-                # Fake tool results
-                for tool_call in tool_use_blocks:  # pylint: disable=E1133
-                    msg_res = Msg(
-                        "system",
-                        [
-                            ToolResultBlock(
-                                type="tool_result",
-                                id=tool_call["id"],
-                                name=tool_call["name"],
-                                output="The tool call has been interrupted "
-                                "by the user.",
-                            ),
-                        ],
-                        "system",
-                    )
-
-                    await self.memory.add(msg_res)
-                    await self.print(msg_res)
             if not self.chunk_continue_status:
                 break
 
@@ -611,6 +547,7 @@ class BrowserAgent(ReActAgent):
                     information = data.get("INFORMATION", "")
                     self.chunk_continue_status = data.get("STATUS", "CONTINUE")
                 except Exception:
+                    # If JSON parsing fails, use raw response as information
                     information = raw_response
                     if (
                         self.snapshot_chunk_id
@@ -628,6 +565,7 @@ class BrowserAgent(ReActAgent):
                             ensure_ascii=False,
                         )
                     except Exception:
+                        # If JSON serialization fails, convert to string
                         information = str(information)
 
                 self.previous_chunkwise_information += (
@@ -752,6 +690,7 @@ class BrowserAgent(ReActAgent):
             if not isinstance(subtasks, list):
                 subtasks = []
         except Exception:
+            # If parsing fails, use original task as single subtask
             subtasks = [original_task.content]
 
         self.subtasks = subtasks
@@ -770,6 +709,7 @@ class BrowserAgent(ReActAgent):
                 "use the decomposed subtasks to complete the original task.\n"
             )
         except Exception:
+            # If JSON serialization fails, continue with basic task format
             pass
         formatted_task = Msg(
             name=original_task.name,
@@ -813,8 +753,6 @@ class BrowserAgent(ReActAgent):
                 type="tool_use",
             )
             response = await self.toolkit.call_tool_function(tool_call)
-            async for chunk in response:
-                response_text = chunk.content
         tool_call = ToolUseBlock(
             id=str(uuid.uuid4()),
             type="tool_use",
@@ -968,6 +906,7 @@ class BrowserAgent(ReActAgent):
                     image_data = None
 
         except Exception:
+            # If screenshot fails, return None to continue without image
             image_data = None
         return image_data
 
@@ -1231,7 +1170,7 @@ class BrowserAgent(ReActAgent):
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
         """Generate a response when the agent has completed all subtasks."""
-        # breakpoint()
+
         hint_msg = Msg(
             "user",
             _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT,
