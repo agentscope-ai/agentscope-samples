@@ -99,6 +99,7 @@ with open(
 
 DEFAULT_BROWSER_WORKER_NAME = "browser_agent"
 
+
 async def browser_pre_reply_hook(
     self,
     kwargs: dict[str, Any],
@@ -227,11 +228,16 @@ class BrowserAgent(ReActAgent):
         Returns:
             None
         """
-        if model is None or formatter is None or memory is None or toolkit is None:
+        if (
+            model is None
+            or formatter is None
+            or memory is None
+            or toolkit is None
+        ):
             raise ValueError(
-                "model, formatter, memory, and toolkit are required parameters"
+                "model, formatter, memory, and toolkit are required parameters",
             )
-        
+
         self.start_url = start_url
         self._has_initial_navigated = False
         self.pure_reasoning_prompt = pure_reasoning_prompt

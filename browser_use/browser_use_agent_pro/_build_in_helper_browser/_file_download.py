@@ -53,7 +53,7 @@ class FileDownloadAgent(ReActAgent):
             max_iters=max_iters,
         )
         # Remove conflicting tool functions if they exist
-        if hasattr(self.toolkit, 'remove_tool_function'):
+        if hasattr(self.toolkit, "remove_tool_function"):
             try:
                 self.toolkit.remove_tool_function("browser_pdf_save")
             except Exception:
