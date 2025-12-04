@@ -268,12 +268,7 @@ class BrowserAgent(ReActAgent):
         )
 
         self.toolkit.register_tool_function(self.browser_subtask_manager)
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             self._register_skill_tool(image_understanding)
             self._register_skill_tool(video_understanding)
 
@@ -337,6 +332,19 @@ class BrowserAgent(ReActAgent):
             # Ignore errors during tool signature replacement
             pass
         self.toolkit.register_tool_function(tool)
+
+    def _supports_multimodal(self) -> bool:
+        """Check if the model supports multimodal input (images/videos).
+
+        Returns:
+            bool: True if the model supports multimodal input, False otherwise.
+        """
+        return (
+            self.model.model_name.startswith("qvq")
+            or "-vl" in self.model.model_name
+            or "4o" in self.model.model_name
+            or "gpt-5" in self.model.model_name
+        )
 
     async def reply(
         self,
@@ -406,7 +414,7 @@ class BrowserAgent(ReActAgent):
                 break
         # When the maximum iterations are reached
         if not reply_msg:
-            await self._summarizing()
+            reply_msg = await self._summarizing()
 
         await self.memory.add(reply_msg)
         return reply_msg
@@ -512,12 +520,7 @@ class BrowserAgent(ReActAgent):
     ) -> Msg:
         """Get a snapshot in text before reasoning"""
         image_data: Optional[str] = None
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             # If the model supports multimodal input, take a screenshot
             # and pass it to the observation message as base64
             image_data = await self._get_screenshot()
@@ -545,7 +548,9 @@ class BrowserAgent(ReActAgent):
                         ).replace("```", "")
                     data = json.loads(raw_response)
                     information = data.get("INFORMATION", "")
-                    self.chunk_continue_status = data.get("STATUS", "CONTINUE")
+                    self.chunk_continue_status = (
+                        data.get("STATUS") == "REASONING_FINISHED"
+                    )
                 except Exception:
                     # If JSON parsing fails, use raw response as information
                     information = raw_response
@@ -987,12 +992,7 @@ class BrowserAgent(ReActAgent):
                 text=reasoning_prompt,
             ),
         ]
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             if image_data:
                 image_block = ImageBlock(
                     type="image",

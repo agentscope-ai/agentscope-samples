@@ -191,7 +191,7 @@ async def form_filling(
                     type="text",
                     text=sub_agent_response_msg.content[0]["text"]
                     or (
-                        "Form filling agent finished"
+                        "Form filling agent finished "
                         "without a textual summary."
                     ),
                 ),

@@ -14,4 +14,4 @@ Some dropdowns may have a search input. If so, use the search input to find the 
 If you see a dropdown arrow, select element, or multiple choice options, you MUST use clicking/selection - NOT typing.
 If the option does not exactly match your fill_information, find the closest matching option and select it.
 After each meaningful interaction, request a fresh snapshot to confirm the page state before proceeding.
-Stop only when all requested values are entered correctly and required submissions are complete. Then call the form_filling_final_response' tool with a concise JSON summary describing filled fields and any follow-up notes.
+Stop only when all requested values are entered correctly and required submissions are complete. Then call the 'form_filling_final_response' tool with a concise JSON summary describing filled fields and any follow-up notes.

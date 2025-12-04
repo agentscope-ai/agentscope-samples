@@ -40,6 +40,7 @@ The playwright-mcp server will automatically handle browser installation when fi
 
 1. Install dependencies:
 ```bash
+# From the project root directory
 pip install -r requirements.txt
 ```
 
@@ -60,29 +61,10 @@ export MODEL="qwen3-max"  # or "qwen-vl-max" for vision model
 Run the Browser Use Agent Pro with a task, optionally configure the start URL:
 
 ```bash
-python main.py "Search for Python tutorials" "https://www.google.com"
+# From the project root directory
+python main.py "Find the latest stock price of Alibaba Group" "https://www.google.com"
 ```
-
-Or use it as a Python module:
-
-```python
-import asyncio
-from browser_use_pro.main import run_browser_agent
-
-async def main():
-    await run_browser_agent(
-        task="Search for Python tutorials",
-        start_url="https://www.google.com"
-    )
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-
 
 ## ℹ️ Note
 
 This is a standalone version extracted from the [Alias-Agent](https://github.com/agentscope-ai/agentscope-samples/tree/main/alias) project. It now uses standard agentscope components (ReActAgent, Toolkit) with local Playwright MCP clients.
-
-

@@ -92,7 +92,7 @@ async def run_browser_agent(
 
         await browser_agent.reply(Msg(name="user", content=task, role="user"))
     except Exception as e:
-        logger.error(f"---> Error: {e}")
+        logger.error(f"Browser agent execution failed: {e}")
         logger.error(traceback.format_exc())
     finally:
         # Close MCP client
@@ -107,6 +107,10 @@ async def run_browser_agent(
 
 
 async def main():
+    if len(sys.argv) < 2:
+        print("Usage: python main.py <task> [start_url]")
+        sys.exit(1)
+
     task = sys.argv[1]
     start_url = sys.argv[2] if len(sys.argv) > 2 else "https://www.google.com"
 
