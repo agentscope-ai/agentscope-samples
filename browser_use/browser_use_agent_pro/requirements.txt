@@ -1,0 +1,14 @@
+# Core dependencies for browser-use agent
+agentscope==1.0.8
+agentscope-runtime==0.2.0
+dashscope>=1.23.1
+loguru>=0.6.0
+pydantic>=2.11.3
+playwright>=1.51.0
+mcp>=1.6.0
+
+# Additional dependencies
+aiohttp>=3.11.16
+docker>=7.1.0
+tenacity>=8.5.0
+
