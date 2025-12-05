@@ -1,7 +1,7 @@
 # AgentScope Sample Agents
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
@@ -206,6 +206,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://xieyxclack.github.io/"><img src="https://avatars.githubusercontent.com/u/31954383?v=4?s=100" width="100px;" alt="Yuexiang XIE"/><br /><sub><b>Yuexiang XIE</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=xieyxclack" title="Code">💻</a> <a href="#example-xieyxclack" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/cuiyuebing"><img src="https://avatars.githubusercontent.com/u/39703217?v=4?s=100" width="100px;" alt="Yue Cui"/><br /><sub><b>Yue Cui</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=cuiyuebing" title="Code">💻</a> <a href="#example-cuiyuebing" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ZexiLee"><img src="https://avatars.githubusercontent.com/u/49397774?v=4?s=100" width="100px;" alt="Zexi Li"/><br /><sub><b>Zexi Li</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=ZexiLee" title="Code">💻</a> <a href="#example-ZexiLee" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/lalaliat"><img src="https://avatars.githubusercontent.com/u/78087788?v=4?s=100" width="100px;" alt="lalaliat"/><br /><sub><b>lalaliat</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=lalaliat" title="Code">💻</a> <a href="#example-lalaliat" title="Examples">💡</a></td>
     </tr>
   </tbody>
   <tfoot>
