@@ -115,7 +115,7 @@ def audio2text(audio_path: str) -> str:
 
     try:  # Local import to avoid hard dependency when unused.
         from dashscope.audio.asr import Recognition, RecognitionCallback
-    except ImportError as exc:  # pylint: disable=broad-except
+    except ImportError as exc:
         raise RuntimeError(
             "dashscope.audio is required for audio transcription.",
         ) from exc

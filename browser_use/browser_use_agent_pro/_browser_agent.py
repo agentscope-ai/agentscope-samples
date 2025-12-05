@@ -549,7 +549,7 @@ class BrowserAgent(ReActAgent):
                     data = json.loads(raw_response)
                     information = data.get("INFORMATION", "")
                     self.chunk_continue_status = (
-                        data.get("STATUS") == "REASONING_FINISHED"
+                        data.get("STATUS") != "REASONING_FINISHED"
                     )
                 except Exception:
                     # If JSON parsing fails, use raw response as information
@@ -580,24 +580,6 @@ class BrowserAgent(ReActAgent):
 
             if b["type"] == "tool_use":
                 self.chunk_continue_status = False
-
-    def _clean_tool_excution_content(
-        self,
-        output_msg: Msg,
-    ) -> Msg:
-        """
-        Hook func for cleaning the messy return after action.
-        Observation will be done before reasoning steps.
-        """
-
-        for i, b in enumerate(output_msg.content):
-            if b["type"] == "tool_result":
-                for j, return_json in enumerate(b.get("output", [])):
-                    if isinstance(return_json, dict) and "text" in return_json:
-                        output_msg.content[i]["output"][j][
-                            "text"
-                        ] = self._filter_execution_text(return_json["text"])
-        return output_msg
 
     async def _task_decomposition_and_reformat(  # pylint: disable=too-many-statements
         self,

@@ -11,6 +11,7 @@ from agentscope.memory import InMemoryMemory
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit
 from agentscope.mcp import StdIOStatefulClient
+from agentscope.message import Msg
 from _browser_agent import BrowserAgent
 
 # Add current directory to path for imports
@@ -42,7 +43,7 @@ MODEL_CONFIG_NAME = os.getenv("MODEL", "qwen3-max")
 
 async def run_browser_agent(
     task: str,
-    start_url: str = "https://www.bing.com",
+    start_url: str = "https://www.google.com",
 ):
     """Run the browser agent with a given task.
 
@@ -88,7 +89,6 @@ async def run_browser_agent(
             max_iters=50,
             start_url=start_url,
         )
-        from agentscope.message import Msg
 
         await browser_agent.reply(Msg(name="user", content=task, role="user"))
     except Exception as e:

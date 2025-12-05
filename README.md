@@ -94,7 +94,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
 | **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
-|                         | browser_use/browser_use_agent_pro                     | ✅               | ❌            | Advanced command-line python browser agent using AgentScope              |
+|                         | browser_use/browser_use_agent_pro                     | ✅               | ❌            | Advanced command-line Python browser agent using AgentScope              |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
 | **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
 |                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅            | Full-stack deep research app                     |

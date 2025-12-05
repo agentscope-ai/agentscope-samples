@@ -30,7 +30,7 @@ Browser Use Agent Pro excels at automating a wide range of web-based tasks, incl
 
 ## 📋 Requirements
 
-- Python 3.8+
+- Python 3.10+
 - Node.js and npx (for playwright-mcp)
 - DASHSCOPE_API_KEY environment variable
 
