@@ -122,6 +122,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "cuiyuebing",
+      "name": "Yue Cui",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39703217?v=4",
+      "profile": "https://github.com/cuiyuebing",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
