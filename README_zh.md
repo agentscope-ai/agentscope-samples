@@ -62,7 +62,8 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 ├── alias/                                  # 解决现实问题的智能体程序
 ├── browser_use/
 │   ├── agent_browser/                      # 纯 Python 浏览器 Agent
-│   └── browser_use_fullstack_runtime/      # 全栈运行时版本（前端+后端）
+│   ├── browser_use_agent_pro/              # 高级纯 Python 浏览器 Agent
+│   └── browser_use_fullstack_runtime/      # 全栈运行时版本(前端+后端)
 │
 ├── deep_research/
 │   ├── agent_deep_research/                # 纯 Python 多 Agent 研究流程
@@ -93,6 +94,7 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 |-----------|-------------------------------------------------------|---------------|-----------------------|-------------------------|
 | **数据处理**            | data_juicer_agent/                                 | ✅               | ❌                       | 基于 Data-Juicer 的多智能体数据处理 |
 | **浏览器相关** | browser_use/agent_browser                             | ✅             | ❌                     | 基于 AgentScope 的命令行浏览器自动化 |
+|           | browser_use/browser_use_agent_pro                     | ✅             | ❌                     | 基于 AgentScope 的高级命令行浏览器智能体 |
 |           | browser_use/browser_use_fullstack_runtime             | ✅             | ✅                     | 带 UI 和沙盒环境的全栈浏览器自动化     |
 | **深度研究**  | deep_research/agent_deep_research                     | ✅             | ❌                     | 多 Agent 研究流程            |
 |           | deep_research/qwen_langgraph_search_fullstack_runtime | ❌             | ✅                     | 全栈运行时深度研究应用             |
@@ -181,7 +183,7 @@ AgentScope Runtime 是一个**全面的运行时框架**，主要解决部署和
 
 ## 贡献者 ✨
 
-感谢这些优秀的贡献者们 ([表情符号说明](https://allcontributors.org/docs/en/emoji-key)):
+感谢这些优秀的贡献者们 ([表情符号说明](https://allcontributors.org/emoji-key/)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
