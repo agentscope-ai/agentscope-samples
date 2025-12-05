@@ -234,6 +234,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "luyi256",
+      "name": "LuYi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50238286?v=4",
+      "profile": "http://luyi256.github.io",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
