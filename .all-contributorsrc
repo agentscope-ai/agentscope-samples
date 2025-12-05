@@ -144,6 +144,16 @@
       ]
     },
     {
+      "login": "lalaliat",
+      "name": "lalaliat",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78087788?v=4",
+      "profile": "https://github.com/lalaliat",
+      "contributions": [
+        "code",
+        "example"
+      ]
+    },
+    {
       "login": "SSSuperDan",
       "name": "Dandan Liu",
       "avatar_url": "https://avatars.githubusercontent.com/u/73866152?v=4",
@@ -152,7 +162,7 @@
         "code",
         "example"
       ]
-    }
+    },
   ],
   "contributorsPerLine": 7,
   "linkToUsage": true,
