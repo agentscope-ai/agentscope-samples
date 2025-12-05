@@ -204,6 +204,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "sleepy-bird-world",
+      "name": "JustinDing",
+      "avatar_url": "https://avatars.githubusercontent.com/u/166603159?v=4",
+      "profile": "https://github.com/sleepy-bird-world",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
