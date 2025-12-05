@@ -172,6 +172,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "zhijianma",
+      "name": "zhijianma",
+      "avatar_url": "https://avatars.githubusercontent.com/u/30956532?v=4",
+      "profile": "https://github.com/zhijianma",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
