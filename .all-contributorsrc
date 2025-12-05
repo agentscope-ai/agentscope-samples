@@ -162,6 +162,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "StCarmen",
+      "name": "Tianjing Zeng",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39507457?v=4",
+      "profile": "https://github.com/StCarmen",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
