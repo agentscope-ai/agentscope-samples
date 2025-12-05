@@ -182,6 +182,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "Dengjiaji",
+      "name": "Jiaji",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15075186?v=4",
+      "profile": "https://github.com/Dengjiaji",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
