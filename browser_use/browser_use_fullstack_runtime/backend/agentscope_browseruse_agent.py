@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import functools
 import os
+import threading
+
 from typing import List, Dict, AsyncGenerator
-from venv import logger
+
+from openai import OpenAI
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
@@ -164,8 +167,6 @@ def init():
             state=state,
         )
 
-    import threading
-
     def run_agent_app():
         agent_app.run(host="127.0.0.1", port=PORT)
 
@@ -182,18 +183,15 @@ class AgentscopeBrowseruseAgent:
         self,
         chat_messages: List[Dict],
     ) -> AsyncGenerator[Dict, None]:
-        from openai import OpenAI
-
         client = OpenAI(base_url=f"http://127.0.0.1:{PORT}/compatible-mode/v1")
-        logger.info(f"Sending chat messages: {chat_messages}")
+
         stream = client.responses.create(
             model="any_name",
             input=chat_messages[-1]["content"],
             stream=True,
         )
         global desktop_url
-        if desktop_url != "":
-            logger.info(f"Current desktop URL: {desktop_url}")
+
         self.desktop_url = desktop_url
         for chunk in stream:
             if hasattr(chunk, "delta"):

@@ -3,4 +3,4 @@ quart>=0.8.0
 quart-cors>=0.8.0
 agentscope-runtime>=1.0.0
 agentscope[full]>=1.0.5
-openai
+openai>=2.8.1

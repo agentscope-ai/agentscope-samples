@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 
 import requests
+
+from openai import OpenAI
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -155,8 +157,6 @@ def sse_client(url, data=None):
 def call_runner(query):
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_host = os.environ.get("SERVER_HOST", "localhost")
-
-    from openai import OpenAI
 
     client = OpenAI(
         base_url=f"http://{server_host}:{server_port}/compatible-mode/v1",
