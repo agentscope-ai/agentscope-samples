@@ -252,7 +252,7 @@ AgentFeed.displayName = 'AgentFeed';
 export default AgentFeed;
 
 function SystemDivider({ message, itemId }) {
-  const content = String(message.content || '').substring(0, 100);
+  const content = String(message.content || '');
 
   return (
     <div
@@ -268,7 +268,7 @@ function SystemDivider({ message, itemId }) {
       <span style={{
         fontSize: '11px',
         color: '#888',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'normal',
         fontWeight: 500,
         letterSpacing: '0.3px',
       }}>

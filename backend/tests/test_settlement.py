@@ -19,8 +19,12 @@ def test_baseline_equal_weight():
 
     tickers = ["AAPL", "MSFT", "GOOGL"]
     prices = {"AAPL": 150.0, "MSFT": 300.0, "GOOGL": 120.0}
-
-    value = calculator.calculate_equal_weight_value(tickers, prices)
+    openprices = {"AAPL": 160.0, "MSFT": 310.0, "GOOGL": 110.0}
+    value = calculator.calculate_equal_weight_value(
+        tickers,
+        openprices,
+        prices,
+    )
 
     assert value > 0
     assert calculator.equal_weight_initialized is True
@@ -32,10 +36,12 @@ def test_baseline_market_cap_weighted():
 
     tickers = ["AAPL", "MSFT", "GOOGL"]
     prices = {"AAPL": 150.0, "MSFT": 300.0, "GOOGL": 120.0}
+    openprices = {"AAPL": 160.0, "MSFT": 310.0, "GOOGL": 110.0}
     market_caps = {"AAPL": 3e12, "MSFT": 2e12, "GOOGL": 1.5e12}
 
     value = calculator.calculate_market_cap_weighted_value(
         tickers,
+        openprices,
         prices,
         market_caps,
     )
