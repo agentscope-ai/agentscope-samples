@@ -366,30 +366,51 @@ def search_line_items(
     period: str = "ttm",
     limit: int = 10,
 ) -> list[LineItem]:
-    """Fetch line items from Financial Datasets API (only supported source)."""
-    api_key = get_api_key()
-    headers = {"X-API-KEY": api_key}
+    """
+    Fetch line items from Financial Datasets API (only supported source).
 
-    url = "https://api.financialdatasets.ai/financials/search/line-items"
-    body = {
-        "tickers": [ticker],
-        "line_items": line_items,
-        "end_date": end_date,
-        "period": period,
-        "limit": limit,
-    }
-    response = _make_api_request(url, headers, method="POST", json_data=body)
-    if response.status_code != 200:
-        raise ValueError(
-            f"Error fetching data: {ticker} - {response.status_code} - {response.text}",
+    Returns empty list on API errors to allow graceful degradation.
+    """
+    try:
+        api_key = get_api_key()
+        headers = {"X-API-KEY": api_key}
+
+        url = "https://api.financialdatasets.ai/financials/search/line-items"
+        body = {
+            "tickers": [ticker],
+            "line_items": line_items,
+            "end_date": end_date,
+            "period": period,
+            "limit": limit,
+        }
+        response = _make_api_request(
+            url,
+            headers,
+            method="POST",
+            json_data=body,
         )
-    data = response.json()
-    response_model = LineItemResponse(**data)
-    search_results = response_model.search_results
-    if not search_results:
-        return []
 
-    return search_results[:limit]
+        if response.status_code != 200:
+            print(
+                f"Warning: Failed to fetch line items for {ticker}: "
+                f"{response.status_code} - {response.text}",
+            )
+            return []
+
+        data = response.json()
+        response_model = LineItemResponse(**data)
+        search_results = response_model.search_results
+
+        if not search_results:
+            return []
+
+        return search_results[:limit]
+
+    except Exception as e:
+        print(
+            f"Warning: Exception while fetching line items for {ticker}: {str(e)}",
+        )
+        return []
 
 
 def _fetch_finnhub_insider_trades(
