@@ -254,6 +254,17 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "zhilingluo",
+      "name": "Zhiling (Bruce) Luo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7297307?v=4",
+      "profile": "http://www.bruceluo.net",
+      "contributions": [
+        "code",
+        "example",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
