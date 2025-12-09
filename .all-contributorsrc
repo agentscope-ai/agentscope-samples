@@ -244,6 +244,16 @@
         "code",
         "example"
       ]
+    },
+    {
+      "login": "1mycell",
+      "name": "Wu Yue",
+      "avatar_url": "https://avatars.githubusercontent.com/u/143110833?v=4",
+      "profile": "https://github.com/1mycell",
+      "contributions": [
+        "code",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
