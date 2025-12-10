@@ -19,7 +19,9 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
    export AGENT_OPERATION_DIR="your_own_direction_here"
    ```
 
-2. **Enable Modelstudio Web Search**
+2. **Enable Modelstudio Web Search**:
+
+
     make sure  `export DASHSCOPE_API_KEY="your_dashscope_api_key_here" have enable the web search from 
     [here](https://bailian.console.aliyun.com/?tab=app#/mcp-market/detail/WebSearch)
 
