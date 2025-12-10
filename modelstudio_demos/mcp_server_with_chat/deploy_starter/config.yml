@@ -1,0 +1,36 @@
+# ==================== 应用配置 ====================
+APP_NAME: "MCP Server Starter"
+DEBUG: false
+
+# ==================== 服务器配置 ====================
+# 云端部署使用 0.0.0.0，本地开发使用 127.0.0.1
+FC_START_HOST: "0.0.0.0"
+HOST: "127.0.0.1"
+PORT: 8080
+RELOAD: true
+
+# ==================== MCP 配置 ====================
+# MCP Server 相关配置
+MCP_SERVER_NAME: "my-mcp-server"
+MCP_SERVER_VERSION: "1.0.0"
+
+# ==================== 日志配置 ====================
+LOG_LEVEL: "INFO"
+
+# ==================== 打包配置 ====================
+# 用于构建和分发的配置
+SETUP_PACKAGE_NAME: "deploy_starter"
+SETUP_MODULE_NAME: "main"
+SETUP_FUNCTION_NAME: "run_app"
+SETUP_COMMAND_NAME: "mcp-server-starter"
+SETUP_NAME: "mcp-server-starter"
+SETUP_VERSION: "0.1.0"
+SETUP_DESCRIPTION: "FastMCP Server Starter - 快速开发 MCP Server 的模版"
+SETUP_LONG_DESCRIPTION: "基于 FastMCP 框架的 MCP Server 开发模版，支持本地运行和云端部署"
+
+# ==================== 可观测性配置 ====================
+TELEMETRY_ENABLE: TRUE
+
+# ==================== 云端部署配置 ====================
+# 阿里云函数计算 (FC) 部署配置
+FC_RUN_CMD: "python3 /code/python/deploy_starter/main.py"
