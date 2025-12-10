@@ -8,7 +8,8 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
 - Python 3.10 or higher
 - Node.js and npm (for the MCP server)
 - DashScope API key from [Alibaba Cloud](https://dashscope.console.aliyun.com/)
-- Tavily search API key from [Tavily](https://www.tavily.com/)
+- ModelStudio Search from [Modelstudio Web Search](https://bailian.console.aliyun.com/?tab=app#/mcp-market/detail/WebSearch)
+- （Optional）Tavily search API key from [Tavily](https://www.tavily.com/)
 
 ## How to Run This Example
 1. **Set Environment Variable**:
