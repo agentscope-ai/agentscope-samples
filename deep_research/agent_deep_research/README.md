@@ -9,7 +9,7 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
 - Node.js and npm (for the MCP server)
 - DashScope API key from [Alibaba Cloud](https://dashscope.console.aliyun.com/)
 - ModelStudio Search from [Modelstudio Web Search](https://bailian.console.aliyun.com/?tab=app#/mcp-market/detail/WebSearch)
-- （Optional）Tavily search API key from [Tavily](https://www.tavily.com/)
+- Tavily search/extract API key from [Tavily](https://www.tavily.com/)
 
 ## How to Run This Example
 1. **Set Environment Variable**:
@@ -25,7 +25,7 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
     make sure  `export DASHSCOPE_API_KEY="your_dashscope_api_key_here" have enable the web search from 
     [here](https://bailian.console.aliyun.com/?tab=app#/mcp-market/detail/WebSearch)
 
-3. **Optional:Test Tavily MCP Server**:
+3. **Test Tavily MCP Server**:
     ```bash
     npx -y tavily-mcp@latest
     ```
