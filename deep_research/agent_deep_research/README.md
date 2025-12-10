@@ -18,16 +18,21 @@ This example shows a **DeepResearch Agent** implementation using the AgentScope 
    export TAVILY_API_KEY="your_tavily_api_key_here"
    export AGENT_OPERATION_DIR="your_own_direction_here"
    ```
-2. **Test Tavily MCP Server**:
+
+2. **Enable Modelstudio Web Search**
+    make sure  `export DASHSCOPE_API_KEY="your_dashscope_api_key_here" have enable the web search from 
+    [here](https://bailian.console.aliyun.com/?tab=app#/mcp-market/detail/WebSearch)
+
+3. **Optional:Test Tavily MCP Server**:
     ```bash
     npx -y tavily-mcp@latest
     ```
 
-2. **Run the script**:
+4. **Run the script**:
     ```bash
    python main.py
    ```
-3. **Deploy the Deepresearch as service**:
+5. **Deploy the Deepresearch as service**:
     ```bash
    python deploy.py
    ```
