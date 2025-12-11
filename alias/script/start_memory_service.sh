@@ -128,8 +128,8 @@ check_qdrant() {
 
     # Check if port is open
     if check_port "$QDRANT_HOST" "$QDRANT_PORT"; then
-        # Try to check Qdrant health endpoint (use --http0.9 to allow HTTP/0.9)
-        if curl --http0.9 -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
+        # Try to check Qdrant health endpoint
+        if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
             return 0
         fi
         # If port is open but health check fails, still consider it running
@@ -212,8 +212,8 @@ start_qdrant_docker() {
                 print_info "Port $QDRANT_PORT is in use by Qdrant container '$qdrant_container'. Using existing service."
                 return 0
             fi
-            # Verify it's actually a Qdrant service by checking health endpoint (use --http0.9)
-            if curl --http0.9 -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
+            # Verify it's actually a Qdrant service by checking health endpoint
+            if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
                 print_info "Port $QDRANT_PORT is in use by another Qdrant container. Using existing service."
                 return 0
             else
@@ -223,7 +223,7 @@ start_qdrant_docker() {
             fi
         fi
         # Port is in use but not by a container - verify it's Qdrant
-        if curl --http0.9 -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
+        if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
             print_info "Port $QDRANT_PORT is in use by a Qdrant service. Using existing service."
             return 0
         fi
