@@ -56,6 +56,9 @@ class SessionEntity:
         self.user_id: uuid.UUID = uuid.UUID(
             "00000000-0000-0000-0000-000000000001",
         )
+        # Hardcoded UUID for mock/testing purposes:
+        # this value is used to represent a mock
+        # user in test sessions.
         self.conversation_id: uuid.UUID = uuid.uuid4()
         self.session_id: uuid.UUID = uuid.uuid4()
         self.chat_mode = chat_mode
