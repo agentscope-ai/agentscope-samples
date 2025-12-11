@@ -11,7 +11,7 @@ import contextlib
 import json
 import os
 
-from Meta_toolkit import CategoryManager, MetaManager
+from Meta_toolkit import MetaManager
 
 from agentscope.agent import ReActAgent, UserAgent
 from agentscope.formatter import DashScopeChatFormatter
@@ -77,7 +77,10 @@ async def main() -> None:
 
         # Meta tool initialization with Pydantic validation
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        meta_tool_config_path = os.path.join(current_dir, "Meta_tool_config.json")
+        meta_tool_config_path = os.path.join(
+            current_dir,
+            "Meta_tool_config.json",
+        )
 
         model = DashScopeChatModel(
             model_name="qwen-max",
@@ -88,8 +91,11 @@ async def main() -> None:
         # Load and validate configuration
         try:
             from meta_config_models import MetaToolConfig
+
             # Load and validate with Pydantic
-            meta_tool_config = MetaToolConfig.from_json_file(meta_tool_config_path)
+            meta_tool_config = MetaToolConfig.from_json_file(
+                meta_tool_config_path,
+            )
         except Exception as e:
             print(f"Error: {e}")
             # Fallback: load as plain dict

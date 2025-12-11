@@ -23,7 +23,7 @@ from agentscope.message import Msg, TextBlock
 from agentscope.tool import Toolkit, ToolResponse
 from agentscope.tool._types import RegisteredToolFunction
 from agentscope.tool._toolkit import ToolGroup
-from meta_config_models import MetaToolConfig, CategoryConfig
+from meta_config_models import MetaToolConfig
 
 # Constants
 MAX_ITERATIONS = 5
@@ -33,13 +33,13 @@ class CategoryManager:
     """Level 2 Category Manager - Manages tools within a specific category."""
 
     def __init__(
-            self,
-            category_name: str,
-            category_description: str,
-            model: ChatModelBase,
-            formatter: FormatterBase,
-            tool_usage_notes: str = "",
-            memory: MemoryBase = InMemoryMemory(),
+        self,
+        category_name: str,
+        category_description: str,
+        model: ChatModelBase,
+        formatter: FormatterBase,
+        tool_usage_notes: str = "",
+        memory: MemoryBase = InMemoryMemory(),
     ):
         """Initialize the Category Manager
 
@@ -141,12 +141,12 @@ class CategoryManager:
         return self.internal_toolkit.get_json_schemas()
 
     def _get_prompt(
-            self,
-            prompt_type: Literal[
-                "tool_selection",
-                "tool_result_evaluation",
-                "max_iteration_summary",
-            ],
+        self,
+        prompt_type: Literal[
+            "tool_selection",
+            "tool_result_evaluation",
+            "max_iteration_summary",
+        ],
     ) -> str:
         """Generate system prompt for tool selection by reading from file.
 
@@ -193,9 +193,9 @@ Please keep these considerations in mind when generating tool calls."""
         return formatted_prompt
 
     def add_internal_func_obj(
-            self,
-            func_obj: RegisteredToolFunction = None,
-            tool_group: ToolGroup = None,
+        self,
+        func_obj: RegisteredToolFunction = None,
+        tool_group: ToolGroup = None,
     ) -> None:
         """Add an internal tool function object to the category manager.
 
@@ -222,9 +222,9 @@ Please keep these considerations in mind when generating tool calls."""
             self.internal_toolkit.groups[func_obj.group] = tool_group
 
     async def execute_category_task(
-            self,
-            objective: str,
-            exact_input: str,
+        self,
+        objective: str,
+        exact_input: str,
     ) -> ToolResponse:
         """Execute a task within this category using intelligent tool
         selection.
@@ -412,9 +412,9 @@ Please keep these considerations in mind when generating tool calls."""
             await self.memory.clear()
 
     async def _llm_select_tools(
-            self,
-            objective: str,
-            exact_input: str,
+        self,
+        objective: str,
+        exact_input: str,
     ) -> dict:
         """Perform initial tool selection using LLM reasoning.
 
@@ -515,9 +515,9 @@ Please keep these considerations in mind when generating tool calls."""
             }
 
     async def _evaluate_tool_results(
-            self,
-            objective: str,  # pylint: disable=unused-argument
-            exact_input: str,  # pylint: disable=unused-argument
+        self,
+        objective: str,  # pylint: disable=unused-argument
+        exact_input: str,  # pylint: disable=unused-argument
     ) -> dict:
         """Evaluate tool execution results and determine next actions.
 
@@ -615,8 +615,8 @@ Please keep these considerations in mind when generating tool calls."""
                 if isinstance(msg.content, list):
                     for block in msg.content:
                         if (
-                                isinstance(block, dict)
-                                and block.get("type") == "text"
+                            isinstance(block, dict)
+                            and block.get("type") == "text"
                         ):
                             summary_text += block.get("text", "")
 
@@ -690,14 +690,14 @@ Please keep these considerations in mind when generating tool calls."""
                     result_text = ""
                     for content_block in final_result.content:
                         if (
-                                isinstance(content_block, dict)
-                                and content_block.get("type") == "text"
+                            isinstance(content_block, dict)
+                            and content_block.get("type") == "text"
                         ):
                             result_text += content_block.get("text", "")
 
                     result_content = (
-                            result_text
-                            or "Execution successful but no text output"
+                        result_text
+                        or "Execution successful but no text output"
                     )
                 else:
                     result_content = "No result"
@@ -758,12 +758,12 @@ class MetaManager(Toolkit):
     """
 
     def __init__(
-            self,
-            model: Optional[ChatModelBase] = None,
-            meta_tool_config: Optional[Union[Dict, MetaToolConfig]] = None,
-            global_toolkit: Optional[Toolkit] = None,
-            formatter: Optional[FormatterBase] = None,
-            memory: MemoryBase = InMemoryMemory(),
+        self,
+        model: Optional[ChatModelBase] = None,
+        meta_tool_config: Optional[Union[Dict, MetaToolConfig]] = None,
+        global_toolkit: Optional[Toolkit] = None,
+        formatter: Optional[FormatterBase] = None,
+        memory: MemoryBase = InMemoryMemory(),
     ) -> None:
         """Initialize the Meta Manager.
 
@@ -774,8 +774,9 @@ class MetaManager(Toolkit):
                 the meta manager will be automatically initialized.
             meta_tool_config (`Union[Dict, MetaToolConfig]`, optional):
                 Dictionary or MetaToolConfig instance containing category
-                configurations loaded from Meta_tool_config.json or similar structure.
-                If a dictionary is provided, it will be validated using Pydantic.
+                configurations loaded from Meta_tool_config.json or
+                similar structure. If a dictionary is provided, it will
+                be validated using Pydantic.
             global_toolkit (`Toolkit`, optional):
                 The global toolkit containing all available tools to be
                 distributed among categories.
@@ -793,27 +794,38 @@ class MetaManager(Toolkit):
         self.category_managers: Dict[str, CategoryManager] = {}
 
         # Auto-initialize if all required parameters are provided
-        if model is not None and meta_tool_config is not None and global_toolkit is not None:
+        if (
+            model is not None
+            and meta_tool_config is not None
+            and global_toolkit is not None
+        ):
             if formatter is None:
                 raise ValueError(
-                    "formatter parameter is required when auto-initializing MetaManager. "
-                    "Please provide a formatter that matches your model type."
+                    "formatter parameter is required when auto-initializing "
+                    "MetaManager. Please provide a formatter that matches "
+                    "your model type.",
                 )
 
             # Validate and convert config
             validated_config = self._validate_config(meta_tool_config)
-            self._initialize_from_config(model, validated_config, global_toolkit, formatter, memory)
+            self._initialize_from_config(
+                model,
+                validated_config,
+                global_toolkit,
+                formatter,
+                memory,
+            )
 
     def _validate_config(
-            self,
-            config: Union[Dict, MetaToolConfig]
+        self,
+        config: Union[Dict, MetaToolConfig],
     ) -> Union[Dict, MetaToolConfig]:
         """Validate configuration using Pydantic models.
 
         Args:
             config (`Union[Dict, MetaToolConfig]`):
-                Configuration to validate. If already a MetaToolConfig instance,
-                it's considered validated and returned as-is.
+                Configuration to validate. If already a MetaToolConfig
+                instance, it's considered validated and returned as-is.
 
         Returns:
             `Union[Dict, MetaToolConfig]`: Validated configuration.
@@ -831,25 +843,31 @@ class MetaManager(Toolkit):
                 try:
                     return MetaToolConfig.from_dict(config)
                 except Exception as e:
-                    raise ValueError(f"Configuration validation failed: {e}") from e
+                    raise ValueError(
+                        f"Configuration validation failed: {e}",
+                    ) from e
             else:
                 # Pydantic not available, return dict as-is with warning
-                print("Warning: Pydantic not available. Configuration validation skipped.")
+                print(
+                    "Warning: Pydantic not available. Configuration "
+                    "validation skipped.",
+                )
                 return config
 
         # Invalid type
         raise ValueError(
             f"Invalid configuration type: {type(config)}. "
-            f"Expected dict or MetaToolConfig-like object with to_dict() method."
+            "Expected dict or MetaToolConfig-like object with "
+            "to_dict() method.",
         )
 
     def _initialize_from_config(
-            self,
-            model: ChatModelBase,
-            meta_tool_config: Union[Dict, MetaToolConfig],
-            global_toolkit: Toolkit,
-            formatter: FormatterBase,
-            memory: MemoryBase,
+        self,
+        model: ChatModelBase,
+        meta_tool_config: Union[Dict, MetaToolConfig],
+        global_toolkit: Toolkit,
+        formatter: FormatterBase,
+        memory: MemoryBase,
     ) -> None:
         """Initialize category managers from configuration.
 
@@ -857,7 +875,8 @@ class MetaManager(Toolkit):
             model (`ChatModelBase`):
                 The chat model to be used for all category managers.
             meta_tool_config (`Union[Dict, MetaToolConfig]`):
-                Dictionary or MetaToolConfig instance containing category configurations.
+                Dictionary or MetaToolConfig instance containing category
+                configurations.
             global_toolkit (`Toolkit`):
                 The global toolkit containing all available tools.
             formatter (`FormatterBase`):
@@ -873,7 +892,7 @@ class MetaManager(Toolkit):
         else:
             raise ValueError(
                 f"meta_tool_config must be a dict or MetaToolConfig instance, "
-                f"got {type(meta_tool_config)}"
+                f"got {type(meta_tool_config)}",
             )
 
         # Iterate through categories
@@ -946,8 +965,8 @@ class MetaManager(Toolkit):
 
         # Create a renamable function copy
         async def named_executor(
-                objective: str,
-                exact_input: str,
+            objective: str,
+            exact_input: str,
         ) -> ToolResponse:
             """
             Wrapper function that forwards calls to the corresponding
