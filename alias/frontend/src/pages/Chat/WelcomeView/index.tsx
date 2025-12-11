@@ -1,10 +1,10 @@
-import React, { memo } from "react";
-import { Button, Flex } from "antd";
+import AgentscopeLogoIcon from "@/components/AgentscopeLogoIcon";
+import AliasLogoIcon from "@/components/AliasLogoIcon";
+import LogoIcon from "@/components/LogoIcon";
 import { Welcome } from "@agentscope-ai/chat";
 import { SparkUpperrightArrowLine } from "@agentscope-ai/icons";
-import LogoIcon from "@/components/LogoIcon";
-import AgentscopeLogoIcon from "@/components/AgentscopeLogoIcon";
-import AlisaLogoIcon from "@/components/AlisaLogoIcon";
+import { Button, Flex } from "antd";
+import React, { memo } from "react";
 import styles from "./index.module.scss";
 const WelcomeView: React.FC = ({}) => {
   const goGitHub = (url: string) => {
@@ -32,7 +32,7 @@ const WelcomeView: React.FC = ({}) => {
               );
             }}
           >
-            <AlisaLogoIcon style={{ marginLeft: -5 }} />
+            <AliasLogoIcon style={{ marginLeft: -5 }} />
             Alias GitHub
             <SparkUpperrightArrowLine style={{ fontSize: "20px" }} />
           </Button>
