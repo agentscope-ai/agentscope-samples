@@ -1,8 +1,8 @@
-import type { GetProps } from "antd";
 import Icon from "@ant-design/icons";
+import type { GetProps } from "antd";
 
 type CustomIconComponentProps = GetProps<typeof Icon>;
-const AlisaLogoIconSvg = () => (
+const AliasLogoIconSvg = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
@@ -39,8 +39,8 @@ const AlisaLogoIconSvg = () => (
     </g>
   </svg>
 );
-const AlisaLogoIcon = (props: Partial<CustomIconComponentProps>) => (
-  <Icon component={AlisaLogoIconSvg} {...props} />
+const AliasLogoIcon = (props: Partial<CustomIconComponentProps>) => (
+  <Icon component={AliasLogoIconSvg} {...props} />
 );
 
-export default AlisaLogoIcon;
+export default AliasLogoIcon;
