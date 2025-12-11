@@ -13,7 +13,7 @@ from agentscope.message import Msg
 from agentscope.mcp import StdIOStatefulClient
 
 
-async def main(user_query: str) -> None:
+async def run(user_query: str) -> None:
     """The main entry point for the Deep Research agent example."""
     logger.setLevel("DEBUG")
 
@@ -66,17 +66,8 @@ async def main(user_query: str) -> None:
 
 
 if __name__ == "__main__":
-    query = (
-        "If Eliud Kipchoge could maintain his record-making "
-        "marathon pace indefinitely, how many thousand hours "
-        "would it take him to run the distance between the "
-        "Earth and the Moon its closest approach? Please use "
-        "the minimum perigee value on the Wikipedia page for "
-        "the Moon when carrying out your calculation. Round "
-        "your result to the nearest 1000 hours and do not use "
-        "any comma separators if necessary."
-    )
+    query = "孔子对中国历史的贡献如何？"
     try:
-        asyncio.run(main(query))
+        asyncio.run(run(query))
     except Exception as e:
         logger.exception(e)

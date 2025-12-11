@@ -14,7 +14,7 @@ from agentscope.model import DashScopeChatModel
 from deep_research.agent_deep_research.deep_research_agent import (
     DeepResearchAgent,
 )
-from deep_research.agent_deep_research.main import main
+from deep_research.agent_deep_research.main import run as main
 
 
 @pytest.fixture

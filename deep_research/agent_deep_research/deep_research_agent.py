@@ -22,6 +22,7 @@ from utils import (
     load_prompt_dict,
     get_dynamic_tool_call_json,
     get_structure_output,
+    upload_to_aliyun_oss,
 )
 
 from agentscope import logger, setup_logger
@@ -41,7 +42,12 @@ from agentscope.message import (
     TextBlock,
     ToolResultBlock,
 )
-
+from agentscope_runtime.tools.searches.modelstudio_search_lite import (
+    ModelstudioSearchLite,
+)
+from agentscope_runtime.adapters.agentscope.tool.tool import (
+    agentscope_tool_adapter,
+)
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
 
@@ -94,7 +100,7 @@ class DeepResearchAgent(ReActAgent):
         model: ChatModelBase,
         formatter: FormatterBase,
         memory: MemoryBase,
-        search_mcp_client: StatefulClientBase,
+        search_mcp_client: Optional[StatefulClientBase] = None,
         sys_prompt: str = _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT,
         max_iters: int = 30,
         max_depth: int = 3,
@@ -160,11 +166,25 @@ class DeepResearchAgent(ReActAgent):
         # register all necessary tools for deep research agent
         self.toolkit.register_tool_function(view_text_file)
         self.toolkit.register_tool_function(write_text_file)
-        asyncio.get_running_loop().create_task(
-            self.toolkit.register_mcp_client(search_mcp_client),
-        )
+        self.toolkit.register_tool_function(self.generate_response)
 
-        self.search_function = "tavily-search"
+        # register modelstudiolite
+        modelstudio_search = ModelstudioSearchLite()
+        modelstudio_search_tool = agentscope_tool_adapter(modelstudio_search)
+        self.toolkit.tools[
+            modelstudio_search_tool.name
+        ] = modelstudio_search_tool
+
+        loop = asyncio.get_running_loop()
+
+        async def _init_mcp_client():
+            await self.toolkit.register_mcp_client(search_mcp_client)
+            # using modelstudio web search
+            self.toolkit.tools.pop("tavily-search")
+
+        loop.create_task(_init_mcp_client())
+
+        self.search_function = "modelstudio_web_search"
         self.extract_function = "tavily-extract"
         self.read_file_function = "view_text_file"
         self.write_file_function = "write_text_file"
@@ -191,19 +211,31 @@ class DeepResearchAgent(ReActAgent):
     ) -> Msg:
         """The reply method of the agent."""
         # Maintain the subtask list
-        self.user_query = msg.get_text_content()
+        if isinstance(msg, list):
+            message = msg[-1]
+        else:
+            message = msg
+
+        self.user_query = message.get_text_content()
         self.current_subtask.append(
             SubTaskItem(objective=self.user_query),
         )
 
         # Identify the expected output and generate a plan
         await self.decompose_and_expand_subtask()
-        msg.content += (
-            f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
-        )
+        if isinstance(message.content, list):
+            message.content[0][
+                "text"
+            ] += (
+                f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
+            )
+        else:
+            message.content += (
+                f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
+            )
 
         # Add user query message to memory
-        await self.memory.add(msg)  # type: ignore
+        await self.memory.add(message)  # type: ignore
 
         # Record structured output model if provided
         if structured_model:
@@ -312,13 +344,14 @@ class DeepResearchAgent(ReActAgent):
                 ] = chunk.content
 
                 # Skip the printing of the finish function call
-                if (
-                    tool_call["name"] != self.finish_function_name
-                    or tool_call["name"] == self.finish_function_name
-                    and not chunk.metadata.get("success")
-                ):
-                    await self.print(tool_res_msg, chunk.is_last)
+                # if (
+                #     tool_call["name"] != self.finish_function_name
+                #     or (tool_call["name"] == self.finish_function_name
+                #     and not chunk.metadata.get("success"))
+                # ):
+                await self.print(tool_res_msg, chunk.is_last)
 
+                logger.info(f"chunk: {chunk}")
                 # Return message if generate_response is called successfully
                 if tool_call[
                     "name"
@@ -843,12 +876,18 @@ class DeepResearchAgent(ReActAgent):
     async def _generate_deepresearch_report(
         self,
         checklist: str,
-    ) -> Tuple[Msg, str]:
+    ) -> Tuple[Msg, str, str]:
         """Collect and polish all draft reports into a final report.
 
         Args:
             checklist (`str`):
                 The expected output items of the original task.
+
+        Returns:
+            Tuple[Msg, str, str]:
+                - The tool response message containing the write result
+                - The local file path of the detailed report
+                - The OSS URL (if upload succeeded) or empty string
         """
         reporting_sys_prompt = self.prompt_dict["reporting_sys_prompt"]
         reporting_sys_prompt.format_map(
@@ -924,7 +963,31 @@ class DeepResearchAgent(ReActAgent):
             params=params,
         )
 
-        return write_report_tool_res_msg, detailed_report_path
+        # Try to upload to Aliyun OSS if credentials are configured
+        oss_url = ""
+        oss_object_name = (
+            f"deep_research_reports/"
+            f"{self.report_path_based}_detailed_report.md"
+        )
+        try:
+            uploaded_url = upload_to_aliyun_oss(
+                detailed_report_path,
+                object_name=oss_object_name,
+                expiration_hours=168,  # 7 days
+            )
+            if uploaded_url:
+                oss_url = uploaded_url
+                logger.info(
+                    "Report uploaded to OSS successfully: %s",
+                    oss_url,
+                )
+        except Exception:
+            logger.info(
+                "OSS credentials not configured or upload failed, "
+                "report saved locally only.",
+            )
+
+        return write_report_tool_res_msg, detailed_report_path, oss_url
 
     async def _summarizing(self) -> Msg:
         """Generate a report based on the exsisting findings when the
@@ -932,15 +995,22 @@ class DeepResearchAgent(ReActAgent):
 
         (
             summarized_content,
-            _,
+            local_path,
+            oss_url,
         ) = await self._generate_deepresearch_report(
             checklist=self.current_subtask[0].knowledge_gaps,
         )
+
+        response_dict = summarized_content.content[0]["output"][0].copy()
+        if oss_url:
+            response_dict["oss_url"] = oss_url
+        response_dict["local_path"] = local_path
+
         return Msg(
             name=self.name,
             role="assistant",
             content=json.dumps(
-                summarized_content.content[0]["output"][0],
+                response_dict,
                 indent=2,
                 ensure_ascii=False,
             ),
@@ -1077,14 +1147,20 @@ class DeepResearchAgent(ReActAgent):
             (
                 summarized_content,
                 _,
+                oss_url,
             ) = await self._generate_deepresearch_report(
                 checklist=checklist,
             )
+
+            response_dict = summarized_content.content[0]["output"][0].copy()
+            if oss_url:
+                response_dict["oss_url"] = oss_url
+
             response_msg = Msg(
                 name=self.name,
                 role="assistant",
                 content=json.dumps(
-                    summarized_content.content[0]["output"][0],
+                    response_dict,
                     indent=2,
                     ensure_ascii=False,
                 ),

@@ -60,6 +60,7 @@ uv.lock
 
 # Logs
 logs/
+log/
 *.log
 
 # Agent-generated files

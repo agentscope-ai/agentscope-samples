@@ -1,1 +1,3 @@
 agentscope[full]>=1.0.5
+agentscope-runtime==1.0.0b2
+oss2>=2.18.0
