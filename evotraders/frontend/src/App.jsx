@@ -332,10 +332,10 @@ export default function LiveTradingApp() {
               }));
             }
 
-            if (state.holdings) setHoldings(state.holdings);
-            if (state.trades) setTrades(state.trades);
-            if (state.stats) setStats(state.stats);
-            if (state.leaderboard) setLeaderboard(state.leaderboard);
+            if (state.dashboard.holdings) setHoldings(state.dashboard.holdings);
+            if (state.dashboard.trades) setTrades(state.dashboard.trades);
+            if (state.dashboard.stats) setStats(state.dashboard.stats);
+            if (state.dashboard.leaderboard) setLeaderboard(state.dashboard.leaderboard);
             if (state.realtime_prices) updateTickersFromPrices(state.realtime_prices);
 
             // Load and process historical feed data

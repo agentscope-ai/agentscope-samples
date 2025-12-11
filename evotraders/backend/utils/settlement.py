@@ -189,12 +189,15 @@ class SettlementCoordinator:
 
         baseline_values = self.baseline_calculator.get_all_baseline_values(
             tickers=tickers,
-            prices=close_prices,
+            open_prices=open_prices if open_prices else close_prices,
+            close_prices=close_prices,
             market_caps=market_caps,
             momentum_scores=momentum_scores,
             date=date,
             rebalance_momentum=rebalance_momentum,
         )
+
+        print(f"Baseline values calculated: {baseline_values}")
 
         agent_value = self.storage.calculate_portfolio_value(
             agent_portfolio,
@@ -301,10 +304,12 @@ class SettlementCoordinator:
         equal_weight = self.baseline_calculator.calculate_equal_weight_value(
             tickers,
             current_prices,
+            current_prices,
         )
         market_cap = (
             self.baseline_calculator.calculate_market_cap_weighted_value(
                 tickers,
+                current_prices,
                 current_prices,
                 market_caps,
             )
@@ -324,6 +329,7 @@ class SettlementCoordinator:
 
         momentum = self.baseline_calculator.calculate_momentum_value(
             tickers,
+            current_prices,
             current_prices,
             momentum_scores,
             date=last_date,
