@@ -1,7 +1,7 @@
 # AgentScope Sample Agents
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
@@ -62,6 +62,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 ├── alias/                                  # Agent to solve real-world problems
 ├── browser_use/
 │   ├── agent_browser/                      # Pure Python browser agent
+│   ├── browser_use_agent_pro/              # Advanced pure python browser agent
 │   └── browser_use_fullstack_runtime/      # Full-stack runtime version with frontend/backend
 │
 ├── deep_research/
@@ -93,6 +94,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
 | **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
+|                         | browser_use/browser_use_agent_pro                     | ✅               | ❌            | Advanced command-line Python browser agent using AgentScope              |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
 | **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
 |                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅            | Full-stack deep research app                     |
@@ -103,6 +105,7 @@ It includes **agent deployment** and **secure sandboxed tool execution**, and ca
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
 | **General AI Agent**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
+| **Financial Trading**   | evotraders/                                           | ✅               | ❌            | Self-Evolving Multi-Agent Trading System         |
 
 ------
 
@@ -131,6 +134,17 @@ A powerful multi-agent data processing system that leverages Data-Juicer's 200+ 
 Beyond being a ready-to-use agent, we envision Alias as a foundational template that can be adapted to different scenarios.
 
 📖 **Documentation**: [English](alias/README.md) | [中文](alias/README_ZH.md)
+
+### EvoTraders
+
+*EvoTraders* is a financial trading agent framework that builds a trading system capable of continuous learning and evolution in real markets through multi-agent collaboration and memory systems. Key features include:
+
+- **Multi-Agent Collaboration**: A team of specialized analysts (Fundamentals, Technical, Sentiment, Valuation) and managers collaborating like a real trading team.
+- **Memory Enhancement & Evolution**: Agents reflect and summarize after trades using the ReMe memory framework, evolving their trading styles over time.
+- **Real-Time & Backtesting**: Supports both real-time market data integration for live trading and backtesting modes.
+- **Visualized Dashboard**: A comprehensive frontend to observe analysis processes, communication, and performance tracking.
+
+📖 **Documentation**: [English](evotraders/README.md) | [中文](evotraders/README_zh.md)
 
 ------
 
@@ -183,7 +197,7 @@ This project is licensed under the **Apache 2.0 License** – see the [LICENSE](
 
 ## Contributors ✨
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -204,6 +218,24 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://shenqianli.github.io/"><img src="https://avatars.githubusercontent.com/u/28307002?v=4?s=100" width="100px;" alt="ShenQianli"/><br /><sub><b>ShenQianli</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=ShenQianLi" title="Code">💻</a> <a href="#example-ShenQianLi" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ZiTao-Li"><img src="https://avatars.githubusercontent.com/u/135263265?v=4?s=100" width="100px;" alt="ZiTao-Li"/><br /><sub><b>ZiTao-Li</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=ZiTao-Li" title="Code">💻</a> <a href="#example-ZiTao-Li" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://xieyxclack.github.io/"><img src="https://avatars.githubusercontent.com/u/31954383?v=4?s=100" width="100px;" alt="Yuexiang XIE"/><br /><sub><b>Yuexiang XIE</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=xieyxclack" title="Code">💻</a> <a href="#example-xieyxclack" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/cuiyuebing"><img src="https://avatars.githubusercontent.com/u/39703217?v=4?s=100" width="100px;" alt="Yue Cui"/><br /><sub><b>Yue Cui</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=cuiyuebing" title="Code">💻</a> <a href="#example-cuiyuebing" title="Examples">💡</a> <a href="#maintenance-cuiyuebing" title="Maintenance">🚧</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=cuiyuebing" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ZexiLee"><img src="https://avatars.githubusercontent.com/u/49397774?v=4?s=100" width="100px;" alt="Zexi Li"/><br /><sub><b>Zexi Li</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=ZexiLee" title="Code">💻</a> <a href="#example-ZexiLee" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/lalaliat"><img src="https://avatars.githubusercontent.com/u/78087788?v=4?s=100" width="100px;" alt="lalaliat"/><br /><sub><b>lalaliat</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=lalaliat" title="Code">💻</a> <a href="#example-lalaliat" title="Examples">💡</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/SSSuperDan"><img src="https://avatars.githubusercontent.com/u/73866152?v=4?s=100" width="100px;" alt="Dandan Liu"/><br /><sub><b>Dandan Liu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=SSSuperDan" title="Code">💻</a> <a href="#example-SSSuperDan" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/StCarmen"><img src="https://avatars.githubusercontent.com/u/39507457?v=4?s=100" width="100px;" alt="Tianjing Zeng"/><br /><sub><b>Tianjing Zeng</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=StCarmen" title="Code">💻</a> <a href="#example-StCarmen" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/zhijianma"><img src="https://avatars.githubusercontent.com/u/30956532?v=4?s=100" width="100px;" alt="zhijianma"/><br /><sub><b>zhijianma</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=zhijianma" title="Code">💻</a> <a href="#example-zhijianma" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Dengjiaji"><img src="https://avatars.githubusercontent.com/u/15075186?v=4?s=100" width="100px;" alt="Jiaji"/><br /><sub><b>Jiaji</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=Dengjiaji" title="Code">💻</a> <a href="#example-Dengjiaji" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/duoyw"><img src="https://avatars.githubusercontent.com/u/31238100?v=4?s=100" width="100px;" alt="duoyw"/><br /><sub><b>duoyw</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=duoyw" title="Code">💻</a> <a href="#example-duoyw" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sleepy-bird-world"><img src="https://avatars.githubusercontent.com/u/166603159?v=4?s=100" width="100px;" alt="JustinDing"/><br /><sub><b>JustinDing</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=sleepy-bird-world" title="Code">💻</a> <a href="#example-sleepy-bird-world" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinliyl"><img src="https://avatars.githubusercontent.com/u/6469360?v=4?s=100" width="100px;" alt="jinliyl"/><br /><sub><b>jinliyl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=jinliyl" title="Code">💻</a> <a href="#example-jinliyl" title="Examples">💡</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/y1y5"><img src="https://avatars.githubusercontent.com/u/105190237?v=4?s=100" width="100px;" alt="y1y5"/><br /><sub><b>y1y5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=y1y5" title="Code">💻</a> <a href="#example-y1y5" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://luyi256.github.io"><img src="https://avatars.githubusercontent.com/u/50238286?v=4?s=100" width="100px;" alt="LuYi"/><br /><sub><b>LuYi</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=luyi256" title="Code">💻</a> <a href="#example-luyi256" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/1mycell"><img src="https://avatars.githubusercontent.com/u/143110833?v=4?s=100" width="100px;" alt="Wu Yue"/><br /><sub><b>Wu Yue</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=1mycell" title="Code">💻</a> <a href="#example-1mycell" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://www.bruceluo.net"><img src="https://avatars.githubusercontent.com/u/7297307?v=4?s=100" width="100px;" alt="Zhiling (Bruce) Luo"/><br /><sub><b>Zhiling (Bruce) Luo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=zhilingluo" title="Code">💻</a> <a href="#example-zhilingluo" title="Examples">💡</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=zhilingluo" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>

@@ -94,16 +94,19 @@ const App: React.FC = () => {
     setMessages(newMessages);
 
     setIsTyping(true);
+
     await processMessageToChatGPT(newMessages);
+    await get_desktop_url();
   };
 
   async function processMessageToChatGPT(chatMessages: ChatMessage) {
-    let apiMessages = chatMessages
+    const apiMessages = chatMessages
       .map((messageObject) => {
         if (messageObject.message.trim() === "") {
           return null;
         }
-        let role = messageObject.sender === "assistant" ? "assistant" : "user";
+        const role =
+          messageObject.sender === "assistant" ? "assistant" : "user";
         return { role, content: messageObject.message };
       })
       .filter(Boolean);
@@ -143,7 +146,9 @@ const App: React.FC = () => {
     ]);
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        break;
+      }
 
       const chunk = decoder.decode(value);
       accumulatedMessage += chunk;
@@ -152,7 +157,9 @@ const App: React.FC = () => {
       accumulatedMessage = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.trim() === "") continue;
+        if (line.trim() === "") {
+          continue;
+        }
 
         try {
           const parsed = JSON.parse(line.split("data: ")[1]);

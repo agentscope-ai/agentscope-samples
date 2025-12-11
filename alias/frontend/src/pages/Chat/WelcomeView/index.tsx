@@ -18,7 +18,7 @@ const WelcomeView: React.FC = ({}) => {
               goGitHub("https://github.com/agentscope-ai/agentscope");
             }}
           >
-            Agentscope Github
+            AgentScope GitHub
             <SparkUpperrightArrowLine style={{ fontSize: "20px" }} />
           </Button>
           <Button
@@ -29,7 +29,7 @@ const WelcomeView: React.FC = ({}) => {
               );
             }}
           >
-            Alias Github
+            Alias GitHub
             <SparkUpperrightArrowLine style={{ fontSize: "20px" }} />
           </Button>
         </Flex>

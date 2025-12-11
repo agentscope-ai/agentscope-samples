@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+/.venv/
+ENV/
+
+# Environment Variables
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursorrules
+.cursorignore
+
+# OS
+.DS_Store
+
+# Txt files
+*.txt
+
+# PDF files
+*.pdf
+
+# Frontend
+node_modules
+
+# Outputs
+outputs/
+
+# Data files
+backend/data/ret_data/
+
+# Database files (users will have their own local databases)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+*.ipynb
+*.log

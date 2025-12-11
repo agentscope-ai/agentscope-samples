@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 
 import requests
+
+from openai import OpenAI
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -152,29 +154,25 @@ def sse_client(url, data=None):
                     pass
 
 
-def call_runner(query, query_user_id, query_session_id):
+def call_runner(query):
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
-    server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
     server_host = os.environ.get("SERVER_HOST", "localhost")
 
-    url = f"http://{server_host}:{server_port}/{server_endpoint}"
-    data_arg = {
-        "input": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": query,
-                    },
-                ],
-            },
-        ],
-        "session_id": query_session_id,
-        "user_id": query_user_id,
-    }
-    for content in sse_client(url, data=data_arg):
-        yield content
+    client = OpenAI(
+        base_url=f"http://{server_host}:{server_port}/compatible-mode/v1",
+    )
+
+    stream = client.responses.create(
+        model="any_name",
+        input=query,
+        stream=True,
+    )
+
+    for chunk in stream:
+        if hasattr(chunk, "delta"):
+            yield chunk.delta
+        else:
+            yield ""
 
 
 # API routes
@@ -359,11 +357,9 @@ def send_message(conversation_id):
         ai_response_text = ""
 
         question = text
-        conversation_id_str = str(conversation_id)
+
         for item in call_runner(
             question,
-            conversation_id_str,
-            conversation_id_str,
         ):
             ai_response_text += item
 
