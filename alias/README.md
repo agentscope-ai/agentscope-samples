@@ -286,7 +286,7 @@ Verify the server is running by visiting `http://localhost:8000/api/v1/monitor/h
 
 #### Start the Frontend
 
-<!-- In a separate terminal, start the frontend development server: -->
+In a separate terminal, start the frontend development server:
 
 ```bash
 # From the project root directory
