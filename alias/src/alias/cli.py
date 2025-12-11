@@ -61,6 +61,7 @@ async def run_agent_task(
     user_msg: str,
     mode: str = "general",
     files: Optional[list[str]] = None,
+    use_long_term_memory_service: bool = False,
 ) -> None:
     """
     Run an agent task with the specified configuration.
@@ -69,6 +70,7 @@ async def run_agent_task(
         user_msg: The user's task/query
         mode: Agent mode ('general', 'dr', 'ds', 'browser', 'finance')
         files: List of local file paths to upload to sandbox workspace
+        use_long_term_memory_service: Enable long-term memory service.
     """
     global _original_sigint_handler
 
@@ -81,7 +83,9 @@ async def run_agent_task(
     #     logger.debug("Installed custom SIGINT handler to protect sandbox")
 
     # Initialize session
-    session = MockSessionService()
+    session = MockSessionService(
+        use_long_term_memory_service=use_long_term_memory_service,
+    )
 
     # Create initial user message
     user_agent = UserAgent(name="User")
@@ -184,6 +188,7 @@ async def _run_agent_loop(
         session: Session service instance
         user_agent: User agent for interactive follow-ups
         sandbox: Sandbox accessible for all agents
+        use_long_term_memory_service: Enable long-term memory service.
     """
     while True:
         # Run the appropriate agent based on mode
@@ -304,6 +309,13 @@ def main():
         "for agent to use (e.g., --files file1.txt file2.csv)",
     )
 
+    run_parser.add_argument(
+        "--use_long_term_memory",
+        action="store_true",
+        help="Enable long-term memory service for retrieving user profiling "
+        "information at session start",
+    )
+
     # Version command
     parser.add_argument(
         "--version",
@@ -326,6 +338,11 @@ def main():
                     user_msg=args.task,
                     mode=args.mode,
                     files=args.files if hasattr(args, "files") else None,
+                    use_long_term_memory_service=(
+                        args.use_long_term_memory
+                        if hasattr(args, "use_long_term_memory")
+                        else False
+                    ),
                 ),
             )
         except (KeyboardInterrupt, SystemExit) as e:

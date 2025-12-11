@@ -213,8 +213,7 @@ class AsyncUserProfilingMemory(
         Args:
             uid (str): User ID.
             content: Messages to add.
-            session_id (Optional[str]): Session ID. If not provided, a new
-                UUID will be generated.
+            session_id (Optional[str]): Session ID.
             metadata (Optional[dict]): Additional metadata for the messages.
             **kwargs: Other keyword arguments passed to the candidate pool.
         Returns:
@@ -223,9 +222,7 @@ class AsyncUserProfilingMemory(
         now = datetime.datetime.now(pytz.timezone("US/Pacific")).isoformat()
         metadata = deepcopy(metadata) if metadata else {}
         if "session_id" not in metadata:
-            metadata["session_id"] = (
-                session_id if session_id else str(uuid.uuid4())
-            )
+            metadata["session_id"] = session_id if session_id else ""
         else:
             if session_id and metadata["session_id"] != session_id:
                 raise ValueError(
@@ -1393,6 +1390,7 @@ class AsyncUserProfilingMemory(
             session_id=session_id,
             action_message_id=action_message_id,
         )
+        logger.info(f"record_chat results: {results}")
         return results
 
     async def _parallel_add_to_pools(
@@ -1757,6 +1755,7 @@ class AsyncUserProfilingMemory(
     ):
         """Optimized record_chat using parallel processing"""
         preference_type = preference_message.get("type")
+        logger.info(f"record_chat preference_type: {preference_type}")
         if preference_type == "irrelevant":
             return {
                 "message": (

@@ -19,6 +19,8 @@
 
 </div>
 
+[[English README]](README.md)
+
 
 *Alias-Agent*（简称 *Alias*）是一个基于 [AgentScope](https://github.com/agentscope-ai/agentscope) 和 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 构建的、由大语言模型驱动的智能体，旨在作为通用智能助手响应用户查询。Alias 擅长分解复杂问题、构建解决路径，并应用合适的策略来处理多样化的现实世界任务。
 
@@ -154,7 +156,7 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 docker pull agentscope/runtime-sandbox-alias:latest
 ```
 
-更多详情请参考 [AgentScope Runtime 文档](https://runtime.agentscope.io/en/sandbox.html)。
+更多详情请参考 [AgentScope Runtime 文档](https://runtime.agentscope.io/zh/sandbox/sandbox.html)。
 
 ### 🔑 API 密钥配置
 
@@ -205,6 +207,19 @@ alias_agent run --mode ds \
 
 **注意**：使用 `--files` 上传的文件会自动复制到沙盒中的 `/workspace`。生成的文件可在 `sessions_mount_dir` 的子目录中找到。
 
+#### 启用长期记忆服务（仅限通用模式）
+要在通用模式下启用长期记忆服务，您需要：
+1. **首先启动记忆服务**（请参阅下面的[启动记忆服务服务器](#启动记忆服务服务器)部分）
+2. **在通用模式下运行时使用 `--use_long_term_memory` 标志**：
+```bash
+# 启用长期记忆服务的通用模式
+alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025" --use_long_term_memory
+```
+**重要提示**：
+- 只有显式添加 `--use_long_term_memory` 标志时才会启用长期记忆（默认禁用）
+- 长期记忆服务仅在**通用模式**（元规划器）中可用
+- 在启动智能体之前，记忆服务必须正在运行
+- 启用后，智能体将在会话开始时检索用户画像信息，以提供个性化体验
 
 ### 基础用法 -- 全栈部署
 
@@ -285,6 +300,8 @@ npm run dev
 
 #### 启动记忆服务服务器
 
+> **注意**：如果您想在通用模式下启用长期记忆功能，则需要记忆服务。在使用 CLI 中的 `--use_long_term_memory` 标志或在 API 请求中设置 `use_long_term_memory_service: true` 之前，请确保已启动记忆服务。
+
 首先，以开发模式安装 Memory Service 包
 
 ```bash
@@ -331,7 +348,7 @@ bash script/start_memory_service.sh
 
 **选项 2：Docker 部署**
 
-有关基于 Docker 的部署，请参阅 [alias/memory_service/docker/README.md](memory_service/docker/README.md) 中的详细文档。
+有关基于 Docker 的部署，请参阅[详细文档](src/alias/memory_service/docker/README.md)。
 
 #### 访问应用程序
 

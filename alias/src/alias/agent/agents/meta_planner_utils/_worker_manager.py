@@ -10,7 +10,7 @@ import asyncio
 from agentscope import logger
 
 from agentscope.module import StateModule
-from agentscope.memory import InMemoryMemory, MemoryBase
+from agentscope.memory import InMemoryMemory, MemoryBase, LongTermMemoryBase
 from agentscope.tool import ToolResponse
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
 from agentscope.model import ChatModelBase, DashScopeChatModel
@@ -186,6 +186,7 @@ class WorkerManager(StateModule):
             dict[str, tuple[WorkerInfo, ReActWorker]]
         ] = None,
         session_service: Any = None,
+        long_term_memory: Optional[LongTermMemoryBase] = None,
     ):
         """Initialize the CoordinationHandler.
         Args:
@@ -201,6 +202,13 @@ class WorkerManager(StateModule):
                 Working directory for the agent operations
             worker_pool: dict[str, tuple[WorkerInfo, ReActAgent]]:
                 workers that has already been created
+            session_service (Any):
+                Session service instance
+            long_term_memory (Optional[LongTermMemoryBase]):
+                Long-term memory instance, if None, long-term memory features
+                will be disabled. Only works when memory service is available
+                and healthy. If provided, the tool memory will be retrieved
+                and added to the worker system prompt.
         """
         super().__init__()
         self.planner_notebook = planner_notebook
@@ -213,6 +221,7 @@ class WorkerManager(StateModule):
         self.worker_full_toolkit = worker_full_toolkit
         self.base_sandbox = sandbox
         self.session_service = session_service
+        self.long_term_memory = long_term_memory
 
         def reconstruct_workerpool(worker_pool_dict: dict) -> dict:
             rebuild_worker_pool = self.worker_pool
@@ -391,6 +400,76 @@ class WorkerManager(StateModule):
             additional_worker_prompt += str(f.read()).format_map(
                 {"agent_working_dir": self.agent_working_dir},
             )
+
+        # Retrieve tool memory if long-term memory is available
+        if self.long_term_memory is not None:
+            try:
+                from alias.server.clients.memory_client import MemoryClient
+
+                # Check if memory service is available
+                if not await MemoryClient.is_available():
+                    logger.debug(
+                        "Long-term memory service is enabled but not "
+                        "available. Skipping tool memory retrieval.",
+                    )
+                elif not (
+                    hasattr(self, "session_service") and self.session_service
+                ):
+                    logger.debug(
+                        "Session service not available. "
+                        "Skipping tool memory retrieval.",
+                    )
+                else:
+                    # Get user ID from session
+                    user_id = str(
+                        self.session_service.session_entity.user_id,
+                    )
+                    # Use tool names as query for retrieving relevant
+                    # tool memory
+                    query = ",".join(tool_names) if tool_names else ""
+                    try:
+                        memory_client = MemoryClient()
+                        retrieve_result = (
+                            await memory_client.retrieve_tool_memory(
+                                uid=user_id,
+                                query=query,
+                            )
+                        )
+                        if (
+                            retrieve_result
+                            and "No matching tool memories found"
+                            not in retrieve_result
+                            and isinstance(retrieve_result, str)
+                            and retrieve_result.strip()
+                        ):
+                            tool_memory_context = (
+                                "\n\n=== Below is some information "
+                                "about tool usage from past experiences "
+                                "===\n" + retrieve_result + "\n"
+                                "==========================================\n"
+                            )
+                            additional_worker_prompt += tool_memory_context
+                            logger.info(
+                                f"Retrieved tool memory for worker "
+                                f"{worker_name}",
+                            )
+                        else:
+                            logger.warning(
+                                f"No matching tool memories found for "
+                                f"worker {worker_name}. Continuing without "
+                                f"tool memory context.",
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to retrieve tool memory: {e}. "
+                            f"Continuing without tool memory context.",
+                        )
+            except ImportError:
+                logger.debug(
+                    "MemoryClient not available. "
+                    "Skipping tool memory retrieval.",
+                )
+
         worker = ReActWorker(
             name=worker_name,
             sys_prompt=(worker_system_prompt + additional_worker_prompt),

@@ -58,14 +58,24 @@ class FileDownloadAgent(AliasAgentBase):
             state_saving_dir=getattr(browser_agent, "state_saving_dir", None),
             max_iters=max_iters,
         )
-        self.toolkit.remove_tool_function("browser_pdf_save")
-        self.toolkit.remove_tool_function("file_download")
+        # Remove conflicting tool functions if they exist
+        if hasattr(self.toolkit, "remove_tool_function"):
+            try:
+                self.toolkit.remove_tool_function("browser_pdf_save")
+            except Exception:
+                # Tool may not exist, ignore removal errors
+                pass
+            try:
+                self.toolkit.remove_tool_function("file_download")
+            except Exception:
+                # Tool may not exist, ignore removal errors
+                pass
 
     async def file_download_final_response(
         self,  # pylint: disable=W0613
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
-        """Summarise the file download outcome."""
+        """Summarize the file download outcome."""
         hint_msg = Msg(
             "user",
             (
@@ -184,8 +194,6 @@ async def file_download(
         target_description=target_description,
         snapshot_text=snapshot_text,
     )
-    # print(snapshot_text)
-    # breakpoint()
 
     init_msg = Msg(
         name="user",

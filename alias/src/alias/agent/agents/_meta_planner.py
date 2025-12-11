@@ -16,7 +16,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from agentscope.formatter import FormatterBase
-from agentscope.memory import MemoryBase
+from agentscope.memory import MemoryBase, LongTermMemoryBase
 from agentscope.message import Msg, TextBlock, ToolResultBlock, ToolUseBlock
 from agentscope.model import ChatModelBase
 from agentscope.tool import ToolResponse
@@ -149,6 +149,12 @@ class MetaPlanner(AliasAgentBase):
         planner_mode: Literal["disable", "dynamic", "enforced"] = "dynamic",
         session_service: Any = None,
         enable_clarification: bool = True,
+        long_term_memory: Optional[LongTermMemoryBase] = None,
+        long_term_memory_mode: Literal[
+            "agent_control",
+            "static_control",
+            "both",
+        ] = "both",
     ) -> None:
         """
         Initialize the MetaPlanner with the given parameters.
@@ -176,6 +182,20 @@ class MetaPlanner(AliasAgentBase):
                 Directory to save the agent's state. Defaults to None.
             planner_mode (bool, optional):
                 Enable planner mode for solving tasks. Defaults to True.
+            long_term_memory (Optional[LongTermMemoryBase]):
+                Long-term memory instance, if None, long-term memory features
+                will be disabled. Only works when memory service is available
+                and healthy. If provided, the tool memory will be retrieved
+                and added to the worker system prompt.
+            long_term_memory_mode (
+                Literal["agent_control", "static_control", "both"]
+            ):
+                Mode for long-term memory control. Defaults to "both".
+                - "agent_control": Agent can control when to retrieve and
+                  record memory
+                - "static_control": Memory is automatically retrieved/recorded
+                  at the beginning and end of each reply respectively.
+                - "both": Both modes are available
         """
         if sys_prompt is None:
             self.base_sys_prompt = (
@@ -204,6 +224,8 @@ class MetaPlanner(AliasAgentBase):
             max_iters=max_iters,
             session_service=session_service,
             state_saving_dir=state_saving_dir,
+            long_term_memory=long_term_memory,
+            long_term_memory_mode=long_term_memory_mode,
         )
         self.browser_toolkit = browser_toolkit
 
@@ -213,6 +235,15 @@ class MetaPlanner(AliasAgentBase):
 
         self.register_state("task_dir")
         self.register_state("agent_working_dir_root")
+
+        # register tool_memory_retrieve tool
+        # if long_term_memory is provided. Notice that
+        # retrieve_from_memory tool is registered
+        # in the toolkit by default.
+        if long_term_memory:
+            self.toolkit.register_tool_function(
+                long_term_memory.tool_memory_retrieve,
+            )
 
         # adjust ReActAgent parameters
         if enable_clarification:
@@ -344,6 +375,7 @@ class MetaPlanner(AliasAgentBase):
                 worker_full_toolkit=self.worker_full_toolkit,
                 session_service=self.session_service,
                 sandbox=self.toolkit.sandbox,
+                long_term_memory=self.long_term_memory,
             )
         else:
             self.worker_manager.planner_notebook = self.planner_notebook

@@ -170,7 +170,12 @@ async def retrieve_memory(
             raise EmptyQueryError()
 
         memory_service = get_memory_service()
-        result = await memory_service.retrieve(request.uid, request.query)
+        result = await memory_service.retrieve(
+            request.uid,
+            request.query,
+            limit=request.limit,
+            threshold=request.threshold,
+        )
         return UserProfilingRetrieveResponse(
             status="success",
             uid=request.uid,
@@ -301,7 +306,19 @@ async def record_action(
                     f"Retrieved session_content length: "
                     f"{len(session_content) if session_content else 0}",
                 )
-
+                if not session_content:
+                    if request.data.get("session_content") is not None:
+                        session_content = request.data["session_content"]
+                        logger.info(
+                            f"Using session_content from request data: "
+                            f"{session_content}",
+                        )
+                    else:
+                        session_content = []
+                        logger.error(
+                            "No session_content found in request data and "
+                            "get_messages_by_session_id returned empty list",
+                        )
                 if action_value == "TASK_STOP":
                     memory_type = "tool_memory"
                 else:
