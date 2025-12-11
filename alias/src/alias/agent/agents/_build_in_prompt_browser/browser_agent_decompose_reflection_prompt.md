@@ -13,7 +13,7 @@ Carefully review both the original task and the list of generated subtasks.
 Format your response as the following JSON:
 {{
   "DECOMPOSITION": true/false, // true if decomposition is necessary, false otherwise
-  "SUFFICIENT": true/false/na, // if decomposition is necessary, true if the subtasks are sufficient, false otherwise, na if decomosition is not necessary.
+  "SUFFICIENT": true/false/na, // if decomposition is necessary, true if the subtasks are sufficient, false otherwise, na if decomposition is not necessary.
   "REASON": "Briefly explain your reasoning.",
   "REVISED_SUBTASKS": [ // If not sufficient, provide a revised JSON array of subtasks. If sufficient, repeat the original subtasks. If decomposition is not necessary, provide the original task.
     "subtask 1",
