@@ -215,7 +215,7 @@ To enable the long-term memory service in General mode, you need to:
 alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025" --use_long_term_memory
 ```
 **Important**:
-<!-- - Long-term memory is only enabled when the `--use_long_term_memory` flag is explicitly provided (disabled by default) -->
+- Long-term memory is only enabled when the `--use_long_term_memory` flag is explicitly provided (disabled by default)
 - The long-term memory service is only available in **General mode** (meta-planner)
 - The memory service must be running before starting the agent
 - When enabled, the agent will retrieve user profiling information at session start to provide personalized experiences
