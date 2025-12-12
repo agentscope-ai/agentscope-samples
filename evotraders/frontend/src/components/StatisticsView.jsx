@@ -8,7 +8,7 @@ import { formatNumber, formatDateTime } from '../utils/formatters';
  * Left: Performance Overview (35%) | Right: Holdings + Trades (65%)
  * No scrolling - content fits within viewport with pagination
  */
-export default function StatisticsView({ trades, holdings, stats, baseline_vw, equity }) {
+export default function StatisticsView({ trades, holdings, stats, baseline_vw, equity, leaderboard }) {
   const [holdingsPage, setHoldingsPage] = useState(1);
   const [tradesPage, setTradesPage] = useState(1);
   const holdingsPerPage = 5;
@@ -61,6 +61,49 @@ export default function StatisticsView({ trades, holdings, stats, baseline_vw, e
   };
 
   const excessReturnData = calculateExcessReturn();
+
+  // Calculate Portfolio Manager's win rate (similar logic to AgentCard)
+  const calculatePortfolioManagerWinRate = () => {
+    if (!leaderboard || !Array.isArray(leaderboard)) {
+      return null;
+    }
+
+    // Find portfolio_manager in leaderboard
+    const pmData = leaderboard.find(agent => agent.agentId === 'portfolio_manager');
+
+    if (!pmData) {
+      return null;
+    }
+
+    // Extract bull and bear data
+    const bullTotal = pmData.bull?.n || 0;
+    const bullWins = pmData.bull?.win || 0;
+    const bullUnknown = pmData.bull?.unknown || 0;
+    const bearTotal = pmData.bear?.n || 0;
+    const bearWins = pmData.bear?.win || 0;
+    const bearUnknown = pmData.bear?.unknown || 0;
+
+    // Calculate evaluated counts (exclude unknown)
+    const evaluatedBull = Math.max(bullTotal - bullUnknown, 0);
+    const evaluatedBear = Math.max(bearTotal - bearUnknown, 0);
+    const evaluatedTotal = evaluatedBull + evaluatedBear;
+
+    // Calculate win rate
+    const totalWins = bullWins + bearWins;
+    const winRate = evaluatedTotal > 0 ? (totalWins / evaluatedTotal) : null;
+
+    return {
+      winRate,
+      totalWins,
+      evaluatedTotal,
+      bullWins,
+      bearWins,
+      evaluatedBull,
+      evaluatedBear
+    };
+  };
+
+  const pmWinRateData = calculatePortfolioManagerWinRate();
 
   // Reset to page 1 when data changes
   useEffect(() => {
@@ -195,11 +238,23 @@ export default function StatisticsView({ trades, holdings, stats, baseline_vw, e
                   <div style={{
                     fontSize: 28,
                     fontWeight: 700,
-                    color: '#000000',
+                    color: pmWinRateData?.winRate != null ? '#00C853' : '#000000',
                     fontFamily: '"Courier New", monospace'
                   }}>
-                    {Math.round(stats.winRate * 100)}%
+                    {pmWinRateData?.winRate != null
+                      ? `${(pmWinRateData.winRate * 100).toFixed(1)}%`
+                      : 'N/A'}
                   </div>
+                  {pmWinRateData && (
+                    <div style={{
+                      fontSize: 7,
+                      color: '#999999',
+                      marginTop: 4,
+                      fontFamily: '"Courier New", monospace'
+                    }}>
+                      {pmWinRateData.totalWins}Win / {pmWinRateData.evaluatedTotal}Eval
+                    </div>
+                  )}
                 </div>
 
                 {/* 3. Absolute Return */}
@@ -303,22 +358,30 @@ export default function StatisticsView({ trades, holdings, stats, baseline_vw, e
                     gap: 8,
                     maxHeight: 120
                   }}>
-                    {Object.entries(stats.tickerWeights).map(([ticker, weight]) => (
-                      <div key={ticker} style={{
-                        padding: '6px 10px',
-                        background: '#fafafa',
-                        border: '1px solid #e0e0e0',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontFamily: '"Courier New", monospace'
-                      }}>
-                        <span style={{ color: '#000000' }}>{ticker}</span>
-                        <span style={{ color: '#00C853' }}>{(weight * 100).toFixed(1)}%</span>
-                      </div>
-                    ))}
+                    {Object.entries(stats.tickerWeights).map(([ticker, weight]) => {
+                      const weightValue = Number(weight);
+                      const isNegative = weightValue < 0;
+                      const displayWeight = (weightValue * 100).toFixed(1);
+
+                      return (
+                        <div key={ticker} style={{
+                          padding: '6px 10px',
+                          background: '#fafafa',
+                          border: '1px solid #e0e0e0',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          fontFamily: '"Courier New", monospace'
+                        }}>
+                          <span style={{ color: '#000000' }}>{ticker}</span>
+                          <span style={{ color: isNegative ? '#FF1744' : '#00C853' }}>
+                            {displayWeight}%
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -401,20 +464,28 @@ export default function StatisticsView({ trades, holdings, stats, baseline_vw, e
                       </tr>
                     </thead>
                     <tbody>
-                      {currentHoldings.map(h => (
-                        <tr key={h.ticker}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {h.ticker !== 'CASH' && <StockLogo ticker={h.ticker} size={18} />}
-                              <span style={{ fontWeight: 700, color: '#000000' }}>{h.ticker}</span>
-                            </div>
-                          </td>
-                          <td>{h.ticker === 'CASH' ? '-' : h.quantity}</td>
-                          <td>{h.ticker === 'CASH' ? '-' : `$${Number(h.currentPrice).toFixed(2)}`}</td>
-                          <td style={{ fontWeight: 700 }}>${formatNumber(h.marketValue)}</td>
-                          <td>{(Number(h.weight) * 100).toFixed(2)}%</td>
-                        </tr>
-                      ))}
+                      {currentHoldings.map(h => {
+                        // For short positions, quantity should be negative and weight should also be negative
+                        const isShort = h.ticker !== 'CASH' && Number(h.quantity) < 0;
+                        const displayWeight = isShort ? -Math.abs(Number(h.weight)) : Number(h.weight);
+
+                        return (
+                          <tr key={h.ticker}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {h.ticker !== 'CASH' && <StockLogo ticker={h.ticker} size={18} />}
+                                <span style={{ fontWeight: 700, color: '#000000' }}>{h.ticker}</span>
+                              </div>
+                            </td>
+                            <td>{h.ticker === 'CASH' ? '-' : h.quantity}</td>
+                            <td>{h.ticker === 'CASH' ? '-' : `$${Number(h.currentPrice).toFixed(2)}`}</td>
+                            <td style={{ fontWeight: 700 }}>${formatNumber(h.marketValue)}</td>
+                            <td style={{ color: isShort ? '#FF1744' : '#000000' }}>
+                              {(displayWeight * 100).toFixed(2)}%
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

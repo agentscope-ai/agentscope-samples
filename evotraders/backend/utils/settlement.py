@@ -70,12 +70,17 @@ class SettlementCoordinator:
         if saved_price_history:
             # Convert saved format back to list of tuples
             for ticker, history in saved_price_history.items():
-                self.price_history[ticker] = [
-                    (entry["date"], entry["price"])
-                    if isinstance(entry, dict)
-                    else tuple(entry)
-                    for entry in history
-                ]
+                converted_history = []
+                for entry in history:
+                    if isinstance(entry, dict):
+                        converted_history.append(
+                            (entry["date"], entry["price"]),
+                        )
+                    elif isinstance(entry, (list, tuple)) and len(entry) >= 2:
+                        converted_history.append((entry[0], entry[1]))
+                    else:
+                        continue
+                self.price_history[ticker] = converted_history
             logger.info(
                 f"Restored price history for {len(self.price_history)} tickers",
             )
@@ -159,6 +164,7 @@ class SettlementCoordinator:
         market_caps: Dict[str, float],
         agent_portfolio: Dict[str, Any],
         analyst_results: List[Dict[str, Any]],  # pylint: disable=W0613
+        pm_decisions: Optional[Dict[str, Dict]] = None,
     ) -> Dict[str, Any]:
         """
         Run complete daily settlement
@@ -171,6 +177,7 @@ class SettlementCoordinator:
             market_caps: Market caps for each ticker
             agent_portfolio: Current agent portfolio state
             analyst_results: Analyst analysis results
+            pm_decisions: PM's trading decisions
 
         Returns:
             Settlement results including all portfolio values and evaluations
@@ -197,7 +204,7 @@ class SettlementCoordinator:
             rebalance_momentum=rebalance_momentum,
         )
 
-        print(f"Baseline values calculated: {baseline_values}")
+        logger.info(f"Baseline values calculated: {baseline_values}")
 
         agent_value = self.storage.calculate_portfolio_value(
             agent_portfolio,
@@ -210,10 +217,21 @@ class SettlementCoordinator:
             date,
         )
 
+        pm_evaluations = {}
+        if pm_decisions:
+            pm_evaluations = self.analyst_tracker.evaluate_pm_decisions(
+                pm_decisions,
+                open_prices,
+                close_prices,
+                date,
+            )
+
+        all_evaluations = {**analyst_evaluations, **pm_evaluations}
+
         leaderboard = self.storage.load_file("leaderboard") or []
         updated_leaderboard = update_leaderboard_with_evaluations(
             leaderboard,
-            analyst_evaluations,
+            all_evaluations,
         )
         self.storage.save_file("leaderboard", updated_leaderboard)
 

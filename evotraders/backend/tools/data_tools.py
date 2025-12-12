@@ -34,6 +34,7 @@ from backend.data.schema import (
     Price,
     PriceResponse,
 )
+from backend.utils.settlement import logger
 
 # Global cache instance
 _cache = get_cache()
@@ -391,7 +392,7 @@ def search_line_items(
         )
 
         if response.status_code != 200:
-            print(
+            logger.info(
                 f"Warning: Failed to fetch line items for {ticker}: "
                 f"{response.status_code} - {response.text}",
             )
@@ -407,7 +408,7 @@ def search_line_items(
         return search_results[:limit]
 
     except Exception as e:
-        print(
+        logger.info(
             f"Warning: Exception while fetching line items for {ticker}: {str(e)}",
         )
         return []

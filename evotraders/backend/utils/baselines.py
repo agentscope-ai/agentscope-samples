@@ -73,7 +73,8 @@ class BaselineCalculator:
             self.equal_weight_initialized = True
 
         total_value = self.equal_weight_portfolio["cash"]
-        for ticker, shares in self.equal_weight_portfolio["positions"].items():
+        positions: Dict[str, float] = self.equal_weight_portfolio["positions"]
+        for ticker, shares in positions.items():
             price = close_prices.get(ticker, 0)
             total_value += shares * price
 
@@ -126,7 +127,8 @@ class BaselineCalculator:
             self.market_cap_initialized = True
 
         total_value = self.market_cap_portfolio["cash"]
-        for ticker, shares in self.market_cap_portfolio["positions"].items():
+        positions: Dict[str, float] = self.market_cap_portfolio["positions"]
+        for ticker, shares in positions.items():
             price = close_prices.get(ticker, 0)
             total_value += shares * price
 
@@ -181,7 +183,8 @@ class BaselineCalculator:
             self.momentum_last_rebalance_date = date
 
         total_value = self.momentum_portfolio["cash"]
-        for ticker, shares in self.momentum_portfolio["positions"].items():
+        positions: Dict[str, float] = self.momentum_portfolio["positions"]
+        for ticker, shares in positions.items():
             price = close_prices.get(ticker, 0)
             total_value += shares * price
 
