@@ -19,6 +19,8 @@ from backend.utils.settlement import SettlementCoordinator
 from backend.utils.terminal_dashboard import get_dashboard
 from backend.core.state_sync import StateSync
 from backend.utils.trade_executor import PortfolioTradeExecutor
+from backend.utils.msg_adapter import FrontendAdapter
+from backend.config.env_config import get_max_single_position_pct
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +33,52 @@ def _log(msg: str):
         dashboard.log(msg)
     else:
         logger.info(msg)
+
+
+def _calculate_position_metrics(
+    portfolio: Dict[str, Any],
+    prices: Optional[Dict[str, float]],
+) -> Dict[str, Any]:
+    """
+    Calculate position metrics including percentages and limits
+
+    Reuses FrontendAdapter.build_stats() to get ticker weights that are
+    already calculated for the frontend.
+
+    Args:
+        portfolio: Current portfolio state
+        prices: Current prices for each ticker
+
+    Returns:
+        Dict with position metrics
+    """
+    if not prices:
+        return {
+            "total_value": portfolio.get("cash", 0),
+            "position_percentages": {},
+            "cash_pct": 100.0,
+            "max_single_position_pct": get_max_single_position_pct() * 100,
+        }
+
+    stats = FrontendAdapter.build_stats(portfolio, prices)
+
+    total_value = stats.get("totalAssetValue", 0)
+    ticker_weights = stats.get("tickerWeights", {})
+    cash = portfolio.get("cash", 0)
+
+    position_percentages = {}
+    for ticker, weight in ticker_weights.items():
+        pct = abs(weight * 100)
+        position_percentages[ticker] = round(pct, 2)
+
+    cash_pct = (cash / total_value * 100) if total_value > 0 else 100.0
+
+    return {
+        "total_value": round(total_value, 2),
+        "position_percentages": position_percentages,
+        "cash_pct": round(cash_pct, 2),
+        "max_single_position_pct": get_max_single_position_pct() * 100,
+    }
 
 
 class TradingPipeline:
@@ -979,17 +1027,34 @@ class TradingPipeline:
         """Run risk manager assessment with real-time sync"""
         portfolio = self.pm.get_portfolio_state()
 
+        position_metrics = _calculate_position_metrics(portfolio, prices)
+
         context = {
             "portfolio": portfolio,
             "tickers": tickers,
             "date": date,
             "current_prices": prices,
+            "position_metrics": position_metrics,
         }
         content = (
             f"Assess risk for the following portfolio and market conditions:\n"
-            f"{json.dumps(context, indent=2)}\n"
-            f"Provide risk warnings and recommendations."
+            f"{json.dumps(context, indent=2)}\n\n"
+            f"Position Analysis:\n"
+            f"- Total Portfolio Value: ${position_metrics['total_value']:,.2f}\n"
+            f"- Cash: {position_metrics['cash_pct']:.1f}%\n"
+            f"- Position Limit: {position_metrics['max_single_position_pct']:.0f}% per ticker\n"
+            f"- Current Positions:\n"
         )
+
+        for ticker, pct in position_metrics["position_percentages"].items():
+            status = (
+                "⚠️ EXCEEDS LIMIT"
+                if pct > position_metrics["max_single_position_pct"]
+                else "✓"
+            )
+            content += f"  {ticker}: {pct:.1f}% {status}\n"
+
+        content += "\nProvide risk warnings and recommendations, especially regarding position limits."
 
         msg = Msg(name="system", content=content, role="user")
         result = await self.risk_manager.reply(msg)
@@ -1044,6 +1109,8 @@ class TradingPipeline:
         """Run PM decision-making with real-time sync"""
         portfolio = self.pm.get_portfolio_state()
 
+        position_metrics = _calculate_position_metrics(portfolio, prices)
+
         context = {
             "analyst_signals": {
                 r["agent"]: r.get("content", "") for r in analyst_results
@@ -1053,21 +1120,49 @@ class TradingPipeline:
             "tickers": tickers,
             "portfolio_cash": portfolio.get("cash", 0),
             "portfolio_positions": portfolio.get("positions", {}),
+            "margin_requirement": portfolio.get("margin_requirement", 0.0),
+            "margin_used": portfolio.get("margin_used", 0.0),
+            "position_metrics": position_metrics,
         }
-
         # Add conference summary if available
         if self.conference_summary:
             context["conference_summary"] = self.conference_summary
 
+        # Add performance comparison data
+        performance_data = self._get_performance_comparison(prices)
+        if performance_data:
+            context["performance_comparison"] = performance_data
+
         content_parts = [
             f"Based on the analyst signals, risk assessment, and conference discussion, "
-            f"make investment decisions for date {date}.\n",
-            f"Context:\n{json.dumps(context, indent=2)}\n",
+            f"make investment decisions for date {date}.\n\n",
+            "=== Position Limits (MANDATORY) ===\n",
+            f"Maximum single position: {position_metrics['max_single_position_pct']:.0f}% of portfolio value\n",
+            f"Total Portfolio Value: ${position_metrics['total_value']:,.2f}\n",
+            f"Cash Available: {position_metrics['cash_pct']:.1f}%\n\n",
         ]
+
+        if position_metrics["position_percentages"]:
+            content_parts.append("=== Current Position Percentages ===\n")
+            for ticker, pct in position_metrics[
+                "position_percentages"
+            ].items():
+                exceeds = pct > position_metrics["max_single_position_pct"]
+                status = "EXCEEDS LIMIT - DO NOT ADD" if exceeds else "✓"
+                content_parts.append(f"{ticker}: {pct:.1f}% {status}\n")
+            content_parts.append("\n")
+
+        content_parts.append(f"Context:\n{json.dumps(context, indent=2)}\n")
 
         if self.conference_summary:
             content_parts.append(
                 f"\n=== Conference Summary ===\n{self.conference_summary}\n",
+            )
+
+        # Add performance comparison summary
+        if performance_data:
+            content_parts.append(
+                self._format_performance_summary(performance_data),
             )
 
         content_parts.append(
@@ -1116,13 +1211,29 @@ class TradingPipeline:
             "portfolio_positions": portfolio.get("positions", {}),
         }
 
-        content = (
+        # Add performance comparison data
+        performance_data = self._get_performance_comparison(prices)
+        if performance_data:
+            context["performance_comparison"] = performance_data
+
+        content_parts = [
             f"Based on the analyst signals and risk assessment, make investment decisions "
-            f"for date {date}.\n"
-            f"Context:\n{json.dumps(context, indent=2)}\n\n"
-            f"Use the make_decision tool for each ticker to record your decisions. "
-            f"After recording all decisions, provide a summary of your investment rationale."
+            f"for date {date}.\n",
+            f"Context:\n{json.dumps(context, indent=2)}\n",
+        ]
+
+        # Add performance comparison summary
+        if performance_data:
+            content_parts.append(
+                self._format_performance_summary(performance_data),
+            )
+
+        content_parts.append(
+            "\nUse the make_decision tool for each ticker to record your decisions. "
+            "After recording all decisions, provide a summary of your investment rationale.",
         )
+
+        content = "".join(content_parts)
 
         msg = Msg(name="system", content=content, role="user")
         result = await self.pm.reply(msg)
@@ -1241,6 +1352,153 @@ class TradingPipeline:
             return str(content)
 
         return str(content)
+
+    def _get_performance_comparison(
+        self,
+        current_prices: Optional[Dict[str, float]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get performance comparison between agent portfolio and benchmarks
+
+        Returns:
+            Dict with portfolio values and returns, or None if data unavailable
+        """
+        if not self.settlement_coordinator:
+            return None
+
+        try:
+            # Get current portfolio value
+            portfolio = self.pm.get_portfolio_state()
+            agent_value = (
+                self.settlement_coordinator.storage.calculate_portfolio_value(
+                    portfolio,
+                    current_prices or {},
+                )
+            )
+
+            # Get latest baseline values from internal state
+            internal_state = (
+                self.settlement_coordinator.storage.load_internal_state()
+            )
+
+            # Get the most recent values from each history
+            equity_history = internal_state.get("equity_history", [])
+            baseline_history = internal_state.get("baseline_history", [])
+            baseline_vw_history = internal_state.get("baseline_vw_history", [])
+            momentum_history = internal_state.get("momentum_history", [])
+
+            if not equity_history:
+                return None
+
+            # Get initial value (first point in history)
+            initial_value = equity_history[0].get("v", 100000.0)
+
+            # Get latest benchmark values
+            latest_equal_weight = (
+                baseline_history[-1].get("v", initial_value)
+                if baseline_history
+                else initial_value
+            )
+            latest_market_cap = (
+                baseline_vw_history[-1].get("v", initial_value)
+                if baseline_vw_history
+                else initial_value
+            )
+            latest_momentum = (
+                momentum_history[-1].get("v", initial_value)
+                if momentum_history
+                else initial_value
+            )
+
+            # Calculate returns
+            agent_return = (
+                (agent_value - initial_value) / initial_value * 100
+                if initial_value > 0
+                else 0.0
+            )
+            equal_weight_return = (
+                (latest_equal_weight - initial_value) / initial_value * 100
+                if initial_value > 0
+                else 0.0
+            )
+            market_cap_return = (
+                (latest_market_cap - initial_value) / initial_value * 100
+                if initial_value > 0
+                else 0.0
+            )
+            momentum_return = (
+                (latest_momentum - initial_value) / initial_value * 100
+                if initial_value > 0
+                else 0.0
+            )
+
+            return {
+                "agent_portfolio": {
+                    "value": round(agent_value, 2),
+                    "return_pct": round(agent_return, 2),
+                },
+                "benchmarks": {
+                    "equal_weight": {
+                        "value": round(latest_equal_weight, 2),
+                        "return_pct": round(equal_weight_return, 2),
+                    },
+                    "market_cap_weighted": {
+                        "value": round(latest_market_cap, 2),
+                        "return_pct": round(market_cap_return, 2),
+                    },
+                    "momentum": {
+                        "value": round(latest_momentum, 2),
+                        "return_pct": round(momentum_return, 2),
+                    },
+                },
+                "initial_value": round(initial_value, 2),
+            }
+
+        except Exception as e:
+            logger.warning(f"Failed to get performance comparison: {e}")
+            return None
+
+    def _format_performance_summary(
+        self,
+        performance_data: Dict[str, Any],
+    ) -> str:
+        """Format performance comparison as human-readable text"""
+        agent = performance_data["agent_portfolio"]
+        benchmarks = performance_data["benchmarks"]
+
+        lines = ["\n=== Portfolio Performance vs Benchmarks ==="]
+        lines.append(
+            f"Your Portfolio: ${agent['value']:,.2f} ({agent['return_pct']:+.2f}%)",
+        )
+        lines.append("\nBenchmark Comparisons:")
+        lines.append(
+            f"  Equal Weight:        ${benchmarks['equal_weight']['value']:,.2f} "
+            f"({benchmarks['equal_weight']['return_pct']:+.2f}%)",
+        )
+        lines.append(
+            f"  Market Cap Weighted: ${benchmarks['market_cap_weighted']['value']:,.2f} "
+            f"({benchmarks['market_cap_weighted']['return_pct']:+.2f}%)",
+        )
+        lines.append(
+            f"  Momentum:            ${benchmarks['momentum']['value']:,.2f} "
+            f"({benchmarks['momentum']['return_pct']:+.2f}%)",
+        )
+
+        # Calculate outperformance
+        agent_return = agent["return_pct"]
+        best_benchmark = max(
+            benchmarks["equal_weight"]["return_pct"],
+            benchmarks["market_cap_weighted"]["return_pct"],
+            benchmarks["momentum"]["return_pct"],
+        )
+        outperformance = agent_return - best_benchmark
+
+        lines.append(
+            f"\nOutperformance vs Best Benchmark: {outperformance:+.2f}%",
+        )
+        lines.append("")
+
+        return "\n".join(lines)
 
     def _format_pm_decisions(self, decisions: Dict[str, Dict]) -> str:
         """Format PM decisions as a human-readable string"""

@@ -11,6 +11,7 @@ from agentscope.memory import InMemoryMemory, LongTermMemoryBase
 from agentscope.message import Msg, TextBlock
 from agentscope.tool import Toolkit, ToolResponse
 
+from ..config.env_config import get_max_single_position_pct
 from ..utils.progress import progress
 from .prompt_loader import PromptLoader
 
@@ -53,7 +54,17 @@ class PMAgent(ReActAgent):
         # Create toolkit
         toolkit = self._create_toolkit()
 
-        sys_prompt = _prompt_loader.load_prompt("portfolio_manager", "system")
+        # Load system prompt with position limit variable
+        max_single_position_pct = (
+            get_max_single_position_pct() * 100
+        )  # Convert to percentage
+        sys_prompt = _prompt_loader.load_prompt(
+            "portfolio_manager",
+            "system",
+            variables={
+                "max_single_position_pct": f"{max_single_position_pct:.0f}",
+            },
+        )
 
         kwargs = {
             "name": name,

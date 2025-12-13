@@ -10,6 +10,7 @@ from agentscope.memory import InMemoryMemory, LongTermMemoryBase
 from agentscope.message import Msg
 from agentscope.tool import Toolkit
 
+from ..config.env_config import get_max_single_position_pct
 from ..utils.progress import progress
 from .prompt_loader import PromptLoader
 
@@ -64,9 +65,16 @@ class RiskAgent(ReActAgent):
 
     def _load_system_prompt(self) -> str:
         """Load system prompt for risk manager"""
+        # Load system prompt with position limit variable
+        max_single_position_pct = (
+            get_max_single_position_pct() * 100
+        )  # Convert to percentage
         return _prompt_loader.load_prompt(
             "risk_manager",
             "system",
+            variables={
+                "max_single_position_pct": f"{max_single_position_pct:.0f}",
+            },
         )
 
     async def reply(self, x: Msg = None) -> Msg:

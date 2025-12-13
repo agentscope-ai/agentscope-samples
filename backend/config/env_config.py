@@ -34,3 +34,8 @@ def get_env_int(key: str, default: int = 0) -> int:
         return int(value)
     except ValueError:
         return default
+
+
+def get_max_single_position_pct() -> float:
+    """Get maximum single position percentage from env (default: 0.25 = 25%)"""
+    return get_env_float("MAX_SINGLE_POSITION_PCT", 0.25)

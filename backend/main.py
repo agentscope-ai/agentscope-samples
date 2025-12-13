@@ -64,7 +64,7 @@ def create_long_term_memory(agent_name: str, config_name: str):
             dimensions=1024,
         ),
         **{
-            "vector_store.default.backend": "local",
+            "vector_store.default.backend": "chroma",
             "vector_store.default.params.store_dir": memory_dir,
         },
     )

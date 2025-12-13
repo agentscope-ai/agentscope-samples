@@ -285,24 +285,69 @@ class Gateway:
         if not prices or not any(p > 0 for p in prices.values()):
             return
 
-        # Load current internal state to get baseline values
+        # Load current internal state
         state = self.storage.load_internal_state()
 
-        # Get latest values from history (if available)
-        equity_history = state.get("equity_history", [])
-        baseline_history = state.get("baseline_history", [])
-        baseline_vw_history = state.get("baseline_vw_history", [])
-        momentum_history = state.get("momentum_history", [])
+        # Calculate current portfolio value with live prices
+        portfolio_state = state.get("portfolio_state", {})
+        portfolio = {
+            "cash": portfolio_state.get("cash", self.storage.initial_cash),
+            "positions": portfolio_state.get("positions", {}),
+            "margin_used": portfolio_state.get("margin_used", 0.0),
+        }
+        current_equity = self.storage.calculate_portfolio_value(
+            portfolio,
+            prices,
+        )
 
-        current_equity = equity_history[-1]["v"] if equity_history else None
-        current_baseline = (
-            baseline_history[-1]["v"] if baseline_history else None
+        # Calculate baseline values with live prices
+        baseline_state = state.get("baseline_state", {})
+        baseline_allocation = baseline_state.get("initial_allocation", {})
+        current_baseline = None
+        if baseline_allocation:
+            baseline_value = 0.0
+            for ticker, qty in baseline_allocation.items():
+                qty = qty["qty"]
+                price = prices.get(ticker, 0)
+                if price > 0:
+                    baseline_value += qty * price
+            current_baseline = baseline_value
+
+        # Calculate value-weighted baseline
+        baseline_vw_state = state.get("baseline_vw_state", {})
+        baseline_vw_allocation = baseline_vw_state.get(
+            "initial_allocation",
+            {},
         )
-        current_baseline_vw = (
-            baseline_vw_history[-1]["v"] if baseline_vw_history else None
-        )
-        current_momentum = (
-            momentum_history[-1]["v"] if momentum_history else None
+        current_baseline_vw = None
+        if baseline_vw_allocation:
+            baseline_vw_value = 0.0
+            for ticker, qty in baseline_vw_allocation.items():
+                qty = qty["qty"]
+                price = prices.get(ticker, 0)
+                if price > 0:
+                    baseline_vw_value += qty * price
+            current_baseline_vw = baseline_vw_value
+
+        # Calculate momentum strategy value
+        momentum_state = state.get("momentum_state", {})
+        momentum_positions = momentum_state.get("positions", {})
+        momentum_cash = momentum_state.get("cash", 0.0)
+        current_momentum = None
+        if momentum_state.get("initialized", False):
+            momentum_value = momentum_cash
+            for ticker, position in momentum_positions.items():
+                qty = position["qty"]
+                price = prices.get(ticker, 0)
+                if price > 0:
+                    momentum_value += qty * price
+            current_momentum = momentum_value
+
+        print(
+            f"Gateway: current_equity={current_equity}, "
+            f"current_baseline={current_baseline}, "
+            f"current_baseline_vw={current_baseline_vw}, "
+            f"current_momentum={current_momentum}",
         )
 
         # Update live returns with current values
@@ -313,9 +358,23 @@ class Gateway:
             current_momentum=current_momentum,
         )
 
-        # Broadcast if we have new data
+        holdings = FrontendAdapter.build_holdings(portfolio, prices)
+        stats = FrontendAdapter.build_stats(portfolio, prices)
+
+        # Broadcast updates
+        await self._broadcast_updates(point, current_equity, holdings, stats)
+
+    async def _broadcast_updates(self, point, current_equity, holdings, stats):
+        """Broadcast live returns and portfolio data to clients"""
         if point:
             live_returns = self.storage.get_live_returns()
+            initial_cash = self.storage.initial_cash
+            pnl_pct = (
+                ((current_equity - initial_cash) / initial_cash) * 100
+                if initial_cash > 0
+                else 0.0
+            )
+
             await self.broadcast(
                 {
                     "type": "team_summary",
@@ -323,6 +382,25 @@ class Gateway:
                     "baseline_return": live_returns["baseline_return"],
                     "baseline_vw_return": live_returns["baseline_vw_return"],
                     "momentum_return": live_returns["momentum_return"],
+                    "balance": round(current_equity, 2),
+                    "totalAssetValue": round(current_equity, 2),
+                    "pnlPct": round(pnl_pct, 4),
+                },
+            )
+
+        if holdings:
+            await self.broadcast(
+                {
+                    "type": "team_holdings",
+                    "data": holdings,
+                },
+            )
+
+        if stats:
+            await self.broadcast(
+                {
+                    "type": "team_stats",
+                    "data": stats,
                 },
             )
 

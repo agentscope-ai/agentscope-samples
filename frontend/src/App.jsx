@@ -101,12 +101,16 @@ export default function LiveTradingApp() {
     return marketStatus.status === 'open';
   }, [marketStatus]);
 
-  // Switch away from LIVE tab when market closes
+  // Auto-switch to LIVE tab when market opens
+  // Disabled: Default to 'all' (daily) view instead of auto-switching to 'live'
   useEffect(() => {
-    if (!isLiveEnabled && chartTab === 'live') {
-      setChartTab('all');
+    if (isLiveEnabled && chartTab !== 'live') {
+      // Auto-switch to live when market opens
+      setChartTab('live');
     }
-  }, [isLiveEnabled, chartTab]);
+    // don't switch away from live when market closes
+    // Users can stay in live view to see the final state
+  }, [isLiveEnabled]);
 
   // Clock - use virtual time if available (for mock mode)
   useEffect(() => {
@@ -243,6 +247,7 @@ export default function LiveTradingApp() {
         }
       };
 
+
       const handlers = {
         // Error response (for fast forward errors)
         error: (e) => {
@@ -338,8 +343,10 @@ export default function LiveTradingApp() {
               if (state.dashboard.stats) setStats(state.dashboard.stats);
               if (state.dashboard.leaderboard) setLeaderboard(state.dashboard.leaderboard);
             }
-            if (state.realtime_prices) updateTickersFromPrices(state.realtime_prices);
-
+            if (state.realtime_prices) {
+              updateTickersFromPrices(state.realtime_prices);
+              // Update holdings with realtime prices on initial load
+            }
             // Load and process historical feed data
             if (state.feed_history && Array.isArray(state.feed_history)) {
               console.log(`✅ Loading ${state.feed_history.length} historical events`);
@@ -422,16 +429,6 @@ export default function LiveTradingApp() {
             // Update all tickers from realtime_prices if provided
             if (realtime_prices) {
               updateTickersFromPrices(realtime_prices);
-            }
-
-            // Update portfolio value if provided
-            if (portfolio && portfolio.total_value) {
-              setPortfolioData(prev => ({
-                ...prev,
-                netValue: portfolio.total_value,
-                pnl: portfolio.pnl_percent || 0,
-                equity: portfolio.equity || prev.equity  // Update equity curve
-              }));
             }
           } catch (error) {
             console.error('[Price Update] Error:', error);
@@ -527,7 +524,7 @@ export default function LiveTradingApp() {
         },
 
         team_summary: (e) => {
-          // Update portfolio data silently without creating feed messages
+          // Update portfolio data with backend-calculated values (authoritative in live mode)
           setPortfolioData(prev => ({
             ...prev,
             netValue: e.balance || prev.netValue,
@@ -970,16 +967,15 @@ export default function LiveTradingApp() {
                           className={`chart-tab ${chartTab === 'all' ? 'active' : ''}`}
                           onClick={() => setChartTab('all')}
                         >
-                          Daily
+                          DAILY
                         </button>
-                        {/* <button
-                          className={`chart-tab ${chartTab === 'live' ? 'active' : ''} ${!isLiveEnabled ? 'disabled' : ''}`}
-                          onClick={() => isLiveEnabled && setChartTab('live')}
-                          disabled={!isLiveEnabled}
-                          title={!isLiveEnabled ? 'Live chart available during market hours only' : ''}
+                        <button
+                          className={`chart-tab ${chartTab === 'live' ? 'active' : ''}`}
+                          onClick={() => setChartTab('live')}
+                          title="View intraday cumulative returns"
                         >
                           LIVE
-                        </button> */}
+                        </button>
                       </div>
 
                       <NetValueChart

@@ -100,6 +100,7 @@ def _make_api_request(
     method: str = "GET",
     json_data: dict = None,
     max_retries: int = 3,
+    timeout: int = 30,
 ) -> requests.Response:
     """
     Make an API request with rate limiting handling and moderate backoff.
@@ -110,6 +111,7 @@ def _make_api_request(
         method: HTTP method (GET or POST)
         json_data: JSON data for POST requests
         max_retries: Maximum number of retries (default: 3)
+        timeout: Request timeout in seconds (default: 30)
 
     Returns:
         requests.Response: The response object
@@ -119,9 +121,14 @@ def _make_api_request(
     """
     for attempt in range(max_retries + 1):  # +1 for initial attempt
         if method.upper() == "POST":
-            response = requests.post(url, headers=headers, json=json_data)
+            response = requests.post(
+                url,
+                headers=headers,
+                json=json_data,
+                timeout=timeout,
+            )
         else:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=timeout)
 
         if response.status_code == 429 and attempt < max_retries:
             # Linear backoff: 60s, 90s, 120s, 150s...
@@ -182,13 +189,22 @@ def get_prices(
             ).timestamp(),
         )
 
-        # Fetch candle data from Finnhub
-        candles = client.stock_candles(
-            ticker,
-            "D",
-            start_timestamp,
-            end_timestamp,
-        )
+        # Fetch candle data from Finnhub with simple retry
+        for attempt in range(3):
+            try:
+                candles = client.stock_candles(
+                    ticker,
+                    "D",
+                    start_timestamp,
+                    end_timestamp,
+                )
+                break
+            except Exception as e:
+                if attempt < 2:
+                    logger.warning(f"Retrying ({attempt + 1}/3): {str(e)}")
+                    time.sleep(2)
+                else:
+                    raise
 
         # Convert to Price objects
         for i in range(len(candles["t"])):
@@ -264,9 +280,17 @@ def get_financial_metrics(
         # Use Finnhub API - Basic Financials
         client = finnhub.Client(api_key=api_key)
 
-        # Fetch basic financials from Finnhub
-        # metric='all' returns all available metrics
-        financials = client.company_basic_financials(ticker, "all")
+        # Fetch basic financials from Finnhub with simple retry
+        for attempt in range(3):
+            try:
+                financials = client.company_basic_financials(ticker, "all")
+                break
+            except Exception as e:
+                if attempt < 2:
+                    logger.warning(f"Retrying ({attempt + 1}/3): {str(e)}")
+                    time.sleep(2)
+                else:
+                    raise
 
         if not financials or "metric" not in financials:
             return []
@@ -429,11 +453,21 @@ def _fetch_finnhub_insider_trades(
         - datetime.timedelta(days=365)
     ).strftime("%Y-%m-%d")
 
-    insider_data = client.stock_insider_transactions(
-        ticker,
-        from_date,
-        end_date,
-    )
+    # Fetch insider transactions with simple retry
+    for attempt in range(3):
+        try:
+            insider_data = client.stock_insider_transactions(
+                ticker,
+                from_date,
+                end_date,
+            )
+            break
+        except Exception as e:
+            if attempt < 2:
+                logger.warning(f"Retrying ({attempt + 1}/3): {str(e)}")
+                time.sleep(2)
+            else:
+                raise
 
     if not insider_data or "data" not in insider_data:
         return []
@@ -550,7 +584,21 @@ def _fetch_finnhub_company_news(
         - datetime.timedelta(days=30)
     ).strftime("%Y-%m-%d")
 
-    news_data = client.company_news(ticker, _from=from_date, to=end_date)
+    # Fetch company news with simple retry
+    for attempt in range(3):
+        try:
+            news_data = client.company_news(
+                ticker,
+                _from=from_date,
+                to=end_date,
+            )
+            break
+        except Exception as e:
+            if attempt < 2:
+                logger.warning(f"Retrying ({attempt + 1}/3): {str(e)}")
+                time.sleep(2)
+            else:
+                raise
 
     if not news_data:
         return []
