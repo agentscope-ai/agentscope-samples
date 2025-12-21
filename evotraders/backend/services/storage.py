@@ -573,6 +573,7 @@ class StorageService:
         """Generate summary.json"""
         portfolio_state = state.get("portfolio_state", {})
         cash = portfolio_state.get("cash", self.initial_cash)
+        margin_used = portfolio_state.get("margin_used", 0.0)
 
         # Calculate ticker weights
         positions = portfolio_state.get("positions", {})
@@ -595,6 +596,7 @@ class StorageService:
             "totalAssetValue": round(net_value, 2),
             "totalReturn": round(total_return, 2),
             "cashPosition": round(cash, 2),
+            "marginUsed": round(margin_used, 2),
             "tickerWeights": ticker_weights,
             "totalTrades": len(state.get("all_trades", [])),
             "pnlPct": round(total_return, 2),
@@ -673,6 +675,7 @@ class StorageService:
         """Generate stats.json"""
         portfolio_state = state.get("portfolio_state", {})
         cash = portfolio_state.get("cash", self.initial_cash)
+        margin_used = portfolio_state.get("margin_used", 0.0)
         total_return = (
             (net_value - self.initial_cash) / self.initial_cash
         ) * 100
@@ -681,6 +684,7 @@ class StorageService:
             "totalAssetValue": round(net_value, 2),
             "totalReturn": round(total_return, 2),
             "cashPosition": round(cash, 2),
+            "marginUsed": round(margin_used, 2),
             "tickerWeights": {},
             "totalTrades": len(state.get("all_trades", [])),
             "winRate": 0.0,
@@ -867,6 +871,7 @@ class StorageService:
             "totalAssetValue": 0.0,
             "totalReturn": -100.0,
             "cashPosition": 0.0,
+            "marginUsed": 0.0,
             "tickerWeights": {},
             "totalTrades": 0,
             "winRate": 0.0,
@@ -1043,9 +1048,6 @@ class StorageService:
         # Only add point if we have at least one return value
         if any(k != "t" for k in point):
             self._live_return_history.append(point)
-            # Limit history size
-            if len(self._live_return_history) > 500:
-                self._live_return_history = self._live_return_history[-500:]
             return point
 
         return None

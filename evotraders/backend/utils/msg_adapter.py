@@ -187,9 +187,10 @@ class FrontendAdapter:
 
         positions = portfolio.get("positions", {})
         cash = portfolio.get("cash", 0.0)
+        margin_used = float(portfolio.get("margin_used", 0.0))
 
         # Calculate total value using current prices
-        total_value = cash
+        total_value = cash + margin_used
         for ticker, position in positions.items():
             long_shares = position.get("long", 0)
             short_shares = position.get("short", 0)
@@ -221,18 +222,16 @@ class FrontendAdapter:
                 },
             )
 
-        # Add cash as a holding
-        if cash > 0:
-            holdings.append(
-                {
-                    "ticker": "CASH",
-                    "quantity": 1,
-                    "avg": cash,
-                    "currentPrice": cash,
-                    "marketValue": cash,
-                    "weight": cash / total_value if total_value > 0 else 0,
-                },
-            )
+        holdings.append(
+            {
+                "ticker": "CASH",
+                "quantity": 1,
+                "avg": cash,
+                "currentPrice": cash,
+                "marketValue": cash,
+                "weight": cash / total_value if total_value > 0 else 0,
+            },
+        )
 
         return holdings
 
@@ -248,7 +247,7 @@ class FrontendAdapter:
         margin_used = portfolio.get("margin_used", 0.0)
 
         # Calculate total value using current prices
-        total_value = cash
+        total_value = cash + margin_used
         for ticker, position in positions.items():
             long_shares = position.get("long", 0)
             short_shares = position.get("short", 0)

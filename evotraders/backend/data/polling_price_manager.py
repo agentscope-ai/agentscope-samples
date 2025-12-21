@@ -60,7 +60,20 @@ class PollingPriceManager:
         """Fetch latest prices for all subscribed stocks"""
         for symbol in self.subscribed_symbols:
             try:
-                quote_data = self.finnhub_client.quote(symbol)
+                # Simple retry for any errors
+                quote_data = None
+                for attempt in range(3):
+                    try:
+                        quote_data = self.finnhub_client.quote(symbol)
+                        break
+                    except Exception as e:
+                        if attempt < 2:
+                            logger.warning(
+                                f"{symbol}: Retry {attempt + 1}/3: {e}",
+                            )
+                            time.sleep(2)
+                        else:
+                            raise
 
                 current_price = quote_data.get("c")
                 open_price = quote_data.get("o")
