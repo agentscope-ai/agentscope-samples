@@ -86,31 +86,50 @@ QDRANT_CONTAINER_NAME="user-profiling-qdrant"
 check_port() {
     local host=$1
     local port=$2
-    timeout 1 bash -c "cat < /dev/null > /dev/tcp/$host/$port" 2>/dev/null
+    # Try using nc (netcat) first, which is more reliable and cross-platform
+    if command -v nc &> /dev/null; then
+        if nc -z "$host" "$port" 2>/dev/null; then
+            return 0
+        fi
+    fi
+    # Fallback to bash TCP check (works on Linux and macOS)
+    if bash -c "exec 3<>/dev/tcp/$host/$port" 2>/dev/null; then
+        exec 3<&-
+        exec 3>&-
+        return 0
+    fi
+    return 1
 }
 
 # Function to check if Redis is running
 check_redis() {
-    if check_port "$REDIS_HOST" "$REDIS_PORT"; then
-        # Try to ping Redis
-        if command -v redis-cli &> /dev/null; then
-            if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping &> /dev/null; then
-                return 0
-            fi
-        else
-            # If redis-cli is not available, just check if port is open
+    # First try to ping Redis directly (most reliable method)
+    if command -v redis-cli &> /dev/null; then
+        if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping &> /dev/null; then
             return 0
         fi
+    fi
+    # Fallback to port check if redis-cli is not available
+    if check_port "$REDIS_HOST" "$REDIS_PORT"; then
+        return 0
     fi
     return 1
 }
 
 # Function to check if Qdrant is running
 check_qdrant() {
-    # First check if port is open
+    # First check if any Qdrant container is running (most reliable)
+    if docker ps --format '{{.Names}}' | grep -q "qdrant"; then
+        # Check if the port is accessible
+        if check_port "$QDRANT_HOST" "$QDRANT_PORT"; then
+            return 0
+        fi
+    fi
+
+    # Check if port is open
     if check_port "$QDRANT_HOST" "$QDRANT_PORT"; then
         # Try to check Qdrant health endpoint
-        if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null; then
+        if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
             return 0
         fi
         # If port is open but health check fails, still consider it running
@@ -187,11 +206,30 @@ start_qdrant_docker() {
         fi
         # Check if any container is using this port
         if docker ps --format '{{.Names}} {{.Ports}}' | grep -q ":$QDRANT_PORT"; then
-            print_warn "Port $QDRANT_PORT is in use by another container. Assuming Qdrant is running."
+            # Check if it's a Qdrant container
+            qdrant_container=$(docker ps --format '{{.Names}} {{.Ports}}' | grep ":$QDRANT_PORT" | grep -i qdrant | head -1 | awk '{print $1}')
+            if [ -n "$qdrant_container" ]; then
+                print_info "Port $QDRANT_PORT is in use by Qdrant container '$qdrant_container'. Using existing service."
+                return 0
+            fi
+            # Verify it's actually a Qdrant service by checking health endpoint
+            if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
+                print_info "Port $QDRANT_PORT is in use by another Qdrant container. Using existing service."
+                return 0
+            else
+                # Port is open, assume it's Qdrant even if health check fails
+                print_info "Port $QDRANT_PORT is in use. Assuming Qdrant service is running."
+                return 0
+            fi
+        fi
+        # Port is in use but not by a container - verify it's Qdrant
+        if curl -s -f "http://$QDRANT_HOST:$QDRANT_PORT/health" &> /dev/null 2>&1; then
+            print_info "Port $QDRANT_PORT is in use by a Qdrant service. Using existing service."
             return 0
         fi
-        print_warn "Port $QDRANT_PORT is in use but not by our container. Please check manually."
-        return 1
+        # Port is open, assume it's Qdrant
+        print_info "Port $QDRANT_PORT is in use. Assuming Qdrant service is running."
+        return 0
     fi
 
     # Create storage directory if it doesn't exist
@@ -206,6 +244,18 @@ start_qdrant_docker() {
             return 0
         else
             print_info "Starting existing Qdrant container..."
+            # Check if the port is already in use before starting
+            if check_port "$QDRANT_HOST" "$QDRANT_PORT"; then
+                # Check if any Qdrant container is using this port
+                qdrant_container=$(docker ps --format '{{.Names}} {{.Ports}}' | grep ":$QDRANT_PORT" | grep -i qdrant | head -1 | awk '{print $1}')
+                if [ -n "$qdrant_container" ]; then
+                    print_info "Port $QDRANT_PORT is already in use by Qdrant container '$qdrant_container'. Skipping container start."
+                    return 0
+                fi
+                # Port is in use, assume it's Qdrant (even if health check fails)
+                print_info "Port $QDRANT_PORT is already in use. Assuming Qdrant service is running. Skipping container start."
+                return 0
+            fi
             docker start "$QDRANT_CONTAINER_NAME"
         fi
     else

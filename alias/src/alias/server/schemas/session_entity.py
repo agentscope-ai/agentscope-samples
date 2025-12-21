@@ -16,6 +16,7 @@ class SessionEntity(SQLModel):
     chat_type: Optional[ChatType] = ChatType.TASK
     query: Optional[str] = None
     roadmap: Optional[RoadmapChange] = None
+    use_long_term_memory_service: Optional[bool] = False
 
     def ids(self):
         return {

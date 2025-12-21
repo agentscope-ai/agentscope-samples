@@ -61,12 +61,12 @@ class FormFillingAgent(AliasAgentBase):
         self,  # pylint: disable=W0613
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
-        """Summarise the form filling outcome."""
+        """Summarize the form filling outcome."""
         hint_msg = Msg(
             "user",
             (
-                "Provide a concise summary of the completed form \
-                filling task.\n"
+                "Provide a concise summary of the completed form "
+                "filling task.\n"
                 "Highlight these items:\n"
                 "0. The original task/query\n"
                 "1. Which fields were filled/selected and their final values\n"
@@ -136,7 +136,7 @@ def _build_initial_instruction(
 ) -> str:
     """Compose the initial instruction fed to the helper agent."""
     return (
-        "You must complete the web form using the information"
+        "You must complete the web form using the information "
         "provided below.\n\nFill instructions (plain text from the user):\n"
         f"{fill_information}\n\n"
         "Latest snapshot captured prior to your run:\n"
@@ -196,7 +196,7 @@ async def form_filling(
                     type="text",
                     text=sub_agent_response_msg.content[0]["text"]
                     or (
-                        "Form filling agent finished"
+                        "Form filling agent finished "
                         "without a textual summary."
                     ),
                 ),

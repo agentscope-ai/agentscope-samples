@@ -35,6 +35,8 @@ from alias.agent.tools.add_tools import add_tools
 from alias.agent.agents.ds_agent_utils import (
     add_ds_specific_tool,
 )
+from alias.agent.memory.longterm_memory import AliasLongTermMemory
+from alias.server.clients.memory_client import MemoryClient
 
 
 MODEL_FORMATTER_MAPPING = {
@@ -117,6 +119,26 @@ async def arun_meta_planner(
             session_service=session_service,
             state_saving_dir=f"./agent-states/run-{time_str}",
         )
+
+        # Initialize long-term memory if enabled
+        long_term_memory = None
+        if session_service.session_entity.use_long_term_memory_service:
+            # Check if memory service is available
+            if await MemoryClient.is_available():
+                long_term_memory = AliasLongTermMemory(
+                    session_service=session_service,
+                )
+                logger.info(
+                    "Long-term memory service is available and initialized",
+                )
+            else:
+                logger.warning(
+                    "use_long_term_memory_service is True, but memory "
+                    "service is not available. Long-term memory will not "
+                    "be used. Please check if the memory service is "
+                    "running.",
+                )
+
         meta_planner = MetaPlanner(
             model=model,
             formatter=formatter,
@@ -129,6 +151,7 @@ async def arun_meta_planner(
             max_iters=100,
             session_service=session_service,
             enable_clarification=enable_clarification,
+            long_term_memory=long_term_memory,
         )
         meta_planner.worker_manager.register_worker(
             browser_agent,
@@ -371,7 +394,7 @@ async def arun_browseruse_agent(
             memory=InMemoryMemory(),
             toolkit=browser_toolkit,
             max_iters=50,
-            start_url="https://www.bing.com",
+            start_url="https://www.google.com",
             session_service=session_service,
             state_saving_dir=f"./agent-states/run_browser-{time_str}",
         )
@@ -405,4 +428,7 @@ async def arun_agents(
                 f"Unknown chat mode: {chat_mode}."
                 "Invoke general mode instead.",
             )
-        await arun_meta_planner(session_service, sandbox)
+        await arun_meta_planner(
+            session_service,
+            sandbox,
+        )

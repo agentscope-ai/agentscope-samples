@@ -3,14 +3,14 @@ import asyncio
 import json
 import time
 import traceback
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 from loguru import logger
 
 from agentscope.agent import ReActAgent
 from agentscope.model import ChatModelBase
 from agentscope.formatter import FormatterBase
-from agentscope.memory import MemoryBase
+from agentscope.memory import MemoryBase, LongTermMemoryBase
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
 
 from alias.agent.tools import AliasToolkit
@@ -54,6 +54,12 @@ class AliasAgentBase(ReActAgent):
         sys_prompt: Optional[str] = None,
         max_iters: int = 10,
         tool_call_interrupt_return: bool = True,
+        long_term_memory: Optional[LongTermMemoryBase] = None,
+        long_term_memory_mode: Literal[
+            "agent_control",
+            "static_control",
+            "both",
+        ] = "both",
     ):
         super().__init__(
             name=name,
@@ -63,6 +69,8 @@ class AliasAgentBase(ReActAgent):
             memory=memory,
             toolkit=toolkit,
             max_iters=max_iters,
+            long_term_memory=long_term_memory,
+            long_term_memory_mode=long_term_memory_mode,
         )
 
         self.session_service = session_service
@@ -256,3 +264,45 @@ class AliasAgentBase(ReActAgent):
         Add additional interrupt function name to the agent.
         """
         self.agent_stop_function_names.append(func_name)
+
+    async def _retrieve_from_long_term_memory(
+        self,
+        msg: Msg | list[Msg] | None,  # pylint: disable=unused-argument
+    ) -> None:
+        """Override the parent method to retrieve from long-term memory using
+        the last user message in memory if available.
+        Args:
+            msg (`Msg | list[Msg] | None`):
+                The input message to the agent (may be None).
+        """
+        if self._static_control and self.long_term_memory:
+            # Get messages from memory
+            memory_msgs = await self.memory.get_memory()
+
+            # Check if there are messages and the last one is from user
+            if memory_msgs and len(memory_msgs) > 0:
+                last_msg = memory_msgs[-1]
+                if last_msg.role == "user":
+                    # Check if the user message is just "continue"
+                    user_content = str(last_msg.content).strip().lower()
+                    if user_content == "continue":
+                        logger.info(
+                            "User input is 'continue' message, "
+                            "skipping retrieve from long-term memory",
+                        )
+                        retrieved_info = None
+                    else:
+                        # Retrieve using the last user message
+                        retrieved_info = await self.long_term_memory.retrieve(
+                            last_msg,
+                        )
+                    if retrieved_info:
+                        retrieved_msg = Msg(
+                            name="long_term_memory",
+                            content="<long_term_memory>The content below are "
+                            "retrieved from long-term memory, which may be "
+                            "related to user preference and may be useful:\n"
+                            f"{retrieved_info}</long_term_memory>",
+                            role="user",
+                        )
+                        await self.memory.add(retrieved_msg)

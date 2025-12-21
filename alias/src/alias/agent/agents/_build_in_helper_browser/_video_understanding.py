@@ -47,7 +47,7 @@ async def video_understanding(
     try:
         frames_dir = os.path.join(workdir, "frames")
         frames = extract_frames(video_path, frames_dir)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         return _error_response(f"Failed to extract frames: {exc}")
 
     audio_path = os.path.join(
@@ -56,12 +56,12 @@ async def video_understanding(
     )
     try:
         extract_audio(video_path, audio_path)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         return _error_response(f"Failed to extract audio: {exc}")
 
     try:
         transcript = audio2text(audio_path)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         return _error_response(f"Failed to transcribe audio: {exc}")
 
     sys_prompt = (
@@ -115,7 +115,7 @@ def audio2text(audio_path: str) -> str:
 
     try:  # Local import to avoid hard dependency when unused.
         from dashscope.audio.asr import Recognition, RecognitionCallback
-    except ImportError as exc:  # pylint: disable=broad-except
+    except ImportError as exc:
         raise RuntimeError(
             "dashscope.audio is required for audio transcription.",
         ) from exc
@@ -153,6 +153,8 @@ def extract_frames(
         try:
             existing.unlink()
         except OSError:
+            # Ignore errors during cleanup;
+            # leftover files will be overwritten or do not affect frame extraction
             pass
 
     duration = _probe_video_duration(video_path)
@@ -182,7 +184,7 @@ def extract_frames(
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    except FileNotFoundError as exc:  # pylint: disable=broad-except
+    except FileNotFoundError as exc:
         raise RuntimeError(
             "ffmpeg is required to extract frames from video.",
         ) from exc
@@ -227,7 +229,7 @@ def extract_audio(video_path: str, audio_path: str) -> str:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    except FileNotFoundError as exc:  # pylint: disable=broad-except
+    except FileNotFoundError as exc:
         raise RuntimeError(
             "ffmpeg is required to extract audio from video.",
         ) from exc

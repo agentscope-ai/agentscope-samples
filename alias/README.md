@@ -19,6 +19,7 @@
 
 </div>
 
+[[中文README]](README_ZH.md)
 
 *Alias-Agent* (short for *Alias*) is an LLM-empowered agent built on [AgentScope](https://github.com/agentscope-ai/agentscope) and [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), designed to serve as a general-purpose intelligent assistant for responding to user queries. Alias excels at decomposing complicated problems, constructing roadmaps, and applying appropriate strategies to tackle diverse real-world tasks.
 
@@ -154,7 +155,7 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 docker pull agentscope/runtime-sandbox-alias:latest
 ```
 
-More details can refer to [AgentScope Runtime documentation](https://runtime.agentscope.io/en/sandbox.html).
+More details can refer to [AgentScope Runtime documentation](https://runtime.agentscope.io/en/sandbox/sandbox.html).
 
 ### 🔑 API Keys Configuration
 
@@ -205,6 +206,19 @@ alias_agent run --mode ds \
 
 **Note**: Files uploaded with `--files` are automatically copied to `/workspace` in the sandbox. Generated files are available in `sessions_mount_dir` subdirectories.
 
+#### Enable Long-Term Memory Service (General Mode Only)
+To enable the long-term memory service in General mode, you need to:
+1. **Start the Memory Service first** (see [Start the Memory Service Server](#start-the-memory-service-server) section below)
+2. **Use the `--use_long_term_memory` flag** when running in General mode:
+```bash
+# General mode with long-term memory service enabled
+alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025" --use_long_term_memory
+```
+**Important**:
+- Long-term memory is only enabled when the `--use_long_term_memory` flag is explicitly provided (disabled by default)
+- The long-term memory service is only available in **General mode** (meta-planner)
+- The memory service must be running before starting the agent
+- When enabled, the agent will retrieve user profiling information at session start to provide personalized experiences
 
 ### Basic Usage -- Full-Stack Deployment
 
@@ -285,6 +299,8 @@ The frontend will start on `http://localhost:5173` (or the port specified in `vi
 
 #### Start the Memory Service Server
 
+> **Note**: The Memory Service is required if you want to enable long-term memory features in General mode. Make sure to start the Memory Service before using the `--use_long_term_memory` flag in CLI or setting `use_long_term_memory_service: true` in API requests.
+
 First install the Memory Service package in development mode
 
 ```bash
@@ -331,7 +347,7 @@ The script will automatically check and start Redis and Qdrant services (via Doc
 
 **Option 2: Docker Deployment**
 
-For Docker-based deployment, please refer to the detailed documentation at [alias/memory_service/docker/README.md](memory_service/docker/README.md).
+For Docker-based deployment, please refer to the detailed documentation at [Detailed Docs](src/alias/memory_service/docker/README.md).
 
 #### Access the Application
 
