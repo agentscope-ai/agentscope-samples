@@ -17,6 +17,12 @@
 [![Runtime Docs](https://img.shields.io/badge/built--on-AgentScope%20Runtime-red)](https://runtime.agentscope.io/)
 [![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-samples)](https://github.com/agentscope-ai/agentscope-samples)
 
+<p align="center">
+<u>
+开启你的独特体验: <a href="https://alias.agentscope.io/"> alias.agentscope.io</a>
+</u>
+</p>
+
 </div>
 
 [[English README]](README.md)
