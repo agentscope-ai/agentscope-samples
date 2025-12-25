@@ -265,6 +265,15 @@
         "example",
         "doc"
       ]
+    },
+    {
+      "login": "yuluo1007",
+      "name": "sidiluo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16065149?v=4",
+      "profile": "https://github.com/yuluo1007",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
