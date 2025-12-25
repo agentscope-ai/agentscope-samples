@@ -162,7 +162,7 @@ This project is licensed under the **Apache 2.0 License** – see the [LICENSE](
 ## Contributors ✨
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-26-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
@@ -204,6 +204,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
       <td align="center" valign="top" width="14.28%"><a href="http://luyi256.github.io"><img src="https://avatars.githubusercontent.com/u/50238286?v=4?s=100" width="100px;" alt="LuYi"/><br /><sub><b>LuYi</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=luyi256" title="Code">💻</a> <a href="#example-luyi256" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/1mycell"><img src="https://avatars.githubusercontent.com/u/143110833?v=4?s=100" width="100px;" alt="Wu Yue"/><br /><sub><b>Wu Yue</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=1mycell" title="Code">💻</a> <a href="#example-1mycell" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://www.bruceluo.net"><img src="https://avatars.githubusercontent.com/u/7297307?v=4?s=100" width="100px;" alt="Zhiling (Bruce) Luo"/><br /><sub><b>Zhiling (Bruce) Luo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=zhilingluo" title="Code">💻</a> <a href="#example-zhilingluo" title="Examples">💡</a> <a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=zhilingluo" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/yuluo1007"><img src="https://avatars.githubusercontent.com/u/16065149?v=4?s=100" width="100px;" alt="sidiluo"/><br /><sub><b>sidiluo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-samples/commits?author=yuluo1007" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>
