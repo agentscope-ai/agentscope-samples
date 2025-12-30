@@ -75,14 +75,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
     options,
   ) => {
     const { file, onSuccess, onError, onProgress } = options;
-    
+
     // Type guard: ensure file is a File object
     if (!(file instanceof File)) {
       const error = new Error("Invalid file type");
       onError?.(error);
       return;
     }
-    
+
     try {
       // Merge file names from server file list and local preview list
       let existingFiles: string[] = [];

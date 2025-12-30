@@ -238,7 +238,8 @@ const SharePage: React.FC = () => {
             ) as Message[];
             setMessages(mappedMessages);
           }
-          if (roadmapResponse) setRoadmapData(roadmapResponse as RoadMapDataProps);
+          if (roadmapResponse)
+            setRoadmapData(roadmapResponse as RoadMapDataProps);
           setConversationName(res.payload.name);
         }
       } catch (err) {
@@ -313,8 +314,7 @@ const SharePage: React.FC = () => {
           </div>
           <div className={styles.tabContent}>
             {activeTab === "workspace" ? (
-              <Workspace
-              />
+              <Workspace />
             ) : (
               <Roadmap
                 data={roadmapData}

@@ -125,47 +125,44 @@ const mapApiMessageToChatMessage = (
 const getPromptFile = async (files: string | string[]) => {
   try {
     const paths = Array.isArray(files) ? files : [files];
-    const fileProcessingPromises = paths.map(
-      async (filePath) => {
-        try {
-          let publicPath = filePath.startsWith('/file/') ? filePath : `/file/${filePath}`;
-          const fileName = publicPath.split("/").pop() || "sample.csv";
-          
-          const response = await fetch(publicPath);
-          if (!response.ok) {
-            console.warn(
-              `Failed to fetch file: ${response.status} ${response.statusText}`,
-            );
-            return null;
-          }
-          const blob = await response.blob();
-          const file = new File([blob], fileName, { type: blob.type });
+    const fileProcessingPromises = paths.map(async (filePath) => {
+      try {
+        let publicPath = filePath.startsWith("/file/")
+          ? filePath
+          : `/file/${filePath}`;
+        const fileName = publicPath.split("/").pop() || "sample.csv";
 
-          if (file.size > MAX_FILE_SIZE) {
-            message.error(`File ${file.name} exceeds 10MB limit`);
-            return null;
-          }
-
-          const uploadResponse: any = await fileApi.uploadFile(file);
-          if (uploadResponse?.status && uploadResponse?.payload) {
-            const { filename, id, size } = uploadResponse.payload;
-            return {
-              filename,
-              size,
-              url: `/api/v1/files/${id}/preview`,
-              id,
-            };
-          }
-          return null;
-        } catch (fileError) {
+        const response = await fetch(publicPath);
+        if (!response.ok) {
           console.warn(
-            `Failed to process file ${filePath}:`,
-            fileError,
+            `Failed to fetch file: ${response.status} ${response.statusText}`,
           );
           return null;
         }
-      },
-    );
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: blob.type });
+
+        if (file.size > MAX_FILE_SIZE) {
+          message.error(`File ${file.name} exceeds 10MB limit`);
+          return null;
+        }
+
+        const uploadResponse: any = await fileApi.uploadFile(file);
+        if (uploadResponse?.status && uploadResponse?.payload) {
+          const { filename, id, size } = uploadResponse.payload;
+          return {
+            filename,
+            size,
+            url: `/api/v1/files/${id}/preview`,
+            id,
+          };
+        }
+        return null;
+      } catch (fileError) {
+        console.warn(`Failed to process file ${filePath}:`, fileError);
+        return null;
+      }
+    });
     const results = await Promise.all(fileProcessingPromises);
     const fileResults = results.filter((result) => result !== null);
     return fileResults.length > 0 ? fileResults : null;
