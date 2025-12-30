@@ -14,7 +14,7 @@ frontend/package-lock.json
 
 # misc
 .env
-.env.*
+!.env.*
 !.env.example
 __pycache__/
 *.db

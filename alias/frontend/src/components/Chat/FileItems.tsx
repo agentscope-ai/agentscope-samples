@@ -8,6 +8,7 @@ import { FileItem } from "@/types/message";
 import { formatFileSize } from "@/utils/fileNameUtils";
 import React from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { env } from "@/config/env";
 
 import styles from "./Message.module.scss";
 
@@ -65,7 +66,7 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
   const handlePreview = (file: FileItem) => {
     if (!file.id) return;
 
-    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const baseUrl = env.apiUrl;
     // const endpoint = isSharePage ? "public" : "preview";
     // const url = `${baseUrl}/api/v1/files/${file.id}/${endpoint}`;
     let url: string;
@@ -76,10 +77,7 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
     }
     // If not share page, need to add authentication header
     if (!isSharePage) {
-      const token =
-        localStorage.getItem("access_token") ||
-        import.meta.env.VITE_API_ACCESS_TOKEN ||
-        import.meta.env.VITE_API_TOKEN;
+      const token = localStorage.getItem("access_token") || env.apiAccessToken;
       if (!token) {
         console.error("No access token available");
         return;
