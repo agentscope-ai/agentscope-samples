@@ -11,7 +11,7 @@ import {
 } from "@/types/message";
 import { MAX_FILE_SIZE } from "@/utils/constant";
 import { message } from "@agentscope-ai/design";
-const sampleFiles = import.meta.glob("@/assets/file/*");
+
 // Map API message to chat message
 const mapApiMessageToChatMessage = (
   msg: ApiMessage,
@@ -124,25 +124,14 @@ const mapApiMessageToChatMessage = (
 
 const getPromptFile = async (files: string | string[]) => {
   try {
-    const filePaths = Object.keys(sampleFiles);
-    if (filePaths.length === 0) {
-      console.warn("No files found in assets/file directory");
-      return null;
-    }
     const paths = Array.isArray(files) ? files : [files];
-    const selectedFilePaths = filePaths.filter((filePath) =>
-      paths.includes(filePath),
-    );
-
-    if (selectedFilePaths.length === 0) {
-      console.warn("No matching files found for paths:", paths);
-      return null;
-    }
-    const fileProcessingPromises = selectedFilePaths.map(
-      async (selectedFilePath) => {
+    const fileProcessingPromises = paths.map(
+      async (filePath) => {
         try {
-          const fileName = selectedFilePath.split("/").pop() || "sample.csv";
-          const response = await fetch(selectedFilePath);
+          let publicPath = filePath.startsWith('/file/') ? filePath : `/file/${filePath}`;
+          const fileName = publicPath.split("/").pop() || "sample.csv";
+          
+          const response = await fetch(publicPath);
           if (!response.ok) {
             console.warn(
               `Failed to fetch file: ${response.status} ${response.statusText}`,
@@ -170,7 +159,7 @@ const getPromptFile = async (files: string | string[]) => {
           return null;
         } catch (fileError) {
           console.warn(
-            `Failed to process file ${selectedFilePath}:`,
+            `Failed to process file ${filePath}:`,
             fileError,
           );
           return null;
