@@ -119,14 +119,16 @@ export function getConfig() {
       ...prodConfig,
       // Use values from env (already validated), if empty use prodConfig (may also be empty)
       apiUrl: env.apiUrl || prodConfig.apiUrl,
-      userProfilingApiUrl: env.userProfilingApiUrl || prodConfig.userProfilingApiUrl,
+      userProfilingApiUrl:
+        env.userProfilingApiUrl || prodConfig.userProfilingApiUrl,
     };
   }
   return {
     ...devConfig,
     // Development environment: prioritize values from env, otherwise use defaults
     apiUrl: env.apiUrl || devConfig.apiUrl,
-    userProfilingApiUrl: env.userProfilingApiUrl || devConfig.userProfilingApiUrl,
+    userProfilingApiUrl:
+      env.userProfilingApiUrl || devConfig.userProfilingApiUrl,
   };
 }
 
@@ -145,7 +147,9 @@ export function validateProdConfig(): void {
     }
     if (missing.length > 0) {
       console.error(
-        `Missing production environment configuration: ${missing.join(", ")}. Please set these environment variables.`,
+        `Missing production environment configuration: ${missing.join(
+          ", ",
+        )}. Please set these environment variables.`,
       );
     }
   }
