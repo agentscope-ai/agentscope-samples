@@ -2,19 +2,19 @@
 
 > 基于 FastMCP 框架的 MCP Server 开发模版，快速开发并部署到阿里云百炼高代码
 
-## 🎉 最新重构特性
+## 🎉 特性
 
-本项目已完成全面重构，新增以下核心功能：
+本项目核心功能：
 
 - **🔧 模块化架构**: MCP Server 代码分离至 `mcp_server.py`，主程序 `main.py` 负责路由整合
-- **💬 Chat API 集成**: 新增 `/chat` 端点，支持阿里云百炼 LLM 调用和流式响应
+- **💬 Chat API 集成**: 新增 `/process` 端点，支持阿里云百炼 LLM 调用和流式响应
 - **🤖 智能工具调用**: LLM 可自动识别并调用 MCP 工具（Function Calling）
 - **📡 统一服务架构**: FastAPI + FastMCP 集成，一个服务同时提供 MCP 和 Chat 功能
 - **🔄 标准化响应**: 基于 AgentScope ResponseBuilder 的结构化流式响应
 - **🌐 CORS 支持**: 支持跨域请求，便于前端集成
 - **🎯 路由优化**: MCP Server 挂载至 `/mcp` 路径，主应用提供更多端点
 
-## ⚡ 快速开始
+## ⚡ 本地快速开始
 
 ### 1. 安装依赖
 
@@ -35,15 +35,15 @@ python -m deploy_starter.main
 curl http://localhost:8080/health
 ```
 
-**测试 Chat 接口:**
+**测试 Chat 接口，调用天气搜索MCP Tool:**
 ```bash
-curl -X POST http://localhost:8080/chat \
+curl -X POST http://localhost:8080/process \
   -H "Content-Type: application/json" \
   -d '{
     "input": [
       {
         "role": "user",
-        "content": [{"type": "text", "text": "你好"}]
+        "content": [{"type": "text", "text": "帮我查一下杭州的天气，最近5天的"}]
       }
     ],
     "session_id": "test-session-001",
@@ -58,7 +58,7 @@ npx @modelcontextprotocol/inspector
 ```
 连接地址使用: `http://localhost:8080/mcp`
 
-![MCP inspector.png](MCP%20inspector.png)
+![MCP inspector.png](MCP inspector.png)
 
 ---
 
@@ -102,7 +102,7 @@ async def search_by_modelStudio(
     return result
 ```
 
-**注意**: 异步工具需要设置环境变量 `DASHSCOPE_API_KEY`用来调用百炼服务 
+**注意**: 异步工具需要设置环境变量 `DASHSCOPE_API_KEY`用来调用百炼服务
 ```bash
 export DASHSCOPE_API_KEY='sk-xxxxxx'
 ```
@@ -131,37 +131,54 @@ def your_tool(
 ```
 
 ---
+## 阿里云百炼高代码 云端部署
 
-## 🚀 部署到阿里云百炼
+### 优先可以选择阿里云百炼高代码控制台直接上传代码包
+[创建应用-高代码应用](https://bailian.console.aliyun.com//app-center?tab=app#/app-center)
 
-### 步骤 1: 安装部署工具
+
+
+### 命令行console方式进行代码上传部署-更适合快速修改代码进行更新部署
+#### 1. 安装依赖
 
 ```bash
-pip install agentscope-runtime
-pip install "agentscope-runtime[deployment]"
+pip install agentscope-runtime==1.0.0
+pip install "agentscope-runtime[deployment]==1.0.0"
 ```
 
-### 步骤 2: 配置环境变量
+#### 2. 设置环境变量
 
 ```bash
-export ALIBABA_CLOUD_ACCESS_KEY_ID="你的阿里云AccessKey"
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="你的阿里云SecretKey"
-export MODELSTUDIO_WORKSPACE_ID="你的百炼工作空间ID"
+export ALIBABA_CLOUD_ACCESS_KEY_ID=...            # 你的阿里云账号AccessKey（必填）
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...        # 你的阿里云账号SecurityKey（必填）
+
+# 可选：如果你希望使用单独的 OSS AK/SK，可设置如下（未设置时将使用到上面的账号 AK/SK），请确保账号有 OSS 的读写权限
+export MODELSTUDIO_WORKSPACE_ID=...               # 你的百炼业务空间id
+export OSS_ACCESS_KEY_ID=...
+export OSS_ACCESS_KEY_SECRET=...
+export OSS_REGION=cn-beijing
 ```
 
-### 步骤 3: 打包并部署
+#### 3. 打包和部署
 
+##### 方式 A：手动构建 wheel 文件
+
+确保你的项目可以被构建为 wheel 文件。你可以使用 setup.py、setup.cfg 或 pyproject.toml。
+
+构建 wheel 文件：
 ```bash
-# 1. 构建 wheel 包
 python setup.py bdist_wheel
-
-# 2. 部署到云端
-runtime-fc-deploy \
-  --deploy-name my-mcp-server \
-  --whl-path dist/mcp-server-starter-0.1.0-py3-none-any.whl
 ```
 
-部署成功后，你会得到一个云端 URL，可以在 Claude Desktop 或其他 MCP 客户端中使用。
+部署：
+```bash
+runtime-fc-deploy \
+  --deploy-name [你的应用名称] \
+  --whl-path [到你的wheel文件的相对路径 如"/dist/your_app.whl"]
+```
+
+
+具体请查看阿里云百炼高代码部署文档：[阿里云百炼高代码部署文档](https://bailian.console.aliyun.com/?tab=api#/api/?type=app&url=2983030)
 
 ---
 
@@ -180,7 +197,7 @@ runtime-fc-deploy \
 ```
 
 **核心文件说明:**
-- `main.py`: FastAPI 主应用，提供 `/chat` 端点和生命周期管理，将 MCP Server 挂载到 `/mcp` 路径
+- `main.py`: FastAPI 主应用，提供 `/process` 端点和生命周期管理，将 MCP Server 挂载到 `/mcp` 路径
 - `mcp_server.py`: FastMCP 服务器实例，定义所有 MCP 工具，提供工具列表和调用函数
 
 ---
@@ -273,7 +290,7 @@ http://localhost:8080/mcp
 
 ### 百炼高代码 Agent 集成
 
-如果你的应用部署到百炼高代码，可以直接使用 `/chat` 端点进行 Agent 对话，支持：
+如果你的应用部署到百炼高代码，可以直接使用 `/process` 端点进行 Agent 对话，支持：
 - 自然语言交互
 - 自动工具调用
 - 流式响应
@@ -283,12 +300,12 @@ http://localhost:8080/mcp
 
 ## 📚 API 端点
 
-| 端点 | 方法 | 说明 |
-|-----|------|------|
-| `/` | GET | 服务器信息 |
-| `/health` | GET | 健康检查（请勿修改） |
-| `/chat` | POST | Chat 接口，支持 LLM 对话和工具调用（需要 DASHSCOPE_API_KEY） |
-| `/mcp` | GET/POST | MCP Server 端点（Streamable HTTP 传输） |
+| 端点         | 方法 | 说明 |
+|------------|------|------|
+| `/`        | GET | 服务器信息 |
+| `/health`  | GET | 健康检查（请勿修改） |
+| `/process` | POST | Chat 接口，支持 LLM 对话和工具调用（需要 DASHSCOPE_API_KEY） |
+| `/mcp`     | GET/POST | MCP Server 端点（Streamable HTTP 传输） |
 
 ### Chat 接口详细说明
 
@@ -317,4 +334,3 @@ http://localhost:8080/mcp
 - ✅ 支持多轮对话上下文
 - ✅ 流式响应，实时返回结果
 - ✅ 工具调用过程透明可见
-

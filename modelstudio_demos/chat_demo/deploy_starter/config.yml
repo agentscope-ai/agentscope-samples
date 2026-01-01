@@ -1,0 +1,32 @@
+# app config
+APP_NAME: "ModelStudio-Agent Starter"
+DEBUG: false
+
+# Server Config
+FC_START_HOST: "0.0.0.0"
+HOST: "127.0.0.1"
+PORT: 8080
+RELOAD: true
+
+# DashScope config
+DASHSCOPE_API_KEY:
+DASHSCOPE_MODEL_NAME: "qwen-turbo"
+
+# log config
+LOG_LEVEL: "INFO"
+
+# Setup config
+SETUP_PACKAGE_NAME: "deploy_starter"
+SETUP_MODULE_NAME: "main"
+SETUP_FUNCTION_NAME: "run_app"
+SETUP_COMMAND_NAME: "ModelStudio-Agent-starter"
+SETUP_NAME: "ModelStudio-Agent-starter"
+SETUP_VERSION: "0.1.0"
+SETUP_DESCRIPTION: "ModelStudio-Agent-starter"
+SETUP_LONG_DESCRIPTION: "ModelStudio-Agent-starter services, supporting both direct execution and uvicorn deployment"
+
+# observability config
+TELEMETRY_ENABLE: TRUE
+
+# FC run config
+FC_RUN_CMD: "python3 /code/python/deploy_starter/main.py"

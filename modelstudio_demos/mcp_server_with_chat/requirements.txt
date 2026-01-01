@@ -1,6 +1,6 @@
 fastapi==0.116.1
 uvicorn
-fastmcp== 2.12.5
+fastmcp==2.12.5
 agentscope-runtime==1.0.0
 PyYAML
 psutil==7.1.2

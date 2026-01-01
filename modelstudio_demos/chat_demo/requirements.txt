@@ -1,0 +1,5 @@
+fastapi==0.116.1
+uvicorn
+agentscope-runtime==1.0.0
+setuptools
+PyYAML

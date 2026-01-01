@@ -3,18 +3,18 @@ import uuid
 
 from setuptools import setup
 
-# Read dependencies from requirements.txt
+# 读取requirements.txt中的依赖
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
 
-# Read config.yml file
+# 读取config.yml文件
 def read_config():
     config_path = os.path.join(
         os.path.dirname(__file__), "deploy_starter", "config.yml"
     )
     config = {}
-    with open(config_path) as f:
+    with open(config_path, "r") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#"):
@@ -32,37 +32,37 @@ def read_config():
     return config
 
 
-# Read README.md file
+# 读取README.md文件
 def read_readme():
     readme_files = ["README.md", "README.rst", "README.txt"]
     for filename in readme_files:
         if os.path.exists(filename):
-            with open(filename) as fh:
+            with open(filename, "r") as fh:
                 return fh.read()
     return "A FastAPI application with AgentScope runtime"
 
 
-# Read configuration
+# 读取配置
 config = read_config()
 
-# Get configuration values
+# 获取配置值
 setup_package_name = config.get("SETUP_PACKAGE_NAME", "deploy_starter")
 setup_module_name = config.get("SETUP_MODULE_NAME", "main")
 setup_function_name = config.get("SETUP_FUNCTION_NAME", "run_app")
-setup_command_name = config.get("SETUP_COMMAND_NAME", "MCP-Server-starter")
+setup_command_name = config.get("SETUP_COMMAND_NAME", "ModelStudio-Agent-starter")
 
-# Generate package name with UUID
-base_name = config.get("SETUP_NAME", "MCP-Server-starter")
+# 生成带UUID的包名
+base_name = config.get("SETUP_NAME", "ModelStudio-Agent-starter")
 unique_name = f"{base_name}-{uuid.uuid4().hex[:8]}"
 
-# Create package structure
+# 创建包结构
 setup(
     name=unique_name,
     version=config.get("SETUP_VERSION", "0.1.0"),
-    description=config.get("SETUP_DESCRIPTION", "MCP-Server-starter"),
+    description=config.get("SETUP_DESCRIPTION", "ModelStudio-Agent-starter"),
     long_description=config.get(
         "SETUP_LONG_DESCRIPTION",
-        "MCP-Server-starter services, supporting both direct execution and uvicorn deployment",
+        "ModelStudio-Agent-starter services, supporting both direct execution and uvicorn deployment",
     ),
     packages=[setup_package_name],
     package_dir={setup_package_name: setup_package_name},
