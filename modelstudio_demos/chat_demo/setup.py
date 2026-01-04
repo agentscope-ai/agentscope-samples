@@ -4,12 +4,12 @@ import uuid
 
 from setuptools import setup
 
-# 读取requirements.txt中的依赖
+# Read dependencies from requirements.txt
 with open("requirements.txt", encoding="utf-8") as requirements_file:
     requirements = requirements_file.read().splitlines()
 
 
-# 读取config.yml文件
+# Read config.yml
 def read_config():
     config_path = os.path.join(
         os.path.dirname(__file__),
@@ -35,7 +35,7 @@ def read_config():
     return config_data
 
 
-# 读取README.md文件
+# Read README file if exists
 def read_readme():
     readme_files = ["README.md", "README.rst", "README.txt"]
     for filename in readme_files:
@@ -45,10 +45,10 @@ def read_readme():
     return "A FastAPI application with AgentScope runtime"
 
 
-# 读取配置
+# Load configuration
 config = read_config()
 
-# 获取配置值
+# Extract configuration values
 setup_package_name = config.get("SETUP_PACKAGE_NAME", "deploy_starter")
 setup_module_name = config.get("SETUP_MODULE_NAME", "main")
 setup_function_name = config.get("SETUP_FUNCTION_NAME", "run_app")
@@ -57,11 +57,11 @@ setup_command_name = config.get(
     "ModelStudio-Agent-starter",
 )
 
-# 生成带UUID的包名
+# Generate package name with UUID suffix
 base_name = config.get("SETUP_NAME", "ModelStudio-Agent-starter")
 unique_name = f"{base_name}-{uuid.uuid4().hex[:8]}"
 
-# 创建包结构
+# Create package structure
 setup(
     name=unique_name,
     version=config.get("SETUP_VERSION", "0.1.0"),
