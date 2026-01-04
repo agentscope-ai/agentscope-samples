@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# flake8: noqa
+# pylint: disable=line-too-long,too-many-branches,too-many-statements,too-many-nested-blocks
 """
 FastMCP Server Development Template
 This is an MCP Server starter template based on the fastMcp framework, allowing developers to quickly develop their own MCP Server and deploy it to Alibaba Cloud Bailian high-code platform
@@ -39,9 +42,9 @@ from deploy_starter.mcp_server import (
 def read_config():
     """Read config.yml file"""
     config_path = os.path.join(os.path.dirname(__file__), "config.yml")
-    config = {}
-    with open(config_path) as f:
-        for line in f:
+    config_data = {}
+    with open(config_path, encoding="utf-8") as config_file:
+        for line in config_file:
             line = line.strip()
             if line and not line.startswith("#"):
                 if ":" in line:
@@ -54,8 +57,8 @@ def read_config():
                         value = False
                     elif value.isdigit():
                         value = int(value)
-                    config[key] = value
-    return config
+                    config_data[key] = value
+    return config_data
 
 
 config = read_config()
@@ -66,10 +69,10 @@ mcp_asgi_app = mcp.streamable_http_app(path="/")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(fastapi_app: FastAPI):
     """Application lifecycle management - integrate MCP application's lifespan"""
     # Use MCP application's lifespan context manager
-    async with mcp_asgi_app.router.lifespan_context(app):
+    async with mcp_asgi_app.router.lifespan_context(fastapi_app):
         # Application startup completed, entering running state
         yield
         # Automatic cleanup when application closes
@@ -164,7 +167,8 @@ async def chat(request_data: ChatRequest):
 
     # Initialize OpenAI client (DashScope is compatible with OpenAI API)
     client = AsyncOpenAI(
-        api_key=api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        api_key=api_key,
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
 
     # Convert message format to OpenAI format
@@ -235,7 +239,7 @@ async def chat(request_data: ChatRequest):
             # Collect LLM response content and tool calls
             llm_content = ""
             tool_calls = []
-            current_tool_call = None
+            current_tool_call: dict[str, Any] | None = None
 
             async for chunk in response:
                 if chunk.choices and len(chunk.choices) > 0:
@@ -250,28 +254,33 @@ async def chat(request_data: ChatRequest):
                     if delta.tool_calls:
                         for tool_call_chunk in delta.tool_calls:
                             if tool_call_chunk.index is not None:
-                                if (
-                                    current_tool_call is None
-                                    or current_tool_call["index"]
+                                if current_tool_call is None:
+                                    pass
+                                elif (
+                                    current_tool_call["index"]
                                     != tool_call_chunk.index
                                 ):
-                                    if current_tool_call:
-                                        tool_calls.append(current_tool_call)
+                                    tool_calls.append(current_tool_call)
+                                    current_tool_call = None
+
+                                if current_tool_call is None:
                                     current_tool_call = {
                                         "index": tool_call_chunk.index,
                                         "id": tool_call_chunk.id or "",
                                         "type": "function",
                                         "function": {
-                                            "name": tool_call_chunk.function.name or "",
-                                            "arguments": tool_call_chunk.function.arguments
+                                            "name": tool_call_chunk.function.name
                                             or "",
+                                            "arguments": (
+                                                tool_call_chunk.function.arguments
+                                                or ""
+                                            ),
                                         },
                                     }
-                                else:
-                                    if tool_call_chunk.function.arguments:
-                                        current_tool_call["function"][
-                                            "arguments"
-                                        ] += tool_call_chunk.function.arguments
+                                elif tool_call_chunk.function.arguments:
+                                    current_tool_call["function"][
+                                        "arguments"
+                                    ] += tool_call_chunk.function.arguments
 
             if current_tool_call:
                 tool_calls.append(current_tool_call)
@@ -281,8 +290,11 @@ async def chat(request_data: ChatRequest):
                 # Scenario: has tool calls
                 # 3. Create reasoning message (if LLM has thinking content)
                 if llm_content.strip():
-                    reasoning_msg_builder = response_builder.create_message_builder(
-                        role=Role.ASSISTANT, message_type="reasoning"
+                    reasoning_msg_builder = (
+                        response_builder.create_message_builder(
+                            role=Role.ASSISTANT,
+                            message_type="reasoning",
+                        )
                     )
                     yield f"data: {reasoning_msg_builder.get_message_data().model_dump_json()}\n\n"
 
@@ -295,7 +307,11 @@ async def chat(request_data: ChatRequest):
 
                 # 4. First add assistant message (containing all tool calls) to message history
                 messages.append(
-                    {"role": "assistant", "content": None, "tool_calls": tool_calls}
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": tool_calls,
+                    },
                 )
 
                 # 5. Process each tool call
@@ -304,14 +320,17 @@ async def chat(request_data: ChatRequest):
                     tool_args = json.loads(tool_call["function"]["arguments"])
 
                     # 5.1 Create plugin_call message (display to user)
-                    plugin_call_msg_builder = response_builder.create_message_builder(
-                        role=Role.ASSISTANT, message_type="plugin_call"
+                    plugin_call_msg_builder = (
+                        response_builder.create_message_builder(
+                            role=Role.ASSISTANT,
+                            message_type="plugin_call",
+                        )
                     )
                     yield f"data: {plugin_call_msg_builder.get_message_data().model_dump_json()}\n\n"
 
                     plugin_call_content_builder = (
                         plugin_call_msg_builder.create_content_builder(
-                            content_type="data"
+                            content_type="data",
                         )
                     )
                     tool_call_data = {
@@ -329,14 +348,15 @@ async def chat(request_data: ChatRequest):
                         # 5.3 Create plugin_call_output message (display to user)
                         plugin_output_msg_builder = (
                             response_builder.create_message_builder(
-                                role=Role.ASSISTANT, message_type="plugin_call_output"
+                                role=Role.ASSISTANT,
+                                message_type="plugin_call_output",
                             )
                         )
                         yield f"data: {plugin_output_msg_builder.get_message_data().model_dump_json()}\n\n"
 
                         plugin_output_content_builder = (
                             plugin_output_msg_builder.create_content_builder(
-                                content_type="data"
+                                content_type="data",
                             )
                         )
                         output_data = {
@@ -361,7 +381,7 @@ async def chat(request_data: ChatRequest):
                                     if tool_result
                                     else ""
                                 ),
-                            }
+                            },
                         )
                     except Exception as e:
                         print(f"Tool call failed: {e}")
@@ -371,7 +391,7 @@ async def chat(request_data: ChatRequest):
                                 "role": "tool",
                                 "tool_call_id": tool_call["id"],
                                 "content": f"Error: {str(e)}",
-                            }
+                            },
                         )
 
                 # 6. Use tool results to call LLM again to generate final answer
@@ -383,11 +403,14 @@ async def chat(request_data: ChatRequest):
 
                 # 7. Create final message (answer based on tool results)
                 final_msg_builder = response_builder.create_message_builder(
-                    role=Role.ASSISTANT, message_type="message"
+                    role=Role.ASSISTANT,
+                    message_type="message",
                 )
                 yield f"data: {final_msg_builder.get_message_data().model_dump_json()}\n\n"
 
-                final_content_builder = final_msg_builder.create_content_builder()
+                final_content_builder = (
+                    final_msg_builder.create_content_builder()
+                )
 
                 async for chunk in final_response:
                     if chunk.choices and len(chunk.choices) > 0:
@@ -402,7 +425,8 @@ async def chat(request_data: ChatRequest):
                 # Scenario: no tool calls, return LLM response directly
                 # 3. Create message (direct answer)
                 msg_builder = response_builder.create_message_builder(
-                    role=Role.ASSISTANT, message_type="message"
+                    role=Role.ASSISTANT,
+                    message_type="message",
                 )
                 yield f"data: {msg_builder.get_message_data().model_dump_json()}\n\n"
 
@@ -419,7 +443,8 @@ async def chat(request_data: ChatRequest):
             # Error handling
             print(f"Chat interface error: {e}")
             error_msg_builder = response_builder.create_message_builder(
-                role=Role.ASSISTANT, message_type="error"
+                role=Role.ASSISTANT,
+                message_type="error",
             )
             error_content_builder = error_msg_builder.create_content_builder()
             error_text = f"Error occurred: {str(e)}"
@@ -429,7 +454,10 @@ async def chat(request_data: ChatRequest):
             yield f"data: {response_builder.completed().model_dump_json()}\n\n"
             # yield "data: [DONE]\n\n"
 
-    return StreamingResponse(generate_response(), media_type="text/event-stream")
+    return StreamingResponse(
+        generate_response(),
+        media_type="text/event-stream",
+    )
 
 
 # ==================== Start Application ====================

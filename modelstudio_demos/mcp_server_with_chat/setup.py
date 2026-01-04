@@ -1,21 +1,24 @@
+# -*- coding: utf-8 -*-
 import os
 import uuid
 
 from setuptools import setup
 
 # Read dependencies from requirements.txt
-with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+with open("requirements.txt", encoding="utf-8") as requirements_file:
+    requirements = requirements_file.read().splitlines()
 
 
 # Read config.yml file
 def read_config():
     config_path = os.path.join(
-        os.path.dirname(__file__), "deploy_starter", "config.yml"
+        os.path.dirname(__file__),
+        "deploy_starter",
+        "config.yml",
     )
-    config = {}
-    with open(config_path) as f:
-        for line in f:
+    config_data = {}
+    with open(config_path, encoding="utf-8") as config_file:
+        for line in config_file:
             line = line.strip()
             if line and not line.startswith("#"):
                 if ":" in line:
@@ -28,8 +31,8 @@ def read_config():
                         value = False
                     elif value.isdigit():
                         value = int(value)
-                    config[key] = value
-    return config
+                    config_data[key] = value
+    return config_data
 
 
 # Read README.md file
@@ -37,8 +40,8 @@ def read_readme():
     readme_files = ["README.md", "README.rst", "README.txt"]
     for filename in readme_files:
         if os.path.exists(filename):
-            with open(filename) as fh:
-                return fh.read()
+            with open(filename, encoding="utf-8") as readme_handle:
+                return readme_handle.read()
     return "A FastAPI application with AgentScope runtime"
 
 
@@ -62,7 +65,10 @@ setup(
     description=config.get("SETUP_DESCRIPTION", "MCP-Server-starter"),
     long_description=config.get(
         "SETUP_LONG_DESCRIPTION",
-        "MCP-Server-starter services, supporting both direct execution and uvicorn deployment",
+        (
+            "MCP-Server-starter services, supporting both direct execution "
+            "and uvicorn deployment"
+        ),
     ),
     packages=[setup_package_name],
     package_dir={setup_package_name: setup_package_name},
@@ -70,7 +76,10 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            f"{setup_command_name}={setup_package_name}.{setup_module_name}:{setup_function_name}",
+            (
+                f"{setup_command_name}={setup_package_name}."
+                f"{setup_module_name}:{setup_function_name}"
+            ),
         ],
     },
     include_package_data=True,

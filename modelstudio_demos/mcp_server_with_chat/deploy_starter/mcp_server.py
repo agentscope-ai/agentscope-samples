@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# flake8: noqa
+# pylint: disable=line-too-long
 """
 FastMCP Server Development Template
 This is an MCP Server starter template based on the fastMcp framework, allowing developers to quickly develop their own MCP Server and deploy it to Alibaba Cloud Bailian high-code platform
@@ -26,9 +29,9 @@ from pydantic import Field
 def read_config():
     """Read config.yml file"""
     config_path = os.path.join(os.path.dirname(__file__), "config.yml")
-    config = {}
-    with open(config_path) as f:
-        for line in f:
+    config_data = {}
+    with open(config_path, encoding="utf-8") as config_file:
+        for line in config_file:
             line = line.strip()
             if line and not line.startswith("#"):
                 if ":" in line:
@@ -41,8 +44,8 @@ def read_config():
                         value = False
                     elif value.isdigit():
                         value = int(value)
-                    config[key] = value
-    return config
+                    config_data[key] = value
+    return config_data
 
 
 config = read_config()
@@ -50,7 +53,10 @@ config = read_config()
 # ==================== Initialize FastMCP ====================
 
 # Create MCP server instance, define MCP name and version
-mcp = FastMCP(name=config.get("MCP_SERVER_NAME", "my-mcp-server"), version="1.0.0")
+mcp = FastMCP(
+    name=config.get("MCP_SERVER_NAME", "my-mcp-server"),
+    version="1.0.0",
+)
 
 # ==================== Tool Definition Examples ====================
 # Developers can define their own tools here, using @mcp.tool() decorator
@@ -75,7 +81,10 @@ def add_numbers(
 )
 async def search_by_modelStudio(
     query: Annotated[str, Field(description="Search query statement")],
-    count: Annotated[int, Field(description="Number of search results returned")] = 5,
+    count: Annotated[
+        int,
+        Field(description="Number of search results returned"),
+    ] = 5,
 ) -> SearchLiteOutput:
     input_data = SearchLiteInput(query=query, count=count)
     search_component = ModelstudioSearchLite()
@@ -154,7 +163,9 @@ async def call_mcp_tool(tool_name: str, arguments: dict[str, Any]) -> Any:
     print(f"Connection URL: {mcp_base_url}/mcp/")
     print("Transport method: StreamableHttpTransport")
     print(f"Tool name: {tool_name}")
-    print(f"Tool arguments: {json.dumps(arguments, indent=2, ensure_ascii=False)}")
+    print(
+        f"Tool arguments: {json.dumps(arguments, indent=2, ensure_ascii=False)}",
+    )
 
     try:
         # Create FastMCP Client, pass HTTP URL
@@ -174,7 +185,7 @@ async def call_mcp_tool(tool_name: str, arguments: dict[str, Any]) -> Any:
                     if hasattr(content_item, "text"):
                         result_data = content_item.text
                         break
-                    elif hasattr(content_item, "data"):
+                    if hasattr(content_item, "data"):
                         result_data = content_item.data
                         break
 
@@ -191,7 +202,7 @@ async def call_mcp_tool(tool_name: str, arguments: dict[str, Any]) -> Any:
 
 
 def convert_mcp_tools_to_openai_format(
-    mcp_tools: list[dict[str, Any]]
+    mcp_tools: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """
     Convert MCP tool format to OpenAI function calling format
@@ -205,7 +216,8 @@ def convert_mcp_tools_to_openai_format(
                 "name": tool.get("name", ""),
                 "description": tool.get("description", ""),
                 "parameters": tool.get(
-                    "inputSchema", {"type": "object", "properties": {}, "required": []}
+                    "inputSchema",
+                    {"type": "object", "properties": {}, "required": []},
                 ),
             },
         }

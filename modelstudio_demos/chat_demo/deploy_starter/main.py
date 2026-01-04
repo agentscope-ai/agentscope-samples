@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import asyncio
 import os
 
@@ -6,7 +7,9 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import Toolkit, execute_python_code
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine import AgentApp, LocalDeployManager
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
@@ -19,9 +22,9 @@ from agentscope_runtime.engine.tracing import TraceType, trace
 # Read config.yml file
 def read_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.yml")
-    config = {}
-    with open(config_path, "r") as f:
-        for line in f:
+    config_data = {}
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        for line in config_file:
             line = line.strip()
             if line and not line.startswith("#"):
                 if ":" in line:
@@ -34,8 +37,8 @@ def read_config():
                         value = False
                     elif value.isdigit():
                         value = int(value)
-                    config[key] = value
-    return config
+                    config_data[key] = value
+    return config_data
 
 
 # Read configuration
