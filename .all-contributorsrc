@@ -274,6 +274,17 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "AttanWu",
+      "name": "Attan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16112546?v=4",
+      "profile": "https://github.com/AttanWu",
+      "contributions": [
+        "example",
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
