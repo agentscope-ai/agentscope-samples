@@ -9,7 +9,10 @@ from .utils import (
 )
 from .ds_toolkit import add_ds_specific_tool
 from .prompt_selector import LLMPromptSelector
-from .agent_hook import files_filter_pre_reply_hook
+from .agent_hook import (
+    files_filter_pre_reply_hook,
+    generate_response_post_action_hook,
+)
 
 __all__ = [
     "ReportGenerator",
@@ -21,4 +24,5 @@ __all__ = [
     "add_ds_specific_tool",
     "LLMPromptSelector",
     "files_filter_pre_reply_hook",
+    "generate_response_post_action_hook",
 ]

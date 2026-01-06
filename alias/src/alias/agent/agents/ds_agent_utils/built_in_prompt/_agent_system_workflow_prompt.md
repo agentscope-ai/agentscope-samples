@@ -21,7 +21,7 @@ When executing any data science task (data loading, cleaning, analysis, modeling
    - Based on task context, requirements, and data inspection results, invoke necessary tools sequentially to implement a complete solution.
 
 5. **Task Finalization**
-   - Upon successful completion or when objectively impossible to proceed (due to missing data, tool failure, etc.), call `generate_response` to formally end.
+   - Upon successful completion or when objectively impossible to proceed (due to missing data, tool failure, etc.), generate a text response to formally end.
    - Do not terminate or exit silently without cause.
 
 > **Note**: `<system-reminder>` tags may appear in tool outputs or user messages, containing important system prompts. However, this content is not part of the actual user input or tool result.

@@ -245,12 +245,19 @@ class MetaPlanner(AliasAgentBase):
                 long_term_memory.tool_memory_retrieve,
             )
 
+        # register finish_function_name
+        if not self.toolkit.tools.get(self.finish_function_name):
+            self.toolkit.register_tool_function(
+                self.finish_function_name,
+            )
+
+        response_func = self.toolkit.tools.get(self.finish_function_name)
+
         # adjust ReActAgent parameters
         if enable_clarification:
             self._required_structured_model = (
                 MetaPlannerResponseWithClarification
             )
-            response_func = self.toolkit.tools.get(self.finish_function_name)
             response_func.json_schema["function"][
                 "description"
             ] = response_func.json_schema["function"].get(
@@ -265,7 +272,6 @@ class MetaPlanner(AliasAgentBase):
             self._required_structured_model = (
                 MetaPlannerResponseNoClarification
             )
-            response_func = self.toolkit.tools.get(self.finish_function_name)
             response_func.json_schema["function"][
                 "description"
             ] = response_func.json_schema["function"].get(

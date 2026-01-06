@@ -10,7 +10,7 @@ import os
 import json
 import inspect
 from functools import wraps
-from typing import Type, Optional, Any
+from typing import Type, Optional, Any, Literal
 import asyncio
 import copy
 from loguru import logger
@@ -150,6 +150,7 @@ async def browser_post_acting_hook(
                     ] = self._filter_execution_text(return_json["text"])
     if tool_call["name"] != self.finish_function_name or (
         tool_call["name"] == self.finish_function_name
+        and tool_res_msg.metadata
         and not tool_res_msg.metadata.get("success")
     ):
         await self.print(tool_res_msg)
@@ -343,6 +344,7 @@ class BrowserAgent(AliasAgentBase):
             or "gpt-5" in self.model.model_name
         )
 
+    # pylint: disable=R0912,R0915
     async def reply(
         self,
         msg: Msg | list[Msg] | None = None,
@@ -370,20 +372,35 @@ class BrowserAgent(AliasAgentBase):
             else ""
         )
 
+        tool_choice: Literal["auto", "none", "required"] | None = None
+
         self._required_structured_model = structured_model
         # Record structured output model if provided
         if structured_model:
+            # Register generate_response tool only when structured output
+            # is required
+            if self.finish_function_name not in self.toolkit.tools:
+                self.toolkit.register_tool_function(
+                    getattr(self, self.finish_function_name),
+                )
+
             self.toolkit.set_extended_model(
                 self.finish_function_name,
                 structured_model,
             )
+            tool_choice = "required"
+        else:
+            # Remove generate_response tool if no structured output is required
+            self.toolkit.remove_tool_function(self.finish_function_name)
+
         # The reasoning-acting loop
+        structured_output = None
         reply_msg = None
         for iter_n in range(self.max_iters):
             self.iter_n = iter_n + 1
             await self._summarize_mem()
 
-            msg_reasoning = await self._pure_reasoning()
+            msg_reasoning = await self._pure_reasoning(tool_choice)
             tool_calls = msg_reasoning.get_content_blocks("tool_use")
             if tool_calls and tool_calls[0]["name"] == "browser_snapshot":
                 msg_reasoning = await self._reasoning_with_observation()
@@ -397,27 +414,89 @@ class BrowserAgent(AliasAgentBase):
 
             # Parallel tool calls or not
             if self.parallel_tool_calls:
-                acting_responses = await asyncio.gather(*futures)
+                structured_outputs = await asyncio.gather(*futures)
 
             else:
                 # Sequential tool calls
-                acting_responses = [await _ for _ in futures]
+                structured_outputs = [await _ for _ in futures]
 
-            # Find the first non-None replying message from the acting
-            for acting_msg in acting_responses:
-                reply_msg = reply_msg or acting_msg
+            # -------------- Check for exit condition --------------
+            # If structured output is still not satisfied
+            if self._required_structured_model:
+                # Remove None results
+                structured_outputs = [_ for _ in structured_outputs if _]
 
-            if reply_msg:
+                msg_hint = None
+                # If the acting step generates structured outputs
+                if structured_outputs:
+                    # Cache the structured output data
+                    structured_output = structured_outputs[-1]
+
+                    # Prepare textual response
+                    if msg_reasoning.has_content_blocks("text"):
+                        # Re-use the existing text response if any to avoid
+                        # duplicate text generation
+                        reply_msg = Msg(
+                            self.name,
+                            msg_reasoning.get_content_blocks("text"),
+                            "assistant",
+                            metadata=structured_output,
+                        )
+                        break
+
+                    # Generate a textual response in the next iteration
+                    msg_hint = Msg(
+                        "user",
+                        "<system-hint>Now generate a text "
+                        "response based on your current situation"
+                        "</system-hint>",
+                        "user",
+                    )
+                    await self._reasoning_hint_msgs.add(msg_hint)
+
+                    # Just generate text response in the next reasoning step
+                    tool_choice = "none"
+                    # The structured output is generated successfully
+                    self._required_structured_model = None
+
+                elif not msg_reasoning.has_content_blocks("tool_use"):
+                    # If structured output is required but no tool call is
+                    # made, remind the llm to go on the task
+                    msg_hint = Msg(
+                        "user",
+                        "<system-hint>Structured output is "
+                        f"required, go on to finish your task or call "
+                        f"'{self.finish_function_name}' to generate the "
+                        f"required structured output.</system-hint>",
+                        "user",
+                    )
+                    await self._reasoning_hint_msgs.add(msg_hint)
+                    # Require tool call in the next reasoning step
+                    tool_choice = "required"
+
+                if msg_hint and self.print_hint_msg:
+                    await self.print(msg_hint)
+
+            elif not msg_reasoning.has_content_blocks("tool_use"):
+                # Exit the loop when no structured output is required (or
+                # already satisfied) and only text response is generated
+                msg_reasoning.metadata = structured_output
+                reply_msg = msg_reasoning
                 break
+
         # When the maximum iterations are reached
-        if not reply_msg:
+        # and no reply message is generated
+        if reply_msg is None:
             reply_msg = await self._summarizing()
+            reply_msg.metadata = structured_output
+            await self.memory.add(reply_msg)
 
         await self.memory.add(reply_msg)
         return reply_msg
 
     async def _pure_reasoning(
         self,
+        tool_choice: Literal["auto", "none", "required"] | None = None,
     ) -> Msg:
         msg = Msg(
             "user",
@@ -439,6 +518,7 @@ class BrowserAgent(AliasAgentBase):
         res = await self.model(
             prompt,
             tools=self.no_screenshot_tool_list,
+            tool_choice=tool_choice,
         )
         # handle output from the model
         interrupted_by_user = False

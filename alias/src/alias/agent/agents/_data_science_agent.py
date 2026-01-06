@@ -7,7 +7,6 @@ from functools import partial
 from typing import List, Dict, Optional, Any, Type, cast
 import uuid
 
-import shortuuid
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
@@ -15,7 +14,7 @@ from agentscope.model import ChatModelBase
 from agentscope.tool import ToolResponse
 from agentscope.tracing import trace_reply
 from loguru import logger
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from alias.agent.agents import AliasAgentBase
@@ -30,11 +29,19 @@ from .ds_agent_utils import (
     todo_write,
     get_prompt_from_file,
     files_filter_pre_reply_hook,
+    generate_response_post_action_hook,
     add_ds_specific_tool,
     set_run_ipython_cell,
     install_package,
 )
 from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH
+
+
+class Model(BaseModel):
+    response: str = Field(
+        description="Just a placeholder. "
+        "Enter any character to trigger report generation",
+    )
 
 
 class DataScienceAgent(AliasAgentBase):
@@ -161,6 +168,12 @@ class DataScienceAgent(AliasAgentBase):
             files_filter_pre_reply_hook,
         )
 
+        self.register_instance_hook(
+            "post_acting",
+            "generate_response_post_action_hook",
+            generate_response_post_action_hook,
+        )
+
         logger.info(
             f"[{self.name}] "
             "DeepInsightAgent initialized (fully model-driven).",
@@ -194,11 +207,15 @@ class DataScienceAgent(AliasAgentBase):
             "pre_reply",
             "files_filter_pre_reply_hook",
         )
+
+        if structured_model is None:
+            structured_model = Model
         return await super().reply(msg, structured_model)
 
     @retry(stop=stop_after_attempt(10), wait=wait_fixed(5), reraise=True)
     async def _reasoning(
         self,
+        tool_choice: str = "required",
     ) -> Msg:
         """Perform the reasoning process."""
         prompt = await self.formatter.format(
@@ -212,6 +229,7 @@ class DataScienceAgent(AliasAgentBase):
             res = await self.model(
                 prompt,
                 tools=self.toolkit.get_json_schemas(),
+                tool_choice=tool_choice,
             )
         except Exception as e:
             print(str(e))
@@ -238,18 +256,6 @@ class DataScienceAgent(AliasAgentBase):
             raise e from None
 
         finally:
-            if msg and not msg.has_content_blocks("tool_use"):
-                # Turn plain text response into a tool call of the finish
-                # function
-                msg.content = [
-                    ToolUseBlock(
-                        id=shortuuid.uuid(),
-                        type="tool_use",
-                        name=self.think_function_name,
-                        input={"response": msg.get_text_content()},
-                    ),
-                ]
-
             # None will be ignored by the memory
             await self.memory.add(msg)
 
@@ -279,17 +285,10 @@ class DataScienceAgent(AliasAgentBase):
     # pylint: disable=invalid-overridden-method, unused-argument
     async def generate_response(
         self,
-        response: str,
         **kwargs: Any,
     ) -> ToolResponse:
-        """Call this function when you have either completed the task
-        or cannot continue due to insurmountable reasons.
-        Provide in the `response` argument any information you believe
-        the user needs to be informed of.
-
-        Args:
-            response (`str`):
-                Your response to the user.
+        """
+        Generate required structured output by this function and return it
         """
         memory = await self.memory.get_memory()
         memory_log = "\n\n".join(
@@ -350,20 +349,14 @@ class DataScienceAgent(AliasAgentBase):
                 f"{self.detailed_report_path}."
             )
 
-        response_msg = Msg(
-            self.name,
-            response,
-            "assistant",
-        )
-
-        await self.print(response_msg, True)
+        kwargs["response"] = response
 
         # Prepare structured output
         if self._required_structured_model:
             try:
                 # Use the metadata field of the message to store the
                 # structured output
-                response_msg.metadata = (
+                structured_output = (
                     self._required_structured_model.model_validate(
                         kwargs,
                     ).model_dump()
@@ -379,7 +372,7 @@ class DataScienceAgent(AliasAgentBase):
                     ],
                     metadata={
                         "success": False,
-                        "response_msg": None,
+                        "structured_output": {},
                     },
                 )
 
@@ -392,7 +385,7 @@ class DataScienceAgent(AliasAgentBase):
             ],
             metadata={
                 "success": True,
-                "response_msg": response_msg,
+                "structured_output": structured_output,
             },
             is_last=True,
         )

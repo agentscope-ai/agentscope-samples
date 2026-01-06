@@ -106,7 +106,7 @@ async def save_post_reasoning_state(
 async def save_post_action_state(
     self: AliasAgentBase,
     action_input: dict[str, Any],  # pylint: disable=W0613
-    tool_output: Optional[Msg],  # pylint: disable=W0613
+    tool_output: Optional[dict],  # pylint: disable=W0613
 ) -> None:
     """Hook func for save state after action step"""
     await _update_and_save_state_with_session(self)
@@ -115,23 +115,23 @@ async def save_post_action_state(
 async def generate_response_post_action_hook(
     self: AliasAgentBase,
     action_input: dict[str, Any],  # pylint: disable=W0613
-    tool_output: Optional[Msg],  # pylint: disable=W0613
+    tool_output: Optional[dict],  # pylint: disable=W0613
 ) -> None:
     """Hook func for printing clarification"""
     if not (hasattr(self, "session_service") and self.session_service):
         return
 
-    if isinstance(tool_output, Msg):
-        if tool_output.metadata and tool_output.metadata.get(
+    if isinstance(tool_output, dict):
+        if tool_output.get(
             "require_clarification",
             False,
         ):
             clarification_dict = {
-                "clarification_question": tool_output.metadata.get(
+                "clarification_question": tool_output.get(
                     "clarification_question",
                     "",
                 ),
-                "clarification_options": tool_output.metadata.get(
+                "clarification_options": tool_output.get(
                     "clarification_options",
                     "",
                 ),
@@ -144,7 +144,7 @@ async def generate_response_post_action_hook(
                     indent=4,
                 ),
                 role="assistant",
-                metadata=tool_output.metadata,
+                metadata=tool_output,
             )
             await self.print(msg, last=True)
 
