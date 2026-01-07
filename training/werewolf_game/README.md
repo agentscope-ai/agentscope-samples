@@ -15,7 +15,7 @@ The werewolf game is a complex social deduction game that requires strategic thi
 
 ### Training Objective
 
-The goal is to train **werewolf players** to maximize their team's win rate against other roles (villagers, seer, and witch). The reward function is binary:
+The goal is to train **werewolf players** to maximize their team's win rate against other roles (villagers, seer, and witch). The reward function is defined by rule:
 - **Reward = +1.0** if werewolves win (all villagers eliminated)
 - **Reward = 0.0** if villagers win (all werewolves eliminated)
 - **Reward = -0.1** for game execution errors (penalty to discourage invalid behaviors)
