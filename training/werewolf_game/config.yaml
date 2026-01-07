@@ -1,0 +1,114 @@
+# Old-style configuration (Trinity-RFT native style)
+# All parameters in YAML - based on werewolves_v2.yaml
+
+project: AgentScope-Werewolves
+name: Werewolves-7Player-GRPO
+checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints}
+
+# Algorithm configuration
+algorithm:
+  algorithm_type: multi_step_grpo
+  kl_loss_fn: "low_var_kl"
+  kl_loss_fn_args:
+    kl_coef: 0
+  advantage_fn_args:
+    epsilon: 1e-6
+    step_norm: true # we normalize the advantage by how many step they take
+  repeat_times: 32
+  policy_loss_fn_args:
+    clip_range_low: 0.2
+    clip_range_high: 0.28
+  optimizer:
+    lr: 1e-6
+
+# Model configuration
+model:
+  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen2.5-7B-Instruct}
+  max_response_tokens: 4096
+  max_model_len: 25600
+
+# Cluster configuration
+cluster:
+  node_num: 4
+  gpu_per_node: 8
+  ray_address: auto
+
+# Buffer configuration
+buffer:
+  total_steps: 400
+  batch_size: 24
+  train_batch_size: 2048
+  explorer_input:
+    taskset:
+      name: werewolves
+      storage_type: file
+      path: data
+      split: 'train'
+      rollout_args:
+        temperature: 1.0
+        max_tokens: 4096
+    eval_tasksets: []
+  trainer_input:
+    experience_buffer:
+      name: werewolves
+      storage_type: queue
+      max_read_timeout: 7200
+      replay_buffer:
+        enable: true
+
+# Explorer configuration
+explorer:
+  runner_per_model: 16
+  max_timeout: 3600
+  max_retry_times: 0
+  max_repeat_times_per_runner: 1
+  over_rollout:
+    ratio: 0.2
+    wait_after_min: 15
+  dynamic_timeout:
+    enable: true
+    ratio: 4
+  rollout_model:
+    engine_num: 16
+    tensor_parallel_size: 1
+    enable_prefix_caching: false
+    enforce_eager: false
+    enable_openai_api: true
+    enable_history: true
+    enable_auto_tool_choice: true
+    tool_call_parser: hermes
+    dtype: bfloat16
+    seed: 42
+  # Auxiliary models for non-werewolf players
+  auxiliary_models:
+    - name: participant
+      model_path: ${oc.env:TRINITY_AUXILIARY_MODEL_PATH,Qwen/Qwen3-30B-A3B-Instruct-2507}
+      engine_num: 8
+      tensor_parallel_size: 1
+      enable_prefix_caching: false
+      enforce_eager: false
+      enable_openai_api: true
+      enable_auto_tool_choice: true
+      tool_call_parser: hermes
+      dtype: bfloat16
+      seed: 42
+
+# Synchronizer configuration
+synchronizer:
+  sync_style: dynamic_by_explorer
+  sync_method: 'nccl'
+  sync_interval: 1
+  sync_timeout: 72000
+
+# Trainer configuration
+trainer:
+  save_interval: 100
+  grad_clip: 1.0
+  use_dynamic_bsz: true
+  max_token_len_per_gpu: 16384
+  ulysses_sequence_parallel_size: 2
+
+# Monitor configuration
+monitor:
+  monitor_type: wandb
+
