@@ -104,6 +104,10 @@ with open(
     _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT = f.read()
 
 
+class EmptyModel(BaseModel):
+    pass
+
+
 async def browser_pre_reply_hook(
     self,
     kwargs: dict[str, Any],
@@ -372,6 +376,9 @@ class BrowserAgent(AliasAgentBase):
             else ""
         )
 
+        if structured_model is None:
+            structured_model = EmptyModel
+
         tool_choice: Literal["auto", "none", "required"] | None = None
 
         self._required_structured_model = structured_model
@@ -432,34 +439,15 @@ class BrowserAgent(AliasAgentBase):
                     # Cache the structured output data
                     structured_output = structured_outputs[-1]
 
-                    # Prepare textual response
-                    if msg_reasoning.has_content_blocks("text"):
-                        # Re-use the existing text response if any to avoid
-                        # duplicate text generation
-                        reply_msg = Msg(
-                            self.name,
-                            msg_reasoning.get_content_blocks("text"),
-                            "assistant",
-                            metadata=structured_output,
-                        )
-                        break
-
-                    # Generate a textual response in the next iteration
-                    msg_hint = Msg(
-                        "user",
-                        "<system-hint>Now generate a text "
-                        "response based on your current situation"
-                        "</system-hint>",
-                        "user",
+                    reply_msg = Msg(
+                        self.name,
+                        structured_output.get("subtask_progress_summary", ""),
+                        "assistant",
+                        metadata=structured_output,
                     )
-                    await self._reasoning_hint_msgs.add(msg_hint)
+                    break
 
-                    # Just generate text response in the next reasoning step
-                    tool_choice = "none"
-                    # The structured output is generated successfully
-                    self._required_structured_model = None
-
-                elif not msg_reasoning.has_content_blocks("tool_use"):
+                if not msg_reasoning.has_content_blocks("tool_use"):
                     # If structured output is required but no tool call is
                     # made, remind the llm to go on the task
                     msg_hint = Msg(
@@ -491,7 +479,6 @@ class BrowserAgent(AliasAgentBase):
             reply_msg.metadata = structured_output
             await self.memory.add(reply_msg)
 
-        await self.memory.add(reply_msg)
         return reply_msg
 
     async def _pure_reasoning(
@@ -1340,15 +1327,6 @@ class BrowserAgent(AliasAgentBase):
                     subtask_progress_summary=summary_text,
                     generated_files={},
                 )
-
-                response_msg = Msg(
-                    self.name,
-                    content=[
-                        TextBlock(type="text", text=summary_text),
-                    ],
-                    role="assistant",
-                    metadata=structure_response.model_dump(),
-                )
                 return ToolResponse(
                     content=[
                         TextBlock(
@@ -1358,7 +1336,7 @@ class BrowserAgent(AliasAgentBase):
                     ],
                     metadata={
                         "success": True,
-                        "response_msg": response_msg,
+                        "structured_output": structure_response.model_dump(),
                     },
                     is_last=True,
                 )
@@ -1370,7 +1348,7 @@ class BrowserAgent(AliasAgentBase):
                             text=f"Here is a summary of current status:\n{summary_text}\nPlease continue.\n Following steps \n {finish_status}",
                         ),
                     ],
-                    metadata={"success": False, "response_msg": None},
+                    metadata={"success": False, "structured_output": None},
                     is_last=True,
                 )
         except Exception as e:

@@ -37,7 +37,7 @@ from .ds_agent_utils import (
 from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH
 
 
-class Model(BaseModel):
+class DefaultStructuredResponse(BaseModel):
     response: str = Field(
         description="Just a placeholder. "
         "Enter any character to trigger report generation",
@@ -209,7 +209,7 @@ class DataScienceAgent(AliasAgentBase):
         )
 
         if structured_model is None:
-            structured_model = Model
+            structured_model = DefaultStructuredResponse
         return await super().reply(msg, structured_model)
 
     @retry(stop=stop_after_attempt(10), wait=wait_fixed(5), reraise=True)
@@ -232,7 +232,7 @@ class DataScienceAgent(AliasAgentBase):
                 tool_choice=tool_choice,
             )
         except Exception as e:
-            print(str(e))
+            logger.debug("Error while calling model in _reasoning: {}", e)
 
         # handle output from the model
         interrupted_by_user = False
@@ -448,8 +448,9 @@ class DataScienceAgent(AliasAgentBase):
             "exploration and analysis been performed to derive meaningful "
             "insights from the data?\n"
             f"If the task is not yet complete, proceed with completing it. "
-            f"Otherwise, use the `{self.finish_function_name}` tool to "
-            "finalize the task.\n"
+            f"Otherwise,  use the `{self.finish_function_name}` tool to "
+            "generate a final report, then generate a text response "
+            "to finalize the task.\n"
             "Do not provide additional feedback—simply continue executing "
             "the task or end it directly."
         )
