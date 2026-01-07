@@ -215,7 +215,7 @@ Training on the 7-player werewolf game for 400 steps demonstrates significant im
 
 | Metric | Before Training | After Training (Step 200+) |
 |--------|----------------|---------------------------|
-| Werewolf Win Rate | ~50% (random baseline) | ~85% |
+| Werewolf Win Rate | ~50%  | ~85% |
 | Success Rate | 0.50 | 0.85 |
 
 **Reward Curve:**
