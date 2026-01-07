@@ -54,7 +54,11 @@ class ReActWorker(AliasAgentBase):
 
         self.max_iters: int = max(self.max_iters, WORKER_MAX_ITER)
 
-        self.generate_response.__doc__ = """
+    def generate_response(
+        self,
+        **kwargs,
+    ):  # pylint: disable=useless-parent-delegation
+        """
         Generate a response summarizing the execution progress of the
         given subtask.
         Args:
@@ -69,3 +73,4 @@ class ReActWorker(AliasAgentBase):
                 paths of generated files (e.g. '/FULL/PATH/OF/FILE_1.md') and
                 the values are short descriptions about the generated files.
         """
+        return super().generate_response(**kwargs)
