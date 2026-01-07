@@ -57,9 +57,19 @@ We also make slight modification to the prompt, and ask the players to reasoning
 
 The dataset for this task is minimal and consists only of random **seeds** for role shuffling. Each training episode uses a different seed to randomize player role assignments, ensuring diverse training scenarios.
 
-**Dataset Location**: `data/train.jsonl`
+### Generate Dataset
 
-**Format**:
+Run the `prepare_data.py` script to generate the dataset:
+
+```bash
+# Generate default dataset (300 seeds for training)
+python prepare_data.py
+
+# Or customize the number of seeds
+python prepare_data.py --num_seeds 500
+```
+
+This will create `data/train.jsonl` (or `data/eval.jsonl`) with the following format:
 ```json
 {"seed": 0}
 {"seed": 1}
@@ -67,7 +77,7 @@ The dataset for this task is minimal and consists only of random **seeds** for r
 ...
 ```
 
-The dataset contains seeds from 0 to 159 (160 total seeds). During training, these seeds are used to shuffle role assignments via `np.random.shuffle()`, creating varied game configurations.
+During training, these seeds are used to shuffle role assignments via `np.random.shuffle()`, creating varied game configurations.
 
 ## Code Implementation
 
@@ -190,12 +200,34 @@ algorithm = Algorithm(
 
 ### Training Command
 
-First, start your ray cluster.
-
-Then, run the training script:
+**Step 1: Prepare the dataset**
 
 ```bash
 cd /path/to/agentscope-samples/training/werewolf_game
+python prepare_data.py --num_seeds 300
+```
+
+**Step 2: Start Ray cluster**
+
+Start your ray cluster.
+```bash
+# For single node
+ray start --head
+
+# For multi-node cluster (e.g., 4 nodes with 8 GPUs each):
+# On the head node:
+ray start --head --port=6379
+
+# On each worker node:
+ray start --address='<head_node_ip>:6379'
+# Replace <head_node_ip> with the actual IP address of your head node
+```
+
+**Step 3: Run training**
+
+Run the training script on the head node:
+
+```bash
 python main.py
 ```
 
