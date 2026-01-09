@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING
 import re
 import os
 from pathlib import Path
@@ -122,29 +122,6 @@ def parse_user_message_and_files(
 
     # Return original message and sorted file list (for consistent testing)
     return original_message, sorted(file_paths), file_type
-
-
-async def generate_response_post_action_hook(
-    self: DataScienceAgent,
-    action_input: dict[str, Any],
-    tool_output: Optional[dict],
-) -> None:
-    """Hook func for printing report"""
-    if (
-        action_input["tool_call"]["name"] == self.finish_function_name
-        and tool_output is not None
-    ):
-        if tool_output.get("response"):
-            response = tool_output["response"]
-            if not isinstance(response, str):
-                response = str(response)
-            msg = Msg(
-                name=self.name,
-                content=[TextBlock(type="text", text=response)],
-                role="assistant",
-                metadata=tool_output,
-            )
-            await self.print(msg, last=True)
 
 
 async def files_filter_pre_reply_hook(

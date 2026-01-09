@@ -499,8 +499,13 @@ class BrowserAgent(AliasAgentBase):
                 Msg("system", self.sys_prompt, "system"),
                 *await self.memory.get_memory(),
                 msg,
+                # The hint messages to guide the agent's behavior, maybe empty
+                *await self._reasoning_hint_msgs.get_memory(),
             ],
         )
+
+        # Clear the hint messages after use
+        await self._reasoning_hint_msgs.clear()
 
         res = await self.model(
             prompt,
@@ -1368,8 +1373,8 @@ class BrowserAgent(AliasAgentBase):
         sys_prompt = (
             "You are an expert in task validation. "
             "Your job is to determine if the agent has completed its task"
-            " based on the provided summary. If finished, strictly reply "
-            '"BROWSER_AGENT_TASK_FINISHED", otherwise return the remaining '
+            " based on the provided summary. If the summary is `NO_ANSWER`, this task is not over. If finished, strictly reply "
+            '"BROWSER_AGENT_TASK_FINISHED" and your reason, otherwise return the remaining '
             "tasks or next steps."
         )
         # Extract user question from memory
