@@ -558,7 +558,7 @@ class DataScienceAgent(AliasAgentBase):
             "exploration and analysis been performed to derive meaningful "
             "insights from the data?\n"
             f"If the task is not yet complete, proceed with completing it. "
-            f"Otherwise,  use the `{self.finish_function_name}` tool to "
+            f"Otherwise, use the `{self.finish_function_name}` tool to "
             "finalize the task.\n"
             "Do not provide additional feedback—simply continue executing "
             "the task or end it directly."
