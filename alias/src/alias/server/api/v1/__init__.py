@@ -5,7 +5,18 @@ from alias.server.api.v1.auth import router as auth_router
 from alias.server.api.v1.conversation import (
     router as conversation_router,
 )
-from alias.server.api.v1.chat import router as chat_router
+
+# Optional backend switch: this import targets Alias's
+# original FastAPI-based API router.
+# Keep it for users who want to revert/switch back from
+# the current AgentScope-Runtime implementation below.
+# from alias.server.api.v1.chat import router as chat_router
+
+# Current default:
+#   AgentScope-Runtime-based API router (functionally equivalent
+#   to the FastAPI router above).
+from alias.server.api.v1.chat_runtime import router as chat_router
+
 from alias.server.api.v1.file import router as file_router
 from alias.server.api.v1.inner import router as inner_router
 from alias.server.api.v1.share import router as share_router

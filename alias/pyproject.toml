@@ -65,3 +65,4 @@ dev = [
 
 [project.scripts]
 alias_agent = "alias.cli:main"
+alias_agent_runtime = "alias.server.alias_agent_app:main"
