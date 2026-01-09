@@ -28,6 +28,7 @@ Your goal is to complete given tasks by controlling a browser to navigate web pa
 - Avoid using Google Scholar. If a researcher is searched, try to use his/her homepage instead.
 - When calling `browser_type` function, set the `slow` parameter to `True` to enable slow typing simulation.
 - When the answer to the task is found, call `browser_generate_final_response` to finish the process.
+- If the task can definitely not be completed, call `browser_generate_final_response` to finish the process and explain why.
 ### Observing Guidelines
 - Always take action based on the elements on the webpage. Never create urls or generate new pages.
 - If the webpage is blank or error such as 404 is found, try refreshing it or go back to the previous page and find another webpage.

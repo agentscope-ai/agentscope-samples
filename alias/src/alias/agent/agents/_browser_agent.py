@@ -36,6 +36,9 @@ from alias.agent.agents import AliasAgentBase
 from alias.agent.agents.common_agent_utils import (
     WorkerResponse,
     get_user_input_to_mem_pre_reply_hook,
+    agent_load_states_pre_reply_hook,
+    save_post_reasoning_state,
+    save_post_action_state,
 )
 from alias.agent.agents._build_in_helper_browser._image_understanding import (
     image_understanding,
@@ -283,6 +286,11 @@ class BrowserAgent(AliasAgentBase):
         # add input msg to memory
         self.register_instance_hook(
             "pre_reply",
+            "agent_load_states_pre_reply_hook",
+            agent_load_states_pre_reply_hook,
+        )
+        self.register_instance_hook(
+            "pre_reply",
             "get_user_input_to_mem_pre_reply_hook",
             get_user_input_to_mem_pre_reply_hook,
         )
@@ -292,9 +300,19 @@ class BrowserAgent(AliasAgentBase):
             browser_pre_reply_hook,
         )
         self.register_instance_hook(
+            "post_reasoning",
+            "save_post_reasoning_state",
+            save_post_reasoning_state,
+        )
+        self.register_instance_hook(
             "post_acting",
             "browser_post_acting_hook",
             browser_post_acting_hook,
+        )
+        self.register_instance_hook(
+            "post_acting",
+            "save_post_action_state",
+            save_post_action_state,
         )
 
     def _register_skill_tool(
@@ -1373,7 +1391,9 @@ class BrowserAgent(AliasAgentBase):
         sys_prompt = (
             "You are an expert in task validation. "
             "Your job is to determine if the agent has completed its task"
-            " based on the provided summary. If the summary is `NO_ANSWER`, this task is not over. If finished, strictly reply "
+            " based on the provided summary. If the summary is `NO_ANSWER`, this task "
+            "is not over unless the task is determined as definitely not completed. "
+            "If finished, strictly reply "
             '"BROWSER_AGENT_TASK_FINISHED" and your reason, otherwise return the remaining '
             "tasks or next steps."
         )
