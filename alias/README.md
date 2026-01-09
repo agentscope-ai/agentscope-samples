@@ -288,7 +288,7 @@ The backend server will:
 - Create the initial superuser account (if not exists)
 - Start on `http://localhost:8000` (or the port specified in `.env`)
 
-Verify the server is running by visiting `http://localhost:8000/api/v1/monitor/health`.
+Verify the server is running by visiting `http://localhost:8000/api/v1/health`.
 
 #### Start the Frontend
 
@@ -361,7 +361,7 @@ Once both servers are running:
 - **Frontend UI**: Open `http://localhost:5173` in your browser
 - **Backend API**: Available at `http://localhost:8000`
 - **API Documentation**: Available at `http://localhost:8000/docs` (Swagger UI) or `http://localhost:8000/api/v1/openapi.json` (OpenAPI JSON)
-- **Health Check**: `http://localhost:8000/api/v1/monitor/health`
+- **Health Check**: `http://localhost:8000/api/v1/health`
 
 #### Default Login Credentials
 

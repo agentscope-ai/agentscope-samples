@@ -80,6 +80,7 @@ class ConversationService(BaseService[Conversation]):
             base_url=settings.SANDBOX_URL,
             bearer_token=settings.SANDBOX_BEARER_TOKEN,
         )
+        sandbox.__enter__()
 
         conversation_data = Conversation(
             user_id=user_id,

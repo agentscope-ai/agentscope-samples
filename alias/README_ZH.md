@@ -289,7 +289,7 @@ python -m uvicorn alias.server.main:app --host 0.0.0.0 --port 8000 --reload
 - 创建初始超级用户账户（如果不存在）
 - 在 `http://localhost:8000` 启动（或 `.env` 中指定的端口）
 
-通过访问 `http://localhost:8000/api/v1/monitor/health` 来验证服务器是否正在运行。
+通过访问 `http://localhost:8000/api/v1/health` 来验证服务器是否正在运行。
 
 #### 启动前端
 
@@ -362,7 +362,7 @@ bash script/start_memory_service.sh
 - **前端 UI**：在浏览器中打开 `http://localhost:5173`
 - **后端 API**：可在 `http://localhost:8000` 访问
 - **API 文档**：可在 `http://localhost:8000/docs` (Swagger UI) 或 `http://localhost:8000/api/v1/openapi.json` (OpenAPI JSON) 访问
-- **健康检查**：`http://localhost:8000/api/v1/monitor/health`
+- **健康检查**：`http://localhost:8000/api/v1/health`
 
 #### 默认登录凭据
 
