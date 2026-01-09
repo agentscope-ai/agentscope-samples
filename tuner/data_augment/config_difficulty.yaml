@@ -1,0 +1,74 @@
+project: "Data-Augmentation" # Project name
+name: "Difficulty-Based-Selector" # Experiment name
+checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints} # Directory to save model checkpoints
+
+data_processor:
+  experience_pipeline:
+    operators:
+      - name: pass_rate_calculator # Calculate average reward and pass it back to selector
+
+buffer:
+  total_epochs: 1 # Total training epochs
+  explorer_input:
+    taskset:
+      path: "path/to/your/augmented/math_data" # Training data path
+      split: "train" # Training data split
+      task_selector:
+        selector_type: difficulty_based # Strategy of task selection
+        feature_keys: [ "qwen2.5_7b_pass_rate", "qwen3_30b_pass_rate" ] # Utilized pass_rate key
+        kwargs: # Hyperparameter from [BOTS](https://github.com/modelscope/Trinity-RFT/blob/main/examples/bots/README.md)
+          m: 8
+          lamb: 0.1
+          rho: 0.1
+          target_reward: 0.8
+          tau: 0
+          do_sample: true
+    eval_tasksets:
+    - name: "eval-aime24" # Evaluation data name
+      path: "path/to/aime24_data" # Evaluation data path
+      split: "test" # Evaluation data split
+
+synchronizer:
+  sync_style: dynamic_by_explorer # Sync triggered dynamically by explorer
+  sync_method: 'nccl'
+  sync_interval: 4 # Sync every N steps
+  sync_timeout: 7200 # Timeout for synchronization (seconds)
+
+monitor:
+  monitor_type: tensorboard # Can also use wandb, mlflow or swanlab
+
+# The config below has been set in python file
+
+algorithm:
+  algorithm_type: multi_step_grpo # GRPO series for multi-step scenario
+  repeat_times: 8 # Number of rollouts per prompt for advantage estimation
+  optimizer:
+    lr: 1e-6 # Learning rate
+
+model:
+  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen3-0.6B} # Base model path
+  max_model_len: 24576 # Max context length
+  max_response_tokens: 16384 # Max tokens per response
+  temperature: 1.0 # Temperature of model's generation
+
+cluster:
+  node_num: 1 # Number of used nodes
+  gpu_per_node: 8 # Number of GPUs every node
+
+explorer:
+  eval_interval: 20 # Evaluation every N steps
+  runner_per_model: 16 # Runners per infer engine
+  max_timeout: 1200 # Max timeout for each rollout (seconds)
+  rollout_model:
+    engine_num: 4 # Number of vLLM engines for rollout model
+    tensor_parallel_size: 1 # TP size per engine for rollout model
+    enable_openai_api: true # Enable OpenAI-compatible API
+    enable_history: true # Enable conversation history
+    enable_auto_tool_choice: true # Enable automatic tool selection
+    tool_call_parser: hermes # Parser for tool calls
+    reasoning_parser: deepseek_r1 # Parser for reasoning type
+
+trainer:
+  save_interval: 100 # Save checkpoint every N steps
+  use_dynamic_bsz: true # Use dynamic batch size
+  ulysses_sequence_parallel_size: 1 # Sequence parallel size for Ulysses
