@@ -3,8 +3,8 @@
 # ============================================
 # Project name for grouping experiments
 project: AgentScope-Werewolves
-# Unique name for this specific experiment run
-name: Werewolves-7Player-GRPO
+# Unique name for this specific experiment run (training good guys)
+name: Werewolves-7Player-GRPO-train-goodguy
 # Root directory for saving checkpoints. Uses environment variable if set, otherwise defaults to ./checkpoints
 checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints}
 
@@ -49,9 +49,9 @@ algorithm:
 # Model Configuration
 # ============================================
 model:
-  # Path to the base model (trainable model for werewolf players)
-  # Uses environment variable if set, otherwise defaults to Qwen2.5-7B-Instruct
-  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen2.5-7B-Instruct}
+  # Path to the base model (trainable model for good guy players: villager, seer, witch)
+  # Uses environment variable if set, otherwise defaults to Qwen3-4B-Instruct-2507
+  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen3-4B-Instruct-2507}
   # Maximum number of tokens the model can generate per response
   max_response_tokens: 4096
   # Total context length the model can handle (prompt + response)
@@ -101,9 +101,9 @@ buffer:
       # Workflow-specific arguments
       workflow_args:
         # Which side to train: "werewolf" or "good_guy" (villager, seer, witch)
-        # - "werewolf": Train werewolf players (default)
-        # - "good_guy": Train villager, seer, and witch players
-        trainable_target: werewolf
+        # - "werewolf": Train werewolf players
+        # - "good_guy": Train villager, seer, and witch players (this config)
+        trainable_target: good_guy
     # Evaluation datasets (empty for this experiment)
     eval_tasksets: []
   
@@ -151,7 +151,7 @@ explorer:
     # Timeout multiplier: timeout = average_task_time * ratio
     ratio: 4
   
-  # Rollout model configuration (trainable model for werewolf players)
+  # Rollout model configuration (trainable model for good guy players)
   rollout_model:
     # Number of vLLM engine instances for parallel inference
     engine_num: 16
@@ -174,7 +174,7 @@ explorer:
     # Random seed for reproducibility
     seed: 42
   
-  # Auxiliary models configuration (for non-werewolf players: villagers, seer, witch)
+  # Auxiliary models configuration (for werewolf players when training good guys)
   auxiliary_models:
     - # Model name identifier
       name: participant

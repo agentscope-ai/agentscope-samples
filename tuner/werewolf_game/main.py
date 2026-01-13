@@ -10,7 +10,7 @@ import numpy as np
 from agentscope.tuner import (
     tune,
     WorkflowOutput,
-    TunerChatModel,
+    TunerModelConfig,
 )
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIMultiAgentFormatter
@@ -24,16 +24,19 @@ from game import BadGuyException, werewolves_game
 
 async def run_werewolves_workflow(
     task: Dict,
-    model: TunerChatModel,
-    auxiliary_models: Dict[str, TunerChatModel],
+    model: TunerModelConfig,
+    auxiliary_models: Dict[str, TunerModelConfig],
 ) -> WorkflowOutput:
     """Run the werewolf game workflow.
 
     Args:
-        task (Dict): The task information containing 'seed' for role shuffling.
-        model (TunerChatModel): The trainable model (for werewolf players).
-        auxiliary_models (Dict[str, TunerChatModel]): Dictionary of auxiliary
-            models. Expected to have 'participant' key for non-werewolf players.
+        task (Dict): The task information containing:
+            - 'seed': for role shuffling
+            - 'workflow_args': optional dict with 'trainable_target' key
+              ("werewolf" or "good_guy", default: "werewolf")
+        model (TunerModelConfig): The trainable model.
+        auxiliary_models (Dict[str, TunerModelConfig]): Dictionary of auxiliary
+            models. Expected to have 'participant' key for opponent players.
 
     Returns:
         WorkflowOutput: Contains reward and metrics from the game.
@@ -46,21 +49,33 @@ async def run_werewolves_workflow(
     np.random.seed(seed)
     np.random.shuffle(roles)
     
-    # Get the participant model for non-werewolf players
+    # Get trainable_target from workflow_args (default: "werewolf")
+    # Options: "werewolf" or "good_guy" (villager, seer, witch)
+    workflow_args = task.get("workflow_args", {})
+    trainable_target = workflow_args.get("trainable_target", "werewolf")
+    
+    # Get the participant model for opponent players
     if "participant" not in auxiliary_models:
         raise ValueError(
-            "Expected 'participant' model in auxiliary_models for non-werewolf players"
+            "Expected 'participant' model in auxiliary_models for opponent players"
         )
     participant_model = auxiliary_models["participant"]
     
-    # Create players with appropriate models
-    # Werewolves use the trainable model, others use the participant model
+    # Create players with appropriate models based on trainable_target
     players = []
     for i, role in enumerate(roles):
+        # Determine which model to use based on trainable_target
+        if trainable_target == "werewolf":
+            # Training werewolves: werewolves use trainable model
+            use_trainable = (role == "werewolf")
+        else:  # trainable_target == "good_guy"
+            # Training good guys: villager, seer, witch use trainable model
+            use_trainable = (role in ["villager", "seer", "witch"])
+        
         agent = ReActAgent(
             name=f"Player{i + 1}",
             sys_prompt=get_official_agent_prompt(f"Player{i + 1}"),
-            model=model if role == "werewolf" else participant_model,
+            model=model if use_trainable else participant_model,
             formatter=OpenAIMultiAgentFormatter(),
             max_iters=3,
         )
@@ -70,24 +85,28 @@ async def run_werewolves_workflow(
         # Run the werewolf game
         good_guy_win = await werewolves_game(players, roles)
         
-        # Calculate reward
-        # We're training werewolves, so they win when good_guy_win is False
-        trainable_target = "werewolf"
+        # Calculate reward based on trainable_target
         is_success = False
-        
-        if (good_guy_win and trainable_target != "werewolf") or (
-            not good_guy_win and trainable_target == "werewolf"
-        ):
-            raw_reward = 1.0
-            is_success = True
-        else:
-            raw_reward = 0.0
-            is_success = False
+        if trainable_target == "werewolf":
+            # Training werewolves: reward when werewolves win (good_guy_win = False)
+            if not good_guy_win:
+                raw_reward = 1.0
+                is_success = True
+            else:
+                raw_reward = 0.0
+        else:  # trainable_target == "good_guy"
+            # Training good guys: reward when good guys win (good_guy_win = True)
+            if good_guy_win:
+                raw_reward = 1.0
+                is_success = True
+            else:
+                raw_reward = 0.0
         
         metrics = {
             "success": float(is_success),
             "werewolf_win": float(not good_guy_win),
             "villager_win": float(good_guy_win),
+            "trainable_target": trainable_target,
         }
         
         return WorkflowOutput(
@@ -225,7 +244,7 @@ def get_official_agent_prompt(name: str) -> str:
 
 
 if __name__ == "__main__":
-    from agentscope.tuner import Dataset, TunerChatModel, Algorithm
+    from agentscope.tuner import DatasetConfig, TunerModelConfig, AlgorithmConfig
     
     # High-level configuration in code (easy to modify)
     config_path = Path(__file__).parent / "config.yaml"
@@ -235,14 +254,14 @@ if __name__ == "__main__":
     auxiliary_model_path = "Qwen/Qwen3-30B-A3B-Instruct-2507" # fill in your auxiliary model path here
     
     # Dataset configuration
-    dataset = Dataset(
+    dataset = DatasetConfig(
         path=str(Path(__file__).parent / "data"),
         split="train",
         total_steps=400,  # Total training steps
     )
     
     # Model configuration (trainable model for werewolf players)
-    model = TunerChatModel(
+    model = TunerModelConfig(
         model_path=trained_model_path,
         max_model_len=25600,
         max_tokens=4096,
@@ -255,7 +274,7 @@ if __name__ == "__main__":
     
     # Auxiliary models (for non-werewolf players)
     auxiliary_models = {
-        "participant": TunerChatModel(
+        "participant": TunerModelConfig(
             model_path=auxiliary_model_path,
             max_model_len=25600,
             max_tokens=4096,
@@ -268,7 +287,7 @@ if __name__ == "__main__":
     }
     
     # Algorithm configuration
-    algorithm = Algorithm(
+    algorithm = AlgorithmConfig(
         algorithm_type="multi_step_grpo",
         group_size=32,  # repeat_times in Trinity
         batch_size=24,

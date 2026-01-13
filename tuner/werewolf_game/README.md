@@ -182,13 +182,13 @@ Key parameters to adjust:
 trained_model_path = "Qwen/Qwen2.5-7B-Instruct"
 auxiliary_model_path = "Qwen/Qwen3-30B-A3B-Instruct-2507"
 
-dataset = Dataset(
+dataset = DatasetConfig(
     path="data",
     split="train",
     total_steps=400,  # Total training steps
 )
 
-algorithm = Algorithm(
+algorithm = AlgorithmConfig(
     algorithm_type="multi_step_grpo",
     group_size=32,    # Rollouts per batch
     batch_size=24,    # Training batches per step
@@ -313,5 +313,52 @@ he's the most suspicious person right now."
 
 This demonstrates the essence of trained behavior: **sacrifice pieces strategically to secure ultimate victory**. The model learns that short-term teammate loss is worthwhile for establishing deep cover and long-term dominance.
 
+---
 
+## Bonus: Training Good Guys
 
+In addition to training werewolves, we also provide a configuration for training the **good guy side** (villagers, seer, and witch). This is a more challenging task as good guys need to:
+
+- Perform complex reasoning to identify werewolves from subtle behavioral cues
+- Coordinate effectively without explicit team communication
+- Resist manipulation and deception from werewolves
+- **Train multiple roles simultaneously**: Unlike werewolves (single role), good guys include villager, seer, and witch with different abilities, requiring the model to master diverse strategies in one training run, and make optimal use of special abilities (Seer's checks, Witch's potions)
+
+### Configuration
+
+Use `config_train_goodguy.yaml` or set `trainable_target: good_guy` in `workflow_args`:
+
+```yaml
+workflow_args:
+  trainable_target: good_guy  # Train villager, seer, and witch
+```
+
+### Quantitative Results
+
+We trained `Qwen3-4B-Instruct` as good guys against `Qwen3-30B-A3B-Instruct` werewolves:
+
+| Metric | Before Training | After ~200 Steps | After ~400 Steps |
+|--------|----------------|------------------|------------------|
+| Good Guy Win Rate | ~18% | ~60% | ~80% |
+
+**Training Curve:**
+
+![Good Guy Training Curve](./rollout_reward_curve_goodguy.png)
+
+The results show that even a smaller 4B model can learn effective strategies to counter stronger 30B werewolf opponents through RL training, demonstrating the potential of this approach for training cooperative multi-agent behaviors.
+
+### Qualitative Results
+
+After training, the good guy models exhibit advanced reasoning patterns:
+
+- **Seer**: Strategic target selection, information concealment in public statements, evidence integration
+- **Witch**: Resource management (preserve potions for critical moments), protect high-value targets, evidence-based decisions
+- **Villager**: Evidence-chain analysis, trust building with special roles, consensus formation for team coordination
+
+---
+
+## Conclusion
+
+This example demonstrates the power of reinforcement learning for training multi-agent systems in complex social deduction games. Through AS-Tune's multi-step GRPO algorithm, we successfully trained agents that develop sophisticated strategies—from werewolves learning "deep cover" tactics to good guys mastering coordinated reasoning and information management.
+
+**Ready to try it yourself?** Feel free to start training your own werewolf game agents. Experiment with different model sizes, training targets (werewolf vs. good guy), and hyperparameters to discover new emergent strategies!
