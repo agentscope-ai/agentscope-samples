@@ -131,8 +131,8 @@ The workflow function `run_react_agent` implements how the `ReActAgent` works.
 ```python
 async def run_react_agent(
     task: Dict,
-    model: TunerChatModel,
-    auxiliary_models: Dict[str, TunerChatModel],
+    model: TunerModelConfig,
+    auxiliary_models: Dict[str, TunerModelConfig],
 ) -> WorkflowOutput:
     assert (
         len(auxiliary_models) == 1
@@ -180,7 +180,7 @@ The judge function `learn2ask_judge` implements reward calculation using LLM-as-
 async def learn2ask_judge(
     task: Dict,
     response: Msg,
-    auxiliary_models: Dict[str, TunerChatModel],
+    auxiliary_models: Dict[str, TunerModelConfig],
 ) -> JudgeOutput:
     assert (
         len(auxiliary_models) == 1
@@ -246,9 +246,9 @@ Open `examples/training/learn_to_ask/main.py` and adjust settings:
 if __name__ == "__main__":
     train_mode = "Ra+Rs"     # Use both action and symptom rewards
     fusion_mode = "default"  # How to combine rewards
-    dataset = Dataset(path="examples/training/learn_to_ask/data", split="train")
+    dataset = DatasetConfig(path="examples/training/learn_to_ask/data", split="train")
 
-    tuner_model = TunerChatModel(
+    tuner_model = TunerModelConfig(
         model_path="Qwen/Qwen2.5-7B-Instruct",
         max_model_len=8192,
         tensor_parallel_size=1,  # Adjust based on your GPU setup
@@ -256,14 +256,14 @@ if __name__ == "__main__":
     )
 
     auxiliary_models = {
-        AUXILIARY_MODEL_NAME: TunerChatModel(
+        AUXILIARY_MODEL_NAME: TunerModelConfig(
             model_path="Qwen/Qwen2.5-32B-Instruct",  # Larger model for evaluation
             tensor_parallel_size=2,
             ...
         )
     }
 
-    algorithm = Algorithm(
+    algorithm = AlgorithmConfig(
         algorithm_type="grpo",
         learning_rate=5e-7,
         batch_size=64,
