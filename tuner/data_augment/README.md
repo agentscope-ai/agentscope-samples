@@ -34,7 +34,7 @@ Leveraging the powerful data processing capabilities of **Trinity-RFT**, **Agent
 
 #### Task Selector
 
-The `Task Selector` determines how samples are selected from a dataset. It can be configured directly in `Yaml Config`, or within the `Dataset` object in Python script.
+The `Task Selector` determines how samples are selected from a dataset. It can be configured directly in `Yaml Config`.
 
 - **Built-in Selectors**:
   - `sequential`: Samples are selected in a fixed order.
@@ -56,7 +56,7 @@ For example, the `difficulty_based` selector requires a `pass_rate_calculator` o
 
 ### Configuring the Experiments
 
-To maintain clarity and simplicity, we recommend defining all experiment-specific parameters, including dataset paths and task selectors, within YAML configuration files.
+To maintain clarity and simplicity, we recommend defining all data-specific parameters, including dataset paths and task selectors, within YAML configuration files.
 
 We provide two configuration files to compare the baseline `random` selector against the `difficulty_based` selector.
 
