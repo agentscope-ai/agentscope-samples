@@ -45,34 +45,38 @@ def download_dataset(
 # Transform a single row from the original format to the target format.
 def transform_row(row: pd.Series) -> pd.Series:
     try:
-        original_question = row['prompt'][0]['content']
+        original_question = row["prompt"][0]["content"]
         sentence_to_remove = "Please output the final answer within \\boxed{}."
         question = original_question.replace(sentence_to_remove, "").strip()
 
-        ground_truth = row['reward_model']['ground_truth']
+        ground_truth = row["reward_model"]["ground_truth"]
         answer = f"#### {ground_truth}"
 
-        rate_7b = row.get('qwen2.5_7b_pass_rate')
-        rate_30b = row.get('qwen3_30b_pass_rate')
+        rate_7b = row.get("qwen2.5_7b_pass_rate")
+        rate_30b = row.get("qwen3_30b_pass_rate")
 
-        return pd.Series({
-            "question": question,
-            "answer": answer,
-            "qwen2.5_7b_pass_rate": rate_7b,
-            "qwen3_30b_pass_rate": rate_30b,
-        })
+        return pd.Series(
+            {
+                "question": question,
+                "answer": answer,
+                "qwen2.5_7b_pass_rate": rate_7b,
+                "qwen3_30b_pass_rate": rate_30b,
+            },
+        )
     except (TypeError, IndexError, KeyError) as e:
         error_msg = (
             f"Skipping row due to processing error: {e}. "
             f"Row content: {row.to_dict()}"
         )
         print(error_msg, file=sys.stderr)
-        return pd.Series({
-            "question": None,
-            "answer": None,
-            "qwen2.5_7b_pass_rate": None,
-            "qwen3_30b_pass_rate": None,
-        })
+        return pd.Series(
+            {
+                "question": None,
+                "answer": None,
+                "qwen2.5_7b_pass_rate": None,
+                "qwen3_30b_pass_rate": None,
+            },
+        )
 
 
 # Read, transform, and save the dataset to a new location.
@@ -93,7 +97,7 @@ def transform_and_save_dataset(input_file: Path, output_dir: str):
     df_transformed = df_original.apply(transform_row, axis=1)
 
     original_count = len(df_transformed)
-    df_transformed.dropna(subset=['question', 'answer'], inplace=True)
+    df_transformed.dropna(subset=["question", "answer"], inplace=True)
     dropped_count = original_count - len(df_transformed)
     if dropped_count > 0:
         print(f"Warning: Dropped {dropped_count} invalid records.")
