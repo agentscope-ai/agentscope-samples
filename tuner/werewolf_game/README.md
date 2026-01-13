@@ -271,7 +271,7 @@ Untrained models (Qwen2.5-7B-Instruct) make fundamental errors:
 #### After Training: "Deep Cover" Werewolf Strategy
 
 After 200+ steps, the trained model **converges to a sophisticated "deep cover" tactic**.
-Below is a example where werewolves sacrifice teammates to gain trust, then dominate late game.
+Below is an example where werewolves sacrifice teammates to gain trust, then dominate late game.
 
 **Concrete Example:**
 
