@@ -67,7 +67,7 @@ async def run_react_agent(
         "prompt",
         os.path.join(os.path.dirname(__file__), "prompt.py"),
     )
-    module = importlib.util.module_from_spec(spec)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)
     if TRAIN_MODE == "Ra":
         sys_prompt = module.rollout_prompt_med_Ra
@@ -126,7 +126,7 @@ async def llm_reward(
         "prompt",
         os.path.join(os.path.dirname(__file__), "prompt.py"),
     )
-    module = importlib.util.module_from_spec(spec)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)
     reward_prompt = module.reward_prompt_med
 

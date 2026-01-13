@@ -52,7 +52,7 @@ def rollout(
         "prompt",
         os.path.join(os.path.dirname(__file__), "..", "prompt.py"),
     )
-    module = importlib.util.module_from_spec(spec)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)
     rollout_prompt = module.rollout_prompt_med
 
@@ -102,7 +102,7 @@ def eval_sample(
         "prompt",
         os.path.join(os.path.dirname(__file__), "..", "prompt.py"),
     )
-    module = importlib.util.module_from_spec(spec)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)
     grader_prompt = module.reward_prompt_med
 
