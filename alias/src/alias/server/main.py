@@ -25,6 +25,8 @@ from alias.server.middleware.request_context_middleware import (
 )
 from alias.server.core.task_manager import task_manager
 
+from alias.server.utils.logger import setup_logger
+
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
@@ -35,6 +37,7 @@ async def lifespan(_app: FastAPI):
     """Application lifespan manager."""
     # Startup
     print("🚀 Starting Alias API Server...")
+    setup_logger()
     await initialize_database()
     await task_manager.start()
     await redis_client.ping()

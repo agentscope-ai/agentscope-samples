@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# mypy: disable-error-code=no-redef
 from typing import List, Dict, Any, Optional, Tuple, Union
 import json
 import re
@@ -12,7 +11,7 @@ from alias.server.clients.inner_client import InnerClient
 try:
     from .logging_utils import setup_logging
 except ImportError:
-    from alias.memory_service.profiling_utils.logging_utils import (
+    from alias.memory_service.profiling_utils.logging_utils import (  # type: ignore[no-redef]  # noqa: E501  # pylint: disable=line-too-long
         setup_logging,
     )
 logger = setup_logging()

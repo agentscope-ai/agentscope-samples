@@ -133,6 +133,9 @@ async def browser_post_acting_hook(
     Hook func for cleaning the messy return after action.
     Observation will be done before reasoning steps.
     """
+    tool_call = kwargs.get("tool_call")
+    if tool_call is None:
+        return
     mem_msgs = await self.memory.get_memory()
     mem_length = await self.memory.size()
     if len(mem_msgs) == 0:
@@ -145,7 +148,11 @@ async def browser_post_acting_hook(
                     tool_res_msg.content[i]["output"][j][
                         "text"
                     ] = self._filter_execution_text(return_json["text"])
-    await self.print(tool_res_msg)
+    if tool_call["name"] != self.finish_function_name or (
+        tool_call["name"] == self.finish_function_name
+        and not tool_res_msg.metadata.get("success")
+    ):
+        await self.print(tool_res_msg)
     await self.memory.delete(mem_length - 1)
     await self.memory.add(tool_res_msg)
 
@@ -252,12 +259,7 @@ class BrowserAgent(AliasAgentBase):
         )
 
         self.toolkit.register_tool_function(self.browser_subtask_manager)
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             self._register_skill_tool(image_understanding)
             self._register_skill_tool(video_understanding)
 
@@ -328,6 +330,19 @@ class BrowserAgent(AliasAgentBase):
             pass
         self.toolkit.register_tool_function(tool)
 
+    def _supports_multimodal(self) -> bool:
+        """Check if the model supports multimodal input (images/videos).
+
+        Returns:
+            bool: True if the model supports multimodal input, False otherwise.
+        """
+        return (
+            self.model.model_name.startswith("qvq")
+            or "-vl" in self.model.model_name
+            or "4o" in self.model.model_name
+            or "gpt-5" in self.model.model_name
+        )
+
     async def reply(
         self,
         msg: Msg | list[Msg] | None = None,
@@ -396,7 +411,7 @@ class BrowserAgent(AliasAgentBase):
                 break
         # When the maximum iterations are reached
         if not reply_msg:
-            await self._summarizing()
+            reply_msg = await self._summarizing()
 
         await self.memory.add(reply_msg)
         return reply_msg
@@ -566,12 +581,7 @@ class BrowserAgent(AliasAgentBase):
     ) -> Msg:
         """Get a snapshot in text before reasoning"""
         image_data: Optional[str] = None
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             # If the model supports multimodal input, take a screenshot
             # and pass it to the observation message as base64
             image_data = await self._get_screenshot()
@@ -599,7 +609,9 @@ class BrowserAgent(AliasAgentBase):
                         ).replace("```", "")
                     data = json.loads(raw_response)
                     information = data.get("INFORMATION", "")
-                    self.chunk_continue_status = data.get("STATUS", "CONTINUE")
+                    self.chunk_continue_status = (
+                        data.get("STATUS") != "REASONING_FINISHED"
+                    )
                 except Exception:
                     information = raw_response
                     if (
@@ -627,24 +639,6 @@ class BrowserAgent(AliasAgentBase):
 
             if b["type"] == "tool_use":
                 self.chunk_continue_status = False
-
-    def _clean_tool_excution_content(
-        self,
-        output_msg: Msg,
-    ) -> Msg:
-        """
-        Hook func for cleaning the messy return after action.
-        Observation will be done before reasoning steps.
-        """
-
-        for i, b in enumerate(output_msg.content):
-            if b["type"] == "tool_result":
-                for j, return_json in enumerate(b.get("output", [])):
-                    if isinstance(return_json, dict) and "text" in return_json:
-                        output_msg.content[i]["output"][j][
-                            "text"
-                        ] = self._filter_execution_text(return_json["text"])
-        return output_msg
 
     async def _task_decomposition_and_reformat(  # pylint: disable=too-many-statements
         self,
@@ -753,7 +747,7 @@ class BrowserAgent(AliasAgentBase):
         try:
             formatted_task += (
                 "The decomposed subtasks are: "
-                + json.dumps(self.subtasks)
+                + json.dumps(self.subtasks, ensure_ascii=False)
                 + "\n"
             )
             formatted_task += (
@@ -802,9 +796,8 @@ class BrowserAgent(AliasAgentBase):
                 input={"action": "close", "index": 0},
                 type="tool_use",
             )
-            response = await self.toolkit.call_tool_function(tool_call)
-            async for chunk in response:
-                response_text = chunk.content
+            await self.toolkit.call_tool_function(tool_call)
+
         tool_call = ToolUseBlock(
             id=str(uuid.uuid4()),
             type="tool_use",
@@ -883,8 +876,8 @@ class BrowserAgent(AliasAgentBase):
                 "1. What has been completed so far.\n"
                 "2. What key information has been found.\n"
                 "3. What remains to be done.\n"
-                "Ensure that your summary is clear, concise, and t"
-                "hat no tasks are repeated or skipped."
+                "Ensure that your summary is clear, concise, and "
+                "that no tasks are repeated or skipped."
             ),
             role="user",
         )
@@ -1039,12 +1032,7 @@ class BrowserAgent(AliasAgentBase):
                 text=reasoning_prompt,
             ),
         ]
-        if (
-            self.model.model_name.startswith("qvq")
-            or "-vl" in self.model.model_name
-            or "4o" in self.model.model_name
-            or "gpt-5" in self.model.model_name
-        ):
+        if self._supports_multimodal():
             if image_data:
                 image_block = ImageBlock(
                     type="image",
@@ -1130,7 +1118,7 @@ class BrowserAgent(AliasAgentBase):
         if self.model.stream:
             # If the model supports streaming, collect chunks
             async for chunk in response:
-                response_text += chunk.content[0]["text"]
+                response_text = chunk.content[0]["text"]
                 print_msg.content = chunk.content
                 await self.print(print_msg, last=False)
         else:
@@ -1221,7 +1209,7 @@ class BrowserAgent(AliasAgentBase):
         **kwargs: Any,  # pylint: disable=W0613
     ) -> ToolResponse:
         """Generate a response when the agent has completed all subtasks."""
-        # breakpoint()
+
         hint_msg = Msg(
             "user",
             _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT,
@@ -1251,13 +1239,16 @@ class BrowserAgent(AliasAgentBase):
                 "assistant",
             )
             if self.model.stream:
+                summary_text = ""
                 async for content_chunk in res:
+                    res_msg.content = content_chunk.content
                     summary_text = content_chunk.content[0]["text"]
+                    await self.print(res_msg, False)
+                await self.print(res_msg, True)
             else:
                 summary_text = res.content[0]["text"]
-
-            res_msg.content = summary_text
-            await self.print(res_msg, False)
+                res_msg.content = summary_text
+                await self.print(res_msg, True)
             # logger.info(summary_text)
             # Validate finish status
             finish_status = await self._validate_finish_status(summary_text)

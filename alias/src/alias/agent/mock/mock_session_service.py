@@ -7,7 +7,7 @@ import os
 from typing import Any, Optional, List, Literal
 import json
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from .mock_message_models import BaseMessage, MessageState, MockMessage
 
@@ -40,6 +40,7 @@ class SessionEntity:
     query: str
     upload_files: List = []
     is_chat: bool = False
+    use_long_term_memory_service: bool = False
 
     def __init__(
         self,
@@ -50,11 +51,18 @@ class SessionEntity:
             "bi",
             "finance",
         ] = "general",
+        use_long_term_memory_service: bool = False,
     ):
-        self.user_id: uuid.UUID = uuid.uuid4()
+        self.user_id: uuid.UUID = uuid.UUID(
+            "00000000-0000-0000-0000-000000000001",
+        )
+        # Hardcoded UUID for mock/testing purposes:
+        # this value is used to represent a mock
+        # user in test sessions.
         self.conversation_id: uuid.UUID = uuid.uuid4()
         self.session_id: uuid.UUID = uuid.uuid4()
         self.chat_mode = chat_mode
+        self.use_long_term_memory_service = use_long_term_memory_service
 
     def ids(self):
         return {
@@ -71,12 +79,15 @@ class MockSessionService:
     def __init__(
         self,
         runtime_model: Any = None,
+        use_long_term_memory_service: bool = False,
     ):
         self.session_id = "mock_session"
         self.conversation_id = "mock_conversation"
         self.messages = []
         self.plan = MockPlan()
-        self.session_entity = SessionEntity()
+        self.session_entity = SessionEntity(
+            use_long_term_memory_service=use_long_term_memory_service,
+        )
         logger.info(
             f"> user_id {self.session_entity.user_id}\n "
             f"> conversation_id {self.session_entity.conversation_id}",
@@ -151,6 +162,11 @@ class MockSessionService:
                 if db_message is None:
                     db_message = MockMessage()
                     self.messages.append(db_message)
+                else:
+                    # Update existing message's update_time
+                    db_message.update_time = datetime.now(
+                        timezone.utc,
+                    ).isoformat()
                 db_message.message = message.model_dump()
             else:
                 db_message = MockMessage()
@@ -187,6 +203,11 @@ class MockSessionService:
                         "SEND_MSG",
                         f"Updating message {len(self.messages) - 1}",
                     )
+                else:
+                    # Update existing message's update_time
+                    db_message.update_time = datetime.now(
+                        timezone.utc,
+                    ).isoformat()
                 db_message.message = message.model_dump()
             else:
                 db_message = MockMessage()

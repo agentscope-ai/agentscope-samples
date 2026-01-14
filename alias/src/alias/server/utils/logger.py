@@ -74,10 +74,7 @@ def setup_logger():
             rotation=settings.LOG_ROTATION,
             retention=log_retention,
             enqueue=True,
+            mode="a",
         )
     except Exception as e:
         logger.error(f"Logger setup failed: {e}", exc_info=True)
-
-
-# Configure logger when the module is imported
-setup_logger()

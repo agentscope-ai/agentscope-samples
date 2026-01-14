@@ -7,7 +7,7 @@ Please decompose the following task into a sequence of specific, atomic subtasks
 - **Indivisible**: Cannot be further broken down.
 - **Clear**: Each step should be easy to understand and perform.
 - **Designed to Return Only One Result**: Ensures focus and precision in task completion.
-- **Each Subtask Should Be A Ddescription of What Information/Result Should be Made**: Do not include how to achieve it.
+- **Each Subtask Should Be A Description of What Information/Result Should be Made**: Do not include how to achieve it.
 - **Avoid Verify**: Do not include verification in the subtasks.
 - **Use Direct Language**: All statements should be direct and assertive. "If" statement should not be used in subtask descriptions.
 
