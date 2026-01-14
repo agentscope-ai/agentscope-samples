@@ -221,7 +221,7 @@ class FrontendAdapter:
                     "weight": weight,
                 },
             )
-        if cash>0:
+        if cash > 0:
             holdings.append(
                 {
                     "ticker": "CASH",

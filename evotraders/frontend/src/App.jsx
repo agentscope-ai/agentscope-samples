@@ -111,7 +111,7 @@ export default function LiveTradingApp() {
     // don't switch away from live when market closes
     // Users can stay in live view to see the final state
   }, [isLiveEnabled, chartTab]);
-  
+
   // Clock - use virtual time if available (for mock mode)
   useEffect(() => {
     if (virtualTime) {
