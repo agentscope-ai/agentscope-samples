@@ -10,9 +10,13 @@ def run_app(
     host: str = "127.0.0.1",
     port: int = PORT,
     web_ui: bool = True,
+    chat_mode: str = "general",
 ) -> None:
     agent_app = AgentApp(
-        runner=AliasRunner(framework_type="AgentScope-Runtime"),
+        runner=AliasRunner(
+            framework_type="AgentScope-Runtime",
+            default_chat_mode=chat_mode,
+        ),
         app_name="Alias",
         app_description=(
             "An LLM-empowered agent built on AgentScope and AgentScope-runtime"
@@ -39,9 +43,31 @@ def main() -> None:
         dest="web_ui",
         help="Disable AgentScope Runtime WebUI",
     )
+    parser.add_argument(
+        "--chat-mode",
+        default="general",
+        choices=["general", "dr", "browser", "ds", "finance"],
+        help=(
+            "Default chat mode used by AliasRunner when request doesn't "
+            "specify chat_mode."
+        ),
+    )
     args = parser.parse_args()
 
-    run_app(host=args.host, port=args.port, web_ui=args.web_ui)
+    print(
+        "[alias_agent_runtime] config:",
+        f"host={args.host}",
+        f"port={args.port}",
+        f"web_ui={args.web_ui}",
+        f"chat_mode={args.chat_mode}",
+    )
+
+    run_app(
+        host=args.host,
+        port=args.port,
+        web_ui=args.web_ui,
+        chat_mode=args.chat_mode,
+    )
 
 
 if __name__ == "__main__":

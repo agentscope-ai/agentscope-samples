@@ -371,6 +371,61 @@ After the first startup, you can log in with the superuser credentials configure
 - **Password**: As specified in `FIRST_SUPERUSER_PASSWORD`
 
 
+### 🌐 Basic Usage -- AgentScope Runtime Deployment
+
+Alias now supports rapid startup based on [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), providing an out-of-the-box WebUI (powered by the AgentScope Runtime WebUI).
+
+#### 1. Prerequisites
+
+*   **Sandbox & API Keys**: Please refer to the previous sections [🐳 Sandbox Setup](#-sandbox-setup-optional) and [🔑 API Keys Configuration](#-api-keys-configuration) to complete the basic environment setup.
+*   **Configure Environment Variables**: Copy the example environment file from the project root:
+    ```bash
+    cp .env.example .env
+    ```
+*   **Start Redis**: Required for caching and session management:
+    ```bash
+    docker run -d -p 6379:6379 --name alias-redis redis:7-alpine
+    ```
+
+#### 2. Installation and Sandbox Startup
+
+Install the package in editable mode from the project root. This will automatically install the `alias_agent_runtime` command-line tool:
+```bash
+pip install -e .
+```
+
+To ensure features like code execution and file operations work correctly, start the sandbox server in a separate terminal:
+```bash
+runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
+```
+
+#### 3. Start AgentScope Runtime Service
+
+Use the `alias_agent_runtime` command to launch both the backend service and the WebUI with a single command:
+
+```bash
+alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general --web-ui
+```
+
+**Parameter Descriptions**:
+*   `--host` / `--port`: Specifies the running address and port (default port is 8090).
+*   `--chat-mode`: Sets the default running mode. Options include `general`, `dr`, `browser`, `ds`, and `finance` (default: `general`).
+*   `--web-ui` / `--no-web-ui`: Controls whether to launch the visual WebUI.
+    *   `--web-ui` (Default): Automatically starts the frontend service.
+    *   `--no-web-ui`: Only starts the backend API service without the frontend interface.
+
+> **Note**: When enabling `--web-ui` for the first time, the system will automatically install necessary frontend dependencies. This may take a few minutes; please wait patiently.
+
+#### 4. Access the Application
+
+Once the service is running, you can interact with Alias via the following addresses:
+
+*   **Frontend Interface**: `http://localhost:5173`
+*   **Runtime API Service**: `http://localhost:8090/process`
+
+Through the WebUI, you can intuitively track the agent's reasoning process, tool invocation traces, and other execution details.
+
+
 ## ⚖️ License
 
 Alias-Agent is released under the **Apache 2.0 License** – see the [LICENSE](https://github.com/agentscope-ai/agentscope-samples/blob/main/LICENSE) file for details.

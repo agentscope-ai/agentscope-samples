@@ -240,10 +240,14 @@ class AliasRunner(Runner):
             task_id = self._to_uuid(req_dict.get("task_id")) or uuid.uuid4()
 
             try:
+                req_chat_mode = (
+                    req_dict.get("chat_mode") or self.default_chat_mode
+                )
+
                 chat_request_obj = ChatRequest.model_validate(
                     {
                         "query": user_text,
-                        "stream": True,
+                        "chat_mode": req_chat_mode,
                     },
                 )
             except ValidationError as exc:

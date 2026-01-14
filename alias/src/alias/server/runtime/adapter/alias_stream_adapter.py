@@ -1,348 +1,191 @@
 # -*- coding: utf-8 -*-
-from __future__ import annotations
-
 import json
-from dataclasses import dataclass
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Dict, Optional, Union
 
 from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Content,
-    DataContent,
+    ContentType,
     FunctionCall,
     FunctionCallOutput,
     Message,
     MessageType,
+    Role,
 )
 
 
-def _is_plan_confirmation_prompt(output_obj: Any) -> bool:
+def _try_deep_parse(val: Any) -> Any:
     """
-    Check whether the tool result is prompting the user to type `continue`.
+    Recursively parse JSON-like strings into native Python objects.
     """
-    text = ""
-    if isinstance(output_obj, str):
-        text = output_obj
-    elif isinstance(output_obj, list):
-        parts = []
-        for o in output_obj:
-            if isinstance(o, dict) and o.get("type") == "text":
-                parts.append(o.get("text") or "")
-            else:
-                parts.append(str(o))
-        text = "\n".join(parts)
-    elif isinstance(output_obj, dict):
-        text = json.dumps(output_obj, ensure_ascii=False, default=str)
-
-    t = (text or "").lower()
-    return (
-        'type "continue"' in t
-        or "type 'continue'" in t
-        or "waiting for the user to confirm" in t
-        or "waiting for user to confirm" in t
-    )
-
-
-def _extract_prompt_text(output_obj: Any) -> str:
-    """Extract prompt text for rendering as a normal assistant message."""
-    if isinstance(output_obj, str):
-        return output_obj
-    if isinstance(output_obj, list):
-        parts = []
-        for o in output_obj:
-            if isinstance(o, dict) and o.get("type") == "text":
-                parts.append(o.get("text") or "")
-        if parts:
-            return "\n".join(parts)
-        return str(output_obj)
-    return str(output_obj)
-
-
-def _safe_json_loads(s: str) -> Optional[Any]:
-    try:
-        return json.loads(s)
-    except Exception:
-        return None
-
-
-def _json_dumps_always(obj: Any) -> str:
-    """Always return a valid JSON string representation."""
-    try:
-        return json.dumps(obj, ensure_ascii=False, default=str)
-    except Exception:
-        return json.dumps(str(obj), ensure_ascii=False)
-
-
-def _extract_alias_messages(chunk: Dict[str, Any]) -> List[Dict[str, Any]]:
-    data = chunk.get("data") or {}
-    msgs = data.get("messages") or []
-    return [m for m in msgs if isinstance(m, dict)]
-
-
-def _extract_item_fields(
-    item: Dict[str, Any],
-) -> Tuple[str, str, str, Dict[str, Any]]:
-    alias_item_id = str(item.get("id") or "")
-    inner = item.get("message") or {}
-    alias_type = str(inner.get("type") or "response")
-    alias_status = str(inner.get("status") or "running")
-    return alias_item_id, alias_type, alias_status, inner
-
-
-def _compute_delta(prev: str, curr: str) -> str:
-    if not curr:
-        return ""
-    if prev and curr.startswith(prev):
-        return curr[len(prev) :]
-    return curr
-
-
-def _normalize_call_id(inner: Dict[str, Any], alias_item_id: str) -> str:
-    tcid = inner.get("tool_call_id") or inner.get("tool_callId")
-    if tcid:
-        return str(tcid)
-
-    content = inner.get("content")
-    if isinstance(content, str) and content:
-        parsed = _safe_json_loads(content)
-        if (
-            isinstance(parsed, list)
-            and parsed
-            and isinstance(parsed[0], dict)
-            and parsed[0].get("id")
+    if isinstance(val, str):
+        content = val.strip()
+        if (content.startswith("{") and content.endswith("}")) or (
+            content.startswith("[") and content.endswith("]")
         ):
-            return str(parsed[0]["id"])
-        if isinstance(parsed, dict) and parsed.get("id"):
-            return str(parsed["id"])
-
-    tool_name = inner.get("tool_name") or "tool"
-    return f"call_{tool_name}_{alias_item_id or 'unknown'}"
-
-
-def _parse_tool_use(
-    inner: Dict[str, Any],
-    alias_item_id: str,
-) -> Tuple[str, str, Dict[str, Any]]:
-    call_id = _normalize_call_id(inner, alias_item_id)
-    tool_name = inner.get("tool_name")
-    args: Dict[str, Any] = (
-        inner.get("arguments")
-        if isinstance(inner.get("arguments"), dict)
-        else {}
-    )
-
-    content = inner.get("content")
-    parsed = _safe_json_loads(content) if isinstance(content, str) else None
-    if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
-        tool_name = parsed[0].get("name") or tool_name
-        if isinstance(parsed[0].get("input"), dict):
-            args = parsed[0]["input"]
-    elif isinstance(parsed, dict):
-        tool_name = parsed.get("name") or tool_name
-        if isinstance(parsed.get("input"), dict):
-            args = parsed["input"]
-
-    return call_id, str(tool_name or "tool"), args
+            try:
+                parsed = json.loads(content)
+                return _try_deep_parse(parsed)
+            except Exception:
+                return val
+        return val
+    if isinstance(val, list):
+        return [_try_deep_parse(i) for i in val]
+    if isinstance(val, dict):
+        return {k: _try_deep_parse(v) for k, v in val.items()}
+    return val
 
 
-def _parse_tool_result(
-    inner: Dict[str, Any],
-    alias_item_id: str,
-) -> Tuple[str, str, Any]:
-    call_id = _normalize_call_id(inner, alias_item_id)
-    tool_name = inner.get("tool_name")
-
-    content = inner.get("content")
-    parsed = _safe_json_loads(content) if isinstance(content, str) else None
-
-    output_obj: Any = None
-    if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
-        tool_name = parsed[0].get("name") or tool_name
-        output_obj = parsed[0].get("output")
-    elif isinstance(parsed, dict):
-        tool_name = parsed.get("name") or tool_name
-        output_obj = parsed.get("output")
-    else:
-        output_obj = content if content is not None else ""
-
-    return call_id, str(tool_name or "tool"), output_obj
+def _ensure_safe_json_string(val: Any) -> str:
+    """
+    Serialize content into a valid JSON string suitable for WebUI parsing.
+    """
+    parsed_val = _try_deep_parse(val)
+    if parsed_val is None:
+        return "{}"
+    return json.dumps(parsed_val, ensure_ascii=False)
 
 
-@dataclass
-class _TextMsgState:
-    mb: Any
-    cb: Any
-    last_text: str = ""
+def _extract_alias_output_obj(content_str: str) -> Any:
+    """
+    Extract the `output` object from Alias nested tool-result content.
+    """
+    try:
+        data = json.loads(content_str)
+        if isinstance(data, list) and data:
+            return data[0].get("output")
+    except Exception:
+        pass
+    return content_str
+
+
+class AliasAdapterState:
+    def __init__(self, mb: Any, cb: Any, runtime_type: str):
+        self.mb = mb
+        self.cb = cb
+        self.runtime_type = runtime_type
+        self.last_content = ""
+        self.is_completed = False
 
 
 async def adapt_alias_message_stream(
     source_stream: AsyncIterator[Dict[str, Any]],
 ) -> AsyncIterator[Union[Message, Content]]:
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches, too-many-statements
     rb = ResponseBuilder()
+    state_map: Dict[str, AliasAdapterState] = {}
+    last_active_key: Optional[str] = None
 
-    text_states: Dict[str, _TextMsgState] = {}
-    seen_tool_use: set[str] = set()
-    seen_tool_result: set[str] = set()
-
-    def _text_key(
-        chunk: Dict[str, Any],
-        alias_item_id: str,
-        alias_type: str,
-    ) -> str:
-        return alias_item_id or f"{chunk.get('message_id')}::{alias_type}"
+    yield rb.created()
+    yield rb.in_progress()
 
     async for chunk in source_stream:
-        if not isinstance(chunk, dict):
-            k = "non_dict"
-            if k not in text_states:
-                mb = rb.create_message_builder(
-                    message_type=MessageType.MESSAGE,
-                    role="assistant",
-                )
+        if not isinstance(chunk, dict) or "data" not in chunk:
+            continue
+
+        messages = chunk["data"].get("messages") or []
+        for item in messages:
+            alias_id = item.get("id")
+            inner_msg = item.get("message") or {}
+
+            alias_type = inner_msg.get("type")
+            alias_status = inner_msg.get("status")
+            tool_call_id = inner_msg.get("tool_call_id") or alias_id
+
+            if alias_type in ["thought", "sub_thought"]:
+                runtime_type = MessageType.REASONING
+                target_role = Role.ASSISTANT
+            elif alias_type in ["tool_call", "tool_use"]:
+                runtime_type = MessageType.PLUGIN_CALL
+                target_role = Role.ASSISTANT
+            elif alias_type == "tool_result":
+                runtime_type = MessageType.PLUGIN_CALL_OUTPUT
+                target_role = Role.TOOL
+            else:
+                runtime_type = MessageType.MESSAGE
+                target_role = Role.ASSISTANT
+
+            state_key = f"{tool_call_id}_{runtime_type}"
+
+            if last_active_key and last_active_key != state_key:
+                old_state = state_map.get(last_active_key)
+                if old_state and not old_state.is_completed:
+                    yield old_state.cb.complete()
+                    yield old_state.mb.complete()
+                    old_state.is_completed = True
+
+            last_active_key = state_key
+
+            if state_key not in state_map:
+                mb = rb.create_message_builder(role=target_role)
+                mb.message.type = runtime_type
                 yield mb.get_message_data()
-                cb = mb.create_content_builder(content_type="text")
-                text_states[k] = _TextMsgState(mb=mb, cb=cb, last_text="")
-            st = text_states[k]
-            curr = st.last_text + str(chunk)
-            delta = _compute_delta(st.last_text, curr)
-            st.last_text = curr
-            if delta:
-                yield st.cb.add_text_delta(delta)
-            continue
 
-        if "error" in chunk:
-            mb = rb.create_message_builder(
-                message_type=MessageType.MESSAGE,
-                role="assistant",
-            )
-            yield mb.get_message_data()
-            cb = mb.create_content_builder(content_type="text")
-            yield cb.set_text(
-                f"[ERROR] {chunk.get('error')} (code={chunk.get('code')})",
-            )
-            yield cb.complete()
-            yield mb.complete()
-            return
-
-        items = _extract_alias_messages(chunk)
-        if not items:
-            continue
-
-        for item in items:
-            (
-                alias_item_id,
-                alias_type,
-                alias_status,
-                inner,
-            ) = _extract_item_fields(item)
-
-            if alias_type == "tool_use":
-                call_id, tool_name, args = _parse_tool_use(
-                    inner,
-                    alias_item_id,
-                )
-
-                if alias_status != "finished":
-                    continue
-
-                if call_id in seen_tool_use:
-                    continue
-                seen_tool_use.add(call_id)
-
-                fc = FunctionCall(
-                    call_id=call_id,
-                    name=tool_name,
-                    arguments=_json_dumps_always(args),
-                )
-                data = DataContent(data=fc.model_dump())
-                msg = Message(
-                    type=MessageType.PLUGIN_CALL,
-                    role="assistant",
-                    content=[data],
-                )
-                yield msg.completed()
-                continue
-
-            if alias_type == "tool_result":
-                call_id, tool_name, output_obj = _parse_tool_result(
-                    inner,
-                    alias_item_id,
-                )
-
-                if call_id in seen_tool_result:
-                    continue
-                if alias_status == "finished":
-                    seen_tool_result.add(call_id)
+                if runtime_type in [
+                    MessageType.PLUGIN_CALL,
+                    MessageType.PLUGIN_CALL_OUTPUT,
+                ]:
+                    c_type = ContentType.DATA
                 else:
-                    continue
+                    c_type = ContentType.TEXT
 
-                fco = FunctionCallOutput(
-                    call_id=call_id,
-                    name=tool_name,
-                    output=_json_dumps_always(output_obj),
-                )
-                data = DataContent(data=fco.model_dump())
-                msg = Message(
-                    type=MessageType.PLUGIN_CALL_OUTPUT,
-                    role="tool",
-                    content=[data],
-                )
-                yield msg.completed()
+                cb = mb.create_content_builder(content_type=c_type)
+                state_map[state_key] = AliasAdapterState(mb, cb, runtime_type)
 
-                if _is_plan_confirmation_prompt(output_obj):
-                    prompt_text = _extract_prompt_text(output_obj)
+            state = state_map[state_key]
 
-                    mb2 = rb.create_message_builder(
-                        message_type=MessageType.MESSAGE,
-                        role="assistant",
+            if runtime_type in [MessageType.MESSAGE, MessageType.REASONING]:
+                raw_text = str(inner_msg.get("content") or "")
+
+                if alias_type == "files" and "files" in inner_msg:
+                    raw_text = "\n".join(
+                        [
+                            f"📁 [{f['filename']}]({f['url']})"
+                            for f in inner_msg["files"]
+                        ],
                     )
-                    yield mb2.get_message_data()
-                    cb2 = mb2.create_content_builder(content_type="text")
-                    yield cb2.set_text(prompt_text)
-                    yield cb2.complete()
-                    yield mb2.complete()
 
-                continue
+                if raw_text.startswith(state.last_content):
+                    delta = raw_text[len(state.last_content) :]
+                    if delta:
+                        yield state.cb.add_text_delta(delta)
+                    state.last_content = raw_text
+                else:
+                    yield state.cb.set_text(raw_text)
+                    state.last_content = raw_text
 
-            k = _text_key(chunk, alias_item_id, alias_type)
-            if k not in text_states:
-                mb = rb.create_message_builder(
-                    message_type=MessageType.MESSAGE,
-                    role="assistant",
+            elif runtime_type == MessageType.PLUGIN_CALL:
+                args = inner_msg.get("arguments") or {}
+                fc = FunctionCall(
+                    call_id=tool_call_id,
+                    name=inner_msg.get("tool_name") or "tool",
+                    arguments=_ensure_safe_json_string(args),
                 )
-                msg_obj = mb.get_message_data()
-                msg_obj.metadata = {
-                    "alias_task_id": chunk.get("task_id"),
-                    "alias_conversation_id": chunk.get("conversation_id"),
-                    "alias_user_id": chunk.get("user_id"),
-                    "alias_chunk_message_id": chunk.get("message_id"),
-                    "alias_item_id": item.get("id"),
-                    "alias_parent_message_id": item.get("parent_message_id"),
-                    "alias_inner": inner,
-                }
-                yield msg_obj
-                cb = mb.create_content_builder(content_type="text")
-                text_states[k] = _TextMsgState(mb=mb, cb=cb, last_text="")
+                yield state.cb.set_data(fc.model_dump())
 
-            st = text_states[k]
-            curr = str(inner.get("content") or "")
-            delta = _compute_delta(st.last_text, curr)
-            st.last_text = curr
-            if delta:
-                yield st.cb.add_text_delta(delta)
+            elif runtime_type == MessageType.PLUGIN_CALL_OUTPUT:
+                output_obj = _extract_alias_output_obj(
+                    inner_msg.get("content", ""),
+                )
+                fco = FunctionCallOutput(
+                    call_id=tool_call_id,
+                    name=inner_msg.get("tool_name") or "tool",
+                    output=_ensure_safe_json_string(output_obj),
+                )
+                yield state.cb.set_data(fco.model_dump())
 
-            if alias_status == "finished":
-                yield st.cb.complete()
-                yield st.mb.complete()
-                text_states.pop(k, None)
+            if alias_status == "finished" and not state.is_completed:
+                yield state.cb.complete()
+                yield state.mb.complete()
+                state.is_completed = True
 
-    for st in list(text_states.values()):
-        try:
-            yield st.cb.complete()
-        except Exception:
-            pass
-        try:
-            yield st.mb.complete()
-        except Exception:
-            pass
+    for state in state_map.values():
+        if not state.is_completed:
+            try:
+                yield state.cb.complete()
+                yield state.mb.complete()
+                state.is_completed = True
+            except Exception:
+                pass
+
+    yield rb.completed()

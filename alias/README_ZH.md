@@ -371,6 +371,58 @@ bash script/start_memory_service.sh
 - **用户名**：如 `FIRST_SUPERUSER_USERNAME` 所指定 (默认: `alias`)
 - **密码**：如 `FIRST_SUPERUSER_PASSWORD` 所指定
 
+### 🌐 基础用法 -- AgentScope Runtime 部署
+
+Alias 现在支持基于 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 快速启动，并提供开箱即用的 WebUI 交互界面（基于AgentScope Runtime 的 WebUI）。
+
+#### 1. 前期准备
+
+*   **沙盒设置与 API 密钥**：请参考前文的 [🐳 沙盒设置](#-沙盒设置可选) 和 [🔑 API 密钥配置](#-api-密钥配置) 完成基础环境配置。
+*   **配置环境变量**：从项目根目录复制示例环境文件：
+    ```bash
+    cp .env.example .env
+    ```
+*   **启动 Redis**：缓存和会话管理所需：
+    ```bash
+    docker run -d -p 6379:6379 --name alias-redis redis:7-alpine
+    ```
+
+#### 2. 安装与沙盒启动
+
+在项目根目录下，以开发模式安装包，这将自动安装 `alias_agent_runtime` 命令行工具：
+```bash
+pip install -e .
+```
+
+为了确保代码执行和文件操作等功能正常，请在另一个终端启动沙盒服务器：
+```bash
+runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
+```
+
+#### 3. 启动 AgentScope Runtime 服务
+
+使用 `alias_agent_runtime` 命令一键启动后端服务及 WebUI 界面：
+
+```bash
+alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general --web-ui
+```
+
+**参数说明**：
+*   `--host` / `--port`: 指定服务的运行地址和端口（默认端口为 8090）。
+*   `--chat-mode`: 设置运行模式，可选 `general`, `dr`, `browser`, `ds`, `finance`（默认为 `general`）。
+*   `--web-ui` / `--no-web-ui`: 是否启动可视化 WebUI 界面。
+    *   使用 `--web-ui`（默认）：自动启动前端服务。
+    *   使用 `--no-web-ui`：仅启动后端 API 服务，不启动前端界面。
+> **注意**：首次启动并开启 `--web-ui` 时，系统会自动安装必要的前端依赖包，可能需要花费几分钟时间，请耐心等待。
+
+#### 4. 访问应用程序
+
+服务启动后，您可以通过访问以下地址与 Alias 进行交互：
+
+*   **前端交互界面**：`http://localhost:5173`
+*   **Runtime API 服务**：`http://localhost:8090/process`
+
+通过 WebUI，您可以直观地查看智能体的思考过程以及工具调用轨迹等信息。
 
 ## ⚖️ 许可证
 
