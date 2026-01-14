@@ -306,8 +306,8 @@ class Gateway:
         current_baseline = None
         if baseline_allocation:
             baseline_value = 0.0
-            for ticker, qty in baseline_allocation.items():
-                qty = qty["qty"]
+            for ticker, qty_v in baseline_allocation.items():
+                qty = qty_v["qty"]
                 price = prices.get(ticker, 0)
                 if price > 0:
                     baseline_value += qty * price
@@ -322,8 +322,8 @@ class Gateway:
         current_baseline_vw = None
         if baseline_vw_allocation:
             baseline_vw_value = 0.0
-            for ticker, qty in baseline_vw_allocation.items():
-                qty = qty["qty"]
+            for ticker, qty_v in baseline_vw_allocation.items():
+                qty = qty_v["qty"]
                 price = prices.get(ticker, 0)
                 if price > 0:
                     baseline_vw_value += qty * price
@@ -336,14 +336,14 @@ class Gateway:
         current_momentum = None
         if momentum_state.get("initialized", False):
             momentum_value = momentum_cash
-            for ticker, position in momentum_positions.items():
-                qty = position["qty"]
+            for ticker, qty_v in momentum_positions.items():
+                qty = qty_v["qty"]
                 price = prices.get(ticker, 0)
                 if price > 0:
                     momentum_value += qty * price
             current_momentum = momentum_value
 
-        print(
+        logger.info(
             f"Gateway: current_equity={current_equity}, "
             f"current_baseline={current_baseline}, "
             f"current_baseline_vw={current_baseline_vw}, "

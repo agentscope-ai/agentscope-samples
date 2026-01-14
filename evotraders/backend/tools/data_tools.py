@@ -204,6 +204,9 @@ def get_prices(
                     logger.warning(f"Retrying ({attempt + 1}/3): {str(e)}")
                     time.sleep(2)
                 else:
+                    logger.error(
+                        f"All retry attempts (3/3) failed for {ticker}: {str(e)}",
+                    )
                     raise
 
         # Convert to Price objects

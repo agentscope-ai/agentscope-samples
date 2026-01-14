@@ -221,17 +221,17 @@ class FrontendAdapter:
                     "weight": weight,
                 },
             )
-
-        holdings.append(
-            {
-                "ticker": "CASH",
-                "quantity": 1,
-                "avg": cash,
-                "currentPrice": cash,
-                "marketValue": cash,
-                "weight": cash / total_value if total_value > 0 else 0,
-            },
-        )
+        if cash>0:
+            holdings.append(
+                {
+                    "ticker": "CASH",
+                    "quantity": 1,
+                    "avg": cash,
+                    "currentPrice": cash,
+                    "marketValue": cash,
+                    "weight": cash / total_value if total_value > 0 else 0,
+                },
+            )
 
         return holdings
 
