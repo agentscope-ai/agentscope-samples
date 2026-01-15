@@ -5,7 +5,7 @@
 <h2 align="center">EvoTraders: A Self-Evolving Multi-Agent Trading System</h2>
 
 <p align="center">
-  📌 <a href="http://trading.evoagents.com">Visit us at EvoTraders website !</a>
+  📌 <a href="http://trading.evoagents.cn">Visit us at EvoTraders website !</a>
 </p>
 
 ![System Demo](./docs/assets/evotraders_demo.gif)
