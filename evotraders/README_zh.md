@@ -6,7 +6,7 @@
 
 
 <p align="center">
-  📌 <a href="https://trading.evoagents.com">Visit us at EvoTraders website !</a>
+  📌 <a href="http://trading.evoagents.com">Visit us at EvoTraders website !</a>
 </p>
 
 ![系统演示](./docs/assets/evotraders_demo.gif)
