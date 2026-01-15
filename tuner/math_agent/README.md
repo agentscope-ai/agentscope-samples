@@ -37,6 +37,9 @@ Suppose you have an agent workflow that solves math problems using the `ReActAge
 
 ```python
 from agentscope.agent import ReActAgent
+from agentscope.formatter import OpenAIChatFormatter
+from agentscope.message import Msg
+
 
 async def run_react_agent(query: str):
     # model = ...  # Initialize your ChatModel here
@@ -104,8 +107,8 @@ To train an agent workflow using RL, you need to refactor your agent with the fo
 ```python
 async def workflow_function(
     task: Dict,
-    model: ChatModelBase,
-    auxiliary_models: Optional[Dict[str, ChatModelBase]]=None,
+    model: OpenAIChatModel,
+    auxiliary_models: Optional[Dict[str, OpenAIChatModel]]=None,
 ) -> WorkflowOutput:
     """Run the agent workflow on a single task and return a scalar reward."""
 ```
@@ -131,15 +134,17 @@ Below is a refactored version of the original `run_react_agent` function to fit 
 3. return a `WorkflowOutput` object containing the agent's response.
 
 ```python
+from typing import Dict
 from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.tuner import WorkflowOutput
 from agentscope.message import Msg
 
 async def run_react_agent(
     task: Dict,
-    model: ChatModelBase,
-    auxiliary_models: Optional[Dict[str, ChatModelBase]]=None,
+    model: OpenAIChatModel,
+    auxiliary_models: Dict[str, OpenAIChatModel] | None = None,
 ) -> WorkflowOutput:
     agent = ReActAgent(
         name="react_agent",
@@ -241,8 +246,8 @@ Here, we use `DatasetConfig` to load the training dataset, `TunerModelConfig` to
 > We recommend using the configuration file approach for fine-grained control over the training process and leveraging advanced features provided by Trinity-RFT.
 > You can refer to the Trinity-RFT [Configuration Guide](https://modelscope.github.io/Trinity-RFT/en/main/tutorial/trinity_configs.html) for more details on configuration options.
 
-The checkpoint and logs will automatically be saved to the `checkpoints/AgentScope` directory under the current working directory and each run will be save in a sub-directory suffixed with current timestamp.
-You can found the tensorboard logs inside `monitor/tensorboard` of the checkpoint directory.
+The checkpoint and logs will automatically be saved to the `checkpoints/AgentScope` directory under the current working directory and each run will be saved in a sub-directory suffixed with the current timestamp.
+You can find the tensorboard logs inside `monitor/tensorboard` of the checkpoint directory.
 
 ```
 react_agent/
@@ -263,14 +268,15 @@ from typing import Dict
 
 from agentscope.tuner import tune, WorkflowOutput, JudgeOutput, DatasetConfig, TunerModelConfig, AlgorithmConfig
 from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.message import Msg
 
 
 async def run_react_agent(
     task: Dict,
-    model: TunerModelConfig,
-    auxiliary_models: Dict[str, TunerModelConfig],
+    model: OpenAIChatModel,
+    auxiliary_models: Dict[str, OpenAIChatModel],
 ) -> WorkflowOutput:
     agent = ReActAgent(
         name="react_agent",
@@ -289,7 +295,7 @@ async def run_react_agent(
 
 
 async def judge_function(
-    task: Dict, response: Msg, auxiliary_models: Dict[str, TunerModelConfig]
+    task: Dict, response: Msg, auxiliary_models: Dict[str, OpenAIChatModel]
 ) -> JudgeOutput:
     """Simple reward: 1.0 for exact match, else 0.0."""
     ground_truth = task["answer"]
@@ -360,6 +366,3 @@ After implementing the workflow function, follow these steps to run the training
     An example reward curve is shown below:
 
     ![reward_curve](./reward_curve.png)
-
-> [!TIP]
-> For more tuning examples, refer to [tuner] directory of the AgentScope-Samples repository.
