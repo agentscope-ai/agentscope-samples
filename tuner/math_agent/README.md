@@ -7,7 +7,7 @@ This guide walks you through the steps to implement and train an agent workflow 
 
 To train your agent workflow using RL, you need to understand three components:
 
-1. **Workflow function**: Refactor your agent workflow into a workflow function that follows the specified input/output signature.
+1. **Workflow function**: Refactor your agent application into a workflow function that follows the specified input/output signature.
 2. **Judge function**: Implement a judge function that computes rewards based on the agent's responses.
 3. **Task dataset**: Prepare a dataset containing training samples for the agent to learn.
 
@@ -29,6 +29,10 @@ flowchart TD
     class Task taskcolor;
 ```
 
+The workflow function takes a chat model and a task from dataset as input, and produces the agent's response.
+The judge function takes the same task and the agent's response as input, and computes a scalar reward.
+The judge function is optional; if not provided, the workflow function can directly output the reward.
+
 ## How to implement
 
 Here we use a math problem solving scenario as an example to illustrate how to implement the above three components.
@@ -37,12 +41,15 @@ Suppose you have an agent workflow that solves math problems using the `ReActAge
 
 ```python
 from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.message import Msg
 
 
 async def run_react_agent(query: str):
-    # model = ...  # Initialize your ChatModel here
+    model = OpenAIChatModel(
+        # your model config here...
+    )
 
     agent = ReActAgent(
         name="react_agent",
