@@ -1,0 +1,45 @@
+repos:
+  # Pre-commit hooks for basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: check-yaml
+        name: Check YAML files
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=1000']
+      - id: check-json
+        name: Check JSON files
+      - id: check-toml
+        name: Check TOML files
+      - id: mixed-line-ending
+        name: Check mixed line endings
+
+  # Python code formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        name: Format Python code with Black
+        language_version: python3.10
+
+  # Python import sorting with isort
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Sort Python imports with isort
+        args: ["--profile", "black"]
+
+  # Python linting with Ruff (fast alternative to flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        name: Lint Python code with Ruff
+        args: [--fix, --exit-non-zero-on-fix]
+

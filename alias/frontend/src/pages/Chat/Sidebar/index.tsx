@@ -24,6 +24,7 @@ import {
 } from "@agentscope-ai/icons";
 import classNames from "classnames";
 import React, { memo, useEffect, useRef, useState } from "react";
+import { Conversation as HistoryConversation } from "@agentscope-ai/chat/lib/Conversations";
 import { useNavigate } from "react-router-dom";
 import Avatar from "../Avatar";
 import HabbitModal from "../Habbit";
@@ -184,20 +185,28 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   // Get delete menu item
-  const getDeleteMenuItem = (id: string) => ({
-    label: "Delete",
-    key: "delete",
-    icon: <SparkDeleteLine />,
-    danger: true,
-    onClick: () => deletedConversation(id),
-  });
+  const getDeleteMenuItem = [
+    {
+      label: "Delete",
+      key: "delete",
+      icon: <SparkDeleteLine />,
+      danger: true,
+      onClick: (conv: HistoryConversation) => {
+        deletedConversation(conv.key);
+      },
+    },
+  ];
 
   // Get filtered conversation list
-  const getFilteredConversations = (type: HistoryType) => {
+  const getFilteredConversations = (type: HistoryType): Conversation[] => {
     if (type === "collected") {
-      return conversations.filter((conv) => conv.collected);
+      return Array.isArray(conversations)
+        ? conversations.filter((conv) => conv.collected)
+        : [];
     }
-    return conversations.filter((conv) => !conv.collected);
+    return Array.isArray(conversations)
+      ? conversations.filter((conv) => !conv.collected)
+      : [];
   };
 
   // Render history panel
@@ -238,9 +247,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {showPanel && (
               <HistoryPanel
-                menu={(session) => ({
-                  items: [getDeleteMenuItem(session.key)],
-                })}
+                menu={getDeleteMenuItem}
                 items={filteredConversations.map((item) => ({
                   key: item.id,
                   label: item.name,
@@ -260,9 +267,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className={styles.popoverContent}>
                 <div className={styles.popoverHeader}>{title}</div>
                 <HistoryPanel
-                  menu={(session) => ({
-                    items: [getDeleteMenuItem(session.key)],
-                  })}
+                  menu={getDeleteMenuItem}
                   items={filteredConversations.map((item) => ({
                     key: item.id,
                     label: item.name,

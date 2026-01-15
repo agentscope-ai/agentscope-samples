@@ -42,6 +42,7 @@ class ChatRequest(SQLModel):
     language_type: Optional[LanguageType] = LanguageType.EN_US
     chat_mode: Optional[ChatMode] = ChatMode.GENERAL
     roadmap: Optional[RoadmapChange] = None
+    use_long_term_memory_service: Optional[bool] = False
 
 
 class ContinueChatRequest(SQLModel):

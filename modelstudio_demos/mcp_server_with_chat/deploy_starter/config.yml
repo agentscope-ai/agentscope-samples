@@ -1,0 +1,36 @@
+# ==================== Application Configuration ====================
+APP_NAME: "MCP Server Starter"
+DEBUG: false
+
+# ==================== Server Configuration ====================
+# Use 0.0.0.0 for cloud deployment; 127.0.0.1 for local development
+FC_START_HOST: "0.0.0.0"
+HOST: "127.0.0.1"
+PORT: 8080
+RELOAD: true
+
+# ==================== MCP Configuration ====================
+# MCP Server settings
+MCP_SERVER_NAME: "my-mcp-server"
+MCP_SERVER_VERSION: "1.0.0"
+
+# ==================== Logging Configuration ====================
+LOG_LEVEL: "INFO"
+
+# ==================== Packaging Configuration ====================
+# Settings for build and distribution
+SETUP_PACKAGE_NAME: "deploy_starter"
+SETUP_MODULE_NAME: "main"
+SETUP_FUNCTION_NAME: "run_app"
+SETUP_COMMAND_NAME: "mcp-server-starter"
+SETUP_NAME: "mcp-server-starter"
+SETUP_VERSION: "0.1.0"
+SETUP_DESCRIPTION: "FastMCP Server Starter - template for fast MCP Server development"
+SETUP_LONG_DESCRIPTION: "MCP Server starter based on FastMCP framework, supports local run and cloud deployment"
+
+# ==================== Observability Configuration ====================
+TELEMETRY_ENABLE: TRUE
+
+# ==================== Cloud Deployment Configuration ====================
+# Alibaba Cloud Function Compute (FC) deployment settings
+FC_RUN_CMD: "python3 /code/python/deploy_starter/main.py"

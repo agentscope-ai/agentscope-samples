@@ -299,6 +299,37 @@ class StateSync:
                     "momentum_return"
                 ]
 
+            if "portfolio" not in self._state:
+                self._state["portfolio"] = {}
+
+            self._state["portfolio"].update(
+                {
+                    "total_value": summary_data["balance"],
+                    "pnl_percent": summary_data["pnlPct"],
+                    "equity": summary_data["equity"],
+                    "baseline": summary_data["baseline"],
+                    "baseline_vw": summary_data["baseline_vw"],
+                    "momentum": summary_data["momentum"],
+                },
+            )
+
+            if summary_data.get("equity_return"):
+                self._state["portfolio"]["equity_return"] = summary_data[
+                    "equity_return"
+                ]
+            if summary_data.get("baseline_return"):
+                self._state["portfolio"]["baseline_return"] = summary_data[
+                    "baseline_return"
+                ]
+            if summary_data.get("baseline_vw_return"):
+                self._state["portfolio"]["baseline_vw_return"] = summary_data[
+                    "baseline_vw_return"
+                ]
+            if summary_data.get("momentum_return"):
+                self._state["portfolio"]["momentum_return"] = summary_data[
+                    "momentum_return"
+                ]
+
             await self.emit(summary_data, persist=True)
 
         await self.emit(
@@ -346,6 +377,17 @@ class StateSync:
             {
                 "type": "team_stats",
                 "data": stats,
+            },
+            persist=False,
+        )
+
+    async def on_leaderboard_update(self, leaderboard: List[Dict]):
+        """Called when leaderboard is updated"""
+        self._state["leaderboard"] = leaderboard
+        await self.emit(
+            {
+                "type": "team_leaderboard",
+                "data": leaderboard,
             },
             persist=False,
         )

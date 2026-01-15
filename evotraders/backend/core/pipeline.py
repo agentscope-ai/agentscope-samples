@@ -199,6 +199,7 @@ class TradingPipeline:
                     market_caps=market_caps,
                     agent_portfolio=execution_result.get("portfolio", {}),
                     analyst_results=analyst_results,
+                    pm_decisions=decisions,
                 )
             )
 

@@ -10,6 +10,7 @@ from alias.server.api.v1.file import router as file_router
 from alias.server.api.v1.inner import router as inner_router
 from alias.server.api.v1.share import router as share_router
 from alias.server.api.v1.user import router as user_router
+from alias.server.api.v1.monitor import router as monitor_router
 
 router = APIRouter()
 router.include_router(user_router)
@@ -19,3 +20,4 @@ router.include_router(chat_router)
 router.include_router(file_router)
 router.include_router(inner_router)
 router.include_router(share_router)
+router.include_router(monitor_router)

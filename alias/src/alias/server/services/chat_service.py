@@ -131,6 +131,9 @@ class ChatService:
         chat_mode = chat_request.chat_mode
         language_type = chat_request.language_type
         roadmap = chat_request.roadmap
+        use_long_term_memory_service = (
+            chat_request.use_long_term_memory_service or False
+        )
 
         async with session_scope() as session:
             message_service = MessageService(session=session)
@@ -178,6 +181,7 @@ class ChatService:
             chat_type=chat_type,
             query=query,
             roadmap=roadmap,
+            use_long_term_memory_service=use_long_term_memory_service,
         )
 
         event_manager = EventManager(

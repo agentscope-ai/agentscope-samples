@@ -4,7 +4,6 @@ import uuid
 from enum import Enum
 from typing import Any, Optional, Literal
 from dataclasses import dataclass
-
 from pydantic import BaseModel, Field
 
 
@@ -67,6 +66,8 @@ class MockMessage:
     id: uuid.UUID = uuid.uuid4()
     message: Optional[dict] = None
     files: list[Any] = []
+    create_time: str = "xxxyyy"
+    update_time: str = "xxxyyy"
 
 
 class SubTaskToPrint(BaseModel):

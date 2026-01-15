@@ -398,13 +398,13 @@ export default function AgentCard({ agent, onClose, isClosing }) {
                 let resultColor = '#555555';
                 let resultFontSize = 18;
 
-                if (isUnknown) {
+                if (isNeutral) {
+                  resultDisplay = '-';
+                  resultColor = '#555555'; // Gray for neutral
+                } else if (isUnknown) {
                   resultDisplay = '?';
                   resultColor = '#FFA726'; // Orange for unknown
                   resultFontSize = 14; // Smaller font for text
-                } else if (isNeutral) {
-                  resultDisplay = '-';
-                  resultColor = '#555555'; // Gray for neutral
                 } else {
                   resultDisplay = isCorrect ? '✓' : '✗';
                   resultColor = isCorrect ? '#00C853' : '#FF1744'; // Green for correct, Red for wrong

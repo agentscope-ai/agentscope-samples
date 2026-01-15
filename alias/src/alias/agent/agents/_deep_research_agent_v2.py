@@ -107,6 +107,8 @@ class DeepResearchAgent(AliasAgentBase):
                     x,
                     x.get("task_type", "general"),
                 )
+                if x
+                else None
             ),
         )
         self.node_level_report = node_level_report

@@ -27,7 +27,7 @@ classifiers = [
 
 dependencies = [
     "agentscope>=1.0.8",
-    "reme-ai>=0.2.0.3",
+    "reme-ai>=0.2.0.4",
     "asyncio>=3.4.3",
     "rich>=13.6.0",
     "websockets>=12.0",

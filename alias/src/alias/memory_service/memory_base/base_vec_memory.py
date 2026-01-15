@@ -950,7 +950,7 @@ class BaseAsyncVectorMemory(MemoryBase):
         user_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         run_id: Optional[str] = None,
-        limit: int = 100,
+        limit: int = 10,
         filters: Optional[Dict[str, Any]] = None,
         threshold: Optional[float] = None,
     ):
@@ -966,7 +966,7 @@ class BaseAsyncVectorMemory(MemoryBase):
             run_id (str, optional): ID of the run to search for.
                 Defaults to None.
             limit (int, optional): Limit the number of results.
-                Defaults to 100.
+                Defaults to 10.
             filters (dict, optional): Filters to apply to the search.
                 Defaults to None.
             threshold (float, optional): Minimum score for a memory to be

@@ -43,27 +43,39 @@ class BaselineCalculator:
     def calculate_equal_weight_value(
         self,
         tickers: List[str],
-        prices: Dict[str, float],
+        open_prices: Dict[str, float],
+        close_prices: Dict[str, float],
     ) -> float:
         """
         Calculate equal-weight portfolio value
 
-        On first call, initialize positions with equal allocation
-        Subsequently, mark-to-market existing positions
+        On first call, initialize positions with equal allocation using
+        open prices. Subsequently, mark-to-market existing positions
+        using close prices.
+
+        Args:
+            tickers: List of stock tickers
+            open_prices: Opening prices (used for initial purchase)
+            close_prices: Closing prices (used for valuation)
         """
         if not self.equal_weight_initialized:
             allocation_per_ticker = self.initial_capital / len(tickers)
             self.equal_weight_portfolio["cash"] = 0.0
             for ticker in tickers:
-                price = prices.get(ticker, 0)
+                price = open_prices.get(ticker, 0)  # Use OPEN price for buying
                 if price > 0:
                     shares = allocation_per_ticker / price
                     self.equal_weight_portfolio["positions"][ticker] = shares
+                    logger.info(
+                        f"Equal Weight: Initialized {ticker} with "
+                        f"{shares:.2f} shares @ ${price:.2f} (open)",
+                    )
             self.equal_weight_initialized = True
 
         total_value = self.equal_weight_portfolio["cash"]
-        for ticker, shares in self.equal_weight_portfolio["positions"].items():
-            price = prices.get(ticker, 0)
+        positions: Dict[str, float] = self.equal_weight_portfolio["positions"]
+        for ticker, shares in positions.items():
+            price = close_prices.get(ticker, 0)
             total_value += shares * price
 
         return total_value
@@ -71,35 +83,53 @@ class BaselineCalculator:
     def calculate_market_cap_weighted_value(
         self,
         tickers: List[str],
-        prices: Dict[str, float],
+        open_prices: Dict[str, float],
+        close_prices: Dict[str, float],
         market_caps: Dict[str, float],
     ) -> float:
         """
         Calculate market-cap-weighted portfolio value
 
-        On first call, initialize positions weighted by market cap
-        Subsequently, mark-to-market existing positions
+        On first call, initialize positions weighted by market cap using
+        open prices. Subsequently, mark-to-market existing positions
+        using close prices.
+
+        Args:
+            tickers: List of stock tickers
+            open_prices: Opening prices (used for initial purchase)
+            close_prices: Closing prices (used for valuation)
+            market_caps: Market capitalization for each ticker
         """
         if not self.market_cap_initialized:
             total_market_cap = sum(market_caps.get(t, 0) for t in tickers)
             if total_market_cap <= 0:
                 logger.warning("No market cap data, using equal weight")
-                return self.calculate_equal_weight_value(tickers, prices)
+                return self.calculate_equal_weight_value(
+                    tickers,
+                    open_prices,
+                    close_prices,
+                )
 
             self.market_cap_portfolio["cash"] = 0.0
             for ticker in tickers:
                 market_cap = market_caps.get(ticker, 0)
-                price = prices.get(ticker, 0)
+                price = open_prices.get(ticker, 0)  # Use OPEN price for buying
                 if market_cap > 0 and price > 0:
                     weight = market_cap / total_market_cap
                     allocation = self.initial_capital * weight
                     shares = allocation / price
                     self.market_cap_portfolio["positions"][ticker] = shares
+                    logger.info(
+                        f"Market Cap Weighted: Initialized {ticker} with "
+                        f"{shares:.2f} shares @ ${price:.2f} (open), "
+                        f"weight={weight:.2%}",
+                    )
             self.market_cap_initialized = True
 
         total_value = self.market_cap_portfolio["cash"]
-        for ticker, shares in self.market_cap_portfolio["positions"].items():
-            price = prices.get(ticker, 0)
+        positions: Dict[str, float] = self.market_cap_portfolio["positions"]
+        for ticker, shares in positions.items():
+            price = close_prices.get(ticker, 0)
             total_value += shares * price
 
         return total_value
@@ -107,7 +137,8 @@ class BaselineCalculator:
     def calculate_momentum_value(
         self,
         tickers: List[str],
-        prices: Dict[str, float],
+        open_prices: Dict[str, float],
+        close_prices: Dict[str, float],
         momentum_scores: Dict[str, float],
         date: str,
         rebalance: bool = False,
@@ -122,7 +153,8 @@ class BaselineCalculator:
 
         Args:
             tickers: List of tickers
-            prices: Current prices
+            open_prices: Opening prices (used for rebalancing trades)
+            close_prices: Closing prices (used for valuation)
             momentum_scores: Momentum scores for each ticker
             date: Current date (YYYY-MM-DD)
             rebalance: Force rebalance if True
@@ -145,14 +177,15 @@ class BaselineCalculator:
         if should_rebalance:
             self._rebalance_momentum_portfolio(
                 tickers,
-                prices,
+                open_prices,
                 momentum_scores,
             )
             self.momentum_last_rebalance_date = date
 
         total_value = self.momentum_portfolio["cash"]
-        for ticker, shares in self.momentum_portfolio["positions"].items():
-            price = prices.get(ticker, 0)
+        positions: Dict[str, float] = self.momentum_portfolio["positions"]
+        for ticker, shares in positions.items():
+            price = close_prices.get(ticker, 0)
             total_value += shares * price
 
         return total_value
@@ -201,7 +234,8 @@ class BaselineCalculator:
     def get_all_baseline_values(
         self,
         tickers: List[str],
-        prices: Dict[str, float],
+        open_prices: Dict[str, float],
+        close_prices: Dict[str, float],
         market_caps: Dict[str, float],
         momentum_scores: Dict[str, float],
         date: str,
@@ -210,18 +244,33 @@ class BaselineCalculator:
         """
         Get all baseline portfolio values in one call
 
+        Args:
+            tickers: List of stock tickers
+            open_prices: Opening prices (used for initial purchase/rebalancing)
+            close_prices: Closing prices (used for valuation)
+            market_caps: Market caps for each ticker
+            momentum_scores: Momentum scores for rebalancing
+            date: Current date
+            rebalance_momentum: Whether to rebalance momentum portfolio
+
         Returns:
             Dict with keys: equal_weight, market_cap_weighted, momentum
         """
-        equal_weight_value = self.calculate_equal_weight_value(tickers, prices)
+        equal_weight_value = self.calculate_equal_weight_value(
+            tickers,
+            open_prices,
+            close_prices,
+        )
         market_cap_value = self.calculate_market_cap_weighted_value(
             tickers,
-            prices,
+            open_prices,
+            close_prices,
             market_caps,
         )
         momentum_value = self.calculate_momentum_value(
             tickers,
-            prices,
+            open_prices,
+            close_prices,
             momentum_scores,
             date,
             rebalance_momentum,

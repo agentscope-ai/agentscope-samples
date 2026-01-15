@@ -80,7 +80,7 @@ class ToolMemory(BaseMemory):
     ) -> Any | bool:
         if not self.inited:
             await self.__aenter__()
-        uid = "alias"
+        uid = uid or "alias"
 
         # Use tool_names if provided, otherwise use query as tool_names
         tool_names = query
@@ -273,7 +273,7 @@ class ToolMemory(BaseMemory):
     ):
         if not self.inited:
             await self.__aenter__()
-        uid = "alias"
+        uid = uid or "alias"
 
         logger.info(
             f"record_action called with: uid={uid}, action={action}, "
