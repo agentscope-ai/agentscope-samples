@@ -5,7 +5,7 @@ Tracks analyst predictions and calculates win rates for leaderboard
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +213,178 @@ class AnalystPerformanceTracker:
     def clear_daily_predictions(self):
         """Clear predictions after evaluation"""
         self.daily_predictions = {}
+
+    def _process_single_pm_decision(
+        self,
+        _ticker: str,
+        decision: Dict,
+        open_price: float,
+        close_price: float,
+        _date: str,
+    ) -> Tuple[str, Optional[bool], str]:
+        """
+        Process a single PM decision and evaluate correctness
+
+        Returns:
+            Tuple of (prediction, is_correct, signal_type)
+        """
+        action = decision.get("action", "hold")
+
+        # Convert action to prediction format
+        if action in ["buy", "long"]:
+            prediction = "long"
+        elif action in ["sell", "short"]:
+            prediction = "short"
+        else:
+            prediction = "hold"
+
+        signal_display_map = {
+            "long": "bull",
+            "short": "bear",
+            "hold": "neutral",
+        }
+        signal_type = signal_display_map.get(prediction, "neutral")
+
+        # Handle invalid prices
+        if open_price <= 0 or close_price <= 0:
+            return prediction, None, signal_type
+
+        # Evaluate correctness
+        actual_return = (close_price - open_price) / open_price
+
+        if prediction == "long":
+            is_correct = actual_return > 0
+        elif prediction == "short":
+            is_correct = actual_return < 0
+        else:  # hold
+            is_correct = None
+
+        return prediction, is_correct, signal_type
+
+    def evaluate_pm_decisions(
+        self,
+        pm_decisions: Dict[str, Dict],
+        open_prices: Optional[Dict[str, float]],
+        close_prices: Dict[str, float],
+        date: str,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Evaluate PM's trading decisions against actual market moves
+
+        Args:
+            pm_decisions: PM decisions {ticker: {action, quantity, ...}}
+            open_prices: Opening prices for each ticker
+            close_prices: Closing prices for each ticker
+            date: Trading date string (YYYY-MM-DD)
+
+        Returns:
+            Dict with 'portfolio_manager' key containing evaluation results
+        """
+        if not pm_decisions or not open_prices or not close_prices:
+            return {}
+
+        correct_long = 0
+        correct_short = 0
+        incorrect_long = 0
+        incorrect_short = 0
+        unknown_long = 0
+        unknown_short = 0
+        hold_count = 0
+
+        individual_signals: List[Dict[str, Any]] = []
+
+        for ticker, decision in pm_decisions.items():
+            open_price = open_prices.get(ticker, 0)
+            close_price = close_prices.get(ticker, 0)
+
+            (
+                prediction,
+                is_correct,
+                signal_type,
+            ) = self._process_single_pm_decision(
+                ticker,
+                decision,
+                open_price,
+                close_price,
+                date,
+            )
+
+            if is_correct is None and (open_price <= 0 or close_price <= 0):
+                if prediction == "long":
+                    unknown_long += 1
+                elif prediction == "short":
+                    unknown_short += 1
+                individual_signals.append(
+                    {
+                        "ticker": ticker,
+                        "signal": signal_type,
+                        "date": date,
+                        "is_correct": "unknown",
+                    },
+                )
+            elif prediction == "hold":
+                hold_count += 1
+                individual_signals.append(
+                    {
+                        "ticker": ticker,
+                        "signal": signal_type,
+                        "date": date,
+                        "is_correct": None,
+                    },
+                )
+            else:
+                if prediction == "long":
+                    if is_correct:
+                        correct_long += 1
+                    else:
+                        incorrect_long += 1
+                else:
+                    if is_correct:
+                        correct_short += 1
+                    else:
+                        incorrect_short += 1
+
+                individual_signals.append(
+                    {
+                        "ticker": ticker,
+                        "signal": signal_type,
+                        "date": date,
+                        "is_correct": is_correct,
+                    },
+                )
+
+        total_long = correct_long + incorrect_long + unknown_long
+        total_short = correct_short + incorrect_short + unknown_short
+        evaluated_long = correct_long + incorrect_long
+        evaluated_short = correct_short + incorrect_short
+        total_evaluated = evaluated_long + evaluated_short
+        correct_predictions = correct_long + correct_short
+
+        win_rate = (
+            correct_predictions / total_evaluated
+            if total_evaluated > 0
+            else None
+        )
+
+        return {
+            "portfolio_manager": {
+                "total_predictions": total_evaluated,
+                "correct_predictions": correct_predictions,
+                "win_rate": win_rate,
+                "bull": {
+                    "n": total_long,
+                    "win": correct_long,
+                    "unknown": unknown_long,
+                },
+                "bear": {
+                    "n": total_short,
+                    "win": correct_short,
+                    "unknown": unknown_short,
+                },
+                "hold": hold_count,
+                "signals": individual_signals,
+            },
+        }
 
 
 def update_leaderboard_with_evaluations(

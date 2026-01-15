@@ -27,6 +27,7 @@ class OperationRecord(SQLModel):
 
 class QueryRecord(SQLModel):
     query: Optional[str] = None
+    session_content: Optional[list[Any]] = None
 
 
 class Action(SQLModel):
@@ -159,6 +160,7 @@ class ChatAction(Action):
         query: Optional[str] = None,
         chat_type: Optional[ChatType] = None,
         history_length: int = 0,
+        session_content: Optional[list[dict]] = None,
     ):
         action_type = cls._resolve_action_type(chat_type, history_length)
         return cls(
@@ -168,6 +170,7 @@ class ChatAction(Action):
             message_id=message_id,
             data=QueryRecord(
                 query=query,
+                session_content=session_content,
             ),
         )
 
@@ -185,6 +188,7 @@ class TaskStopAction(Action):
         user_id: uuid.UUID,
         conversation_id: uuid.UUID,
         task_id: uuid.UUID,
+        data: Optional[dict] = None,
     ):
         action_type = cls._resolve_action_type()
         return cls(
@@ -192,4 +196,5 @@ class TaskStopAction(Action):
             session_id=conversation_id,
             action_type=action_type,
             task_id=task_id,
+            data=data,
         )

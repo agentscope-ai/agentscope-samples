@@ -128,7 +128,7 @@ async def _planner_save_plan_with_session(
 async def planner_save_post_action_state(
     self: MetaPlanner,
     action_input: dict[str, Any],  # pylint: disable=W0613
-    tool_output: Optional[Msg],  # pylint: disable=W0613
+    tool_output: Optional[dict],  # pylint: disable=W0613
 ) -> None:
     """Hook func for save state after action step"""
     await _update_and_save_state_with_session(self)

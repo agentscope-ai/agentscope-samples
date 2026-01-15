@@ -202,9 +202,11 @@ class Gateway:
             return
         dates = data.get("dates", [])
         if dates and self._backtest_task is None:
-            self._backtest_task = asyncio.create_task(
+            task = asyncio.create_task(
                 self._run_backtest_dates(dates),
             )
+            task.add_done_callback(self._handle_backtest_exception)
+            self._backtest_task = task
 
     async def broadcast(self, message: Dict[str, Any]):
         """Broadcast message to all connected clients"""
@@ -414,6 +416,11 @@ class Gateway:
 
         holdings = self.storage.load_file("holdings") or []
         trades = self.storage.load_file("trades") or []
+        leaderboard = self.storage.load_file("leaderboard") or []
+
+        if leaderboard:
+            await self.state_sync.on_leaderboard_update(leaderboard)
+
         self._dashboard.update(
             date=date,
             status="Running",
@@ -504,26 +511,46 @@ class Gateway:
             f"Starting backtest - {len(dates)} trading days",
         )
 
-        for i, date in enumerate(dates):
-            self._dashboard.update(days_completed=i)
-            await self.on_strategy_trigger(date=date)
-            await asyncio.sleep(0.1)
+        try:
+            for i, date in enumerate(dates):
+                self._dashboard.update(days_completed=i)
+                await self.on_strategy_trigger(date=date)
+                await asyncio.sleep(0.1)
 
-        await self.state_sync.on_system_message(
-            f"Backtest complete - {len(dates)} days",
-        )
+            await self.state_sync.on_system_message(
+                f"Backtest complete - {len(dates)} days",
+            )
 
-        # Update dashboard with final state
-        summary = self.storage.load_file("summary") or {}
-        self._dashboard.update(
-            status="Complete",
-            portfolio=summary,
-            days_completed=len(dates),
-        )
-        self._dashboard.stop()
-        self._dashboard.print_final_summary()
+            # Update dashboard with final state
+            summary = self.storage.load_file("summary") or {}
+            self._dashboard.update(
+                status="Complete",
+                portfolio=summary,
+                days_completed=len(dates),
+            )
+            self._dashboard.stop()
+            self._dashboard.print_final_summary()
+        except Exception as e:
+            error_msg = f"Backtest failed: {type(e).__name__}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            await self.state_sync.on_system_message(error_msg)
+            self._dashboard.update(status=f"Failed: {str(e)}")
+            self._dashboard.stop()
+            raise
+        finally:
+            self._backtest_task = None
 
-        self._backtest_task = None
+    def _handle_backtest_exception(self, task: asyncio.Task):
+        """Handle exceptions from backtest task"""
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            logger.info("Backtest task was cancelled")
+        except Exception as e:
+            logger.error(
+                f"Backtest task failed with exception:{type(e).__name__}:{e}",
+                exc_info=True,
+            )
 
     def set_backtest_dates(self, dates: List[str]):
         self.state_sync.set_backtest_dates(dates)

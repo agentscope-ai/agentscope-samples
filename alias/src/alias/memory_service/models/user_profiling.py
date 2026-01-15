@@ -183,12 +183,21 @@ class UserProfilingAddRequest(BaseUserProfilingRequest):
     """Request for adding user profiling content"""
 
     content: List[Any] = Field(default_factory=list)
+    session_id: Optional[str] = Field(default=None, description="Session ID")
 
 
 class UserProfilingRetrieveRequest(BaseUserProfilingRequest):
     """Request for retrieving user profiling data"""
 
     query: str
+    limit: Optional[int] = Field(
+        default=3,
+        description="The maximum number of memories to retrieve",
+    )
+    threshold: Optional[float] = Field(
+        default=0.6,
+        description="The threshold for the memories to retrieve",
+    )
 
 
 class UserProfilingRetrieveResponse(BaseUserProfilingResponse):

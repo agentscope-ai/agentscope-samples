@@ -265,6 +265,26 @@
         "example",
         "doc"
       ]
+    },
+    {
+      "login": "yuluo1007",
+      "name": "sidiluo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16065149?v=4",
+      "profile": "https://github.com/yuluo1007",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "AttanWu",
+      "name": "Attan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16112546?v=4",
+      "profile": "https://github.com/AttanWu",
+      "contributions": [
+        "example",
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,

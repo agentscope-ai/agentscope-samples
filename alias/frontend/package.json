@@ -9,8 +9,8 @@
     "preview": "vite preview --config vite.config.ts"
   },
   "dependencies": {
-    "@agentscope-ai/chat": "1.1.17",
-    "@agentscope-ai/design": "1.0.11",
+    "@agentscope-ai/chat": "^1.1.44",
+    "@agentscope-ai/design": "^1.0.20",
     "@ahooksjs/use-url-state": "^3.5.1",
     "@ant-design/pro-components": "^2.8.7",
     "@codemirror/lang-css": "^6.3.1",

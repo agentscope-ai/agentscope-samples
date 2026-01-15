@@ -112,7 +112,7 @@ class AnalystAgent(ReActAgent):
         """
         ticker = None
         if x and hasattr(x, "metadata") and x.metadata:
-            ticker = x.metadata.get("ticker")
+            ticker = x.metadata.get("tickers")
 
         if ticker:
             progress.update_status(
