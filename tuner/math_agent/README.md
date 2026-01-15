@@ -314,7 +314,7 @@ if __name__ == "__main__":
     dataset = DatasetConfig(path="my_dataset", split="train")
     model = TunerModelConfig(model_path="Qwen/Qwen3-0.6B", max_model_len=16384)
     algorithm = AlgorithmConfig(
-        algorithm_type="multi_step_grpo",
+        algorithm_type="multi_step_grpo",  # a GRPO algorithm for agentic scenarios
         group_size=8,
         batch_size=32,
         learning_rate=1e-6,
