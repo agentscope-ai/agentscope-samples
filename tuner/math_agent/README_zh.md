@@ -254,7 +254,7 @@ if __name__ == "__main__":
 TensorBoard 日志在 checkpoint 目录下的 `monitor/tensorboard` 中。
 
 ```
-react_agent/
+math_agent/
     └── checkpoints/
         └──AgentScope/
             └── Experiment-20260104185355/  # 每次运行新建带时间戳的子目录

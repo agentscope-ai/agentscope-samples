@@ -257,7 +257,7 @@ The checkpoint and logs will automatically be saved to the `checkpoints/AgentSco
 You can find the tensorboard logs inside `monitor/tensorboard` of the checkpoint directory.
 
 ```
-react_agent/
+math_agent/
     └── checkpoints/
         └──AgentScope/
             └── Experiment-20260104185355/  # each run saved in a sub-directory with timestamp
