@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
 """Enhanced prompts with reasoning/statement separation awareness - 7 Player Version."""
 
 
@@ -195,4 +196,3 @@ class ChinesePrompts:
     to_all_continue = "游戏继续。"
 
     to_all_reflect = "游戏结束。现在每位玩家可以对自己的表现进行反思。注意每位玩家只有一次发言机会，且反思内容仅自己可见。"
-

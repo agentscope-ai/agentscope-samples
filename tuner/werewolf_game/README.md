@@ -91,11 +91,11 @@ The training workflow consists of the following key components:
 async def run_werewolves_workflow(task, model, auxiliary_models):
     # 1. Initialize roles
     roles = ["werewolf"] * 2 + ["villager"] * 3 + ["seer", "witch"]
-    
+
     # 2. Shuffle based on task seed
     np.random.seed(task["seed"])
     np.random.shuffle(roles)
-    
+
     # 3. Create agents: werewolves use trainable model, others use auxiliary model
     players = [
         ReActAgent(
@@ -104,13 +104,13 @@ async def run_werewolves_workflow(task, model, auxiliary_models):
             ...
         ) for i, role in enumerate(roles)
     ]
-    
+
     # 4. Run the game
     good_guy_win = await werewolves_game(players, roles)
-    
+
     # 5. Compute reward
     reward = 1.0 if not good_guy_win else 0.0
-    
+
     return WorkflowOutput(reward=reward, metrics={...})
 ```
 
@@ -285,27 +285,27 @@ Below is an example where werewolves sacrifice teammates to gain trust, then dom
 
 *Private Reasoning (only Player4 sees):*
 ```
-"I'm a werewolf, and I know Player2 was targeted last night but survived. 
-My teammate Player5 is doomed - Player3 and Player7 are attacking him together. 
-I need to deflect suspicion from MYSELF, not save Player5. 
+"I'm a werewolf, and I know Player2 was targeted last night but survived.
+My teammate Player5 is doomed - Player3 and Player7 are attacking him together.
+I need to deflect suspicion from MYSELF, not save Player5.
 
-Strategy: Sacrifice Player5 to gain trust. If I vote against my teammate, 
-villagers will think I'm trustworthy. This creates confusion and positions 
+Strategy: Sacrifice Player5 to gain trust. If I vote against my teammate,
+villagers will think I'm trustworthy. This creates confusion and positions
 me as a "confirmed good guy" for later rounds."
 ```
 
 *Public Statement (all players see):*
 ```
-✅ "I think Player5 is acting very strangely. He brought up Player2 being targeted, 
-but didn't explain why he's so focused on them. It feels like a distraction tactic. 
-I also noticed that Player3 and Player7 are both accusing Player5, which makes sense - 
-their logic is solid. I think we should seriously consider voting out Player5 - 
+✅ "I think Player5 is acting very strangely. He brought up Player2 being targeted,
+but didn't explain why he's so focused on them. It feels like a distraction tactic.
+I also noticed that Player3 and Player7 are both accusing Player5, which makes sense -
+their logic is solid. I think we should seriously consider voting out Player5 -
 he's the most suspicious person right now."
 ```
 
 **Result:** Player5 eliminated, but Player4 gains complete trust from Seer and all villagers.
 
-**Why it works:** 
+**Why it works:**
 - Seer trusts Player4 as strong villager ally → won't check him
 - Villagers follow Player4's "logical" analysis
 - Player4 systematically misleads discussions in later rounds

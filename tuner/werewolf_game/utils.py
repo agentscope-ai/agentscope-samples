@@ -157,4 +157,3 @@ class Players:
                 true_roles=true_roles,
             )
         return None
-

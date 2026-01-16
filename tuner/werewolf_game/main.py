@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+# pylint: disable=C0301,C0413,W0621,W0404,C0412,E0611,E1121
 """Example of training a werewolf game agent with Trinity-RFT using AgentScope tuner."""
 import sys
 from pathlib import Path
@@ -14,12 +16,11 @@ from agentscope.tuner import (
 )
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIMultiAgentFormatter
-from agentscope.message import Msg
 
 # Add current directory to path for local imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from game import BadGuyException, werewolves_game
+from game import BadGuyException, werewolves_game  # noqa: E402
 
 
 async def run_werewolves_workflow(
@@ -43,35 +44,35 @@ async def run_werewolves_workflow(
     """
     # Initialize roles: 2 werewolves, 3 villagers, 1 seer, 1 witch
     roles = ["werewolf"] * 2 + ["villager"] * 3 + ["seer", "witch"]
-    
+
     # Shuffle roles based on task seed for reproducibility
     seed = task.get("seed", 0)
     np.random.seed(seed)
     np.random.shuffle(roles)
-    
+
     # Get trainable_target from workflow_args (default: "werewolf")
     # Options: "werewolf" or "good_guy" (villager, seer, witch)
     workflow_args = task.get("workflow_args", {})
     trainable_target = workflow_args.get("trainable_target", "werewolf")
-    
+
     # Get the participant model for opponent players
     if "participant" not in auxiliary_models:
         raise ValueError(
-            "Expected 'participant' model in auxiliary_models for opponent players"
+            "Expected 'participant' model in auxiliary_models for opponent players",
         )
     participant_model = auxiliary_models["participant"]
-    
+
     # Create players with appropriate models based on trainable_target
     players = []
     for i, role in enumerate(roles):
         # Determine which model to use based on trainable_target
         if trainable_target == "werewolf":
             # Training werewolves: werewolves use trainable model
-            use_trainable = (role == "werewolf")
+            use_trainable = role == "werewolf"
         else:  # trainable_target == "good_guy"
             # Training good guys: villager, seer, witch use trainable model
-            use_trainable = (role in ["villager", "seer", "witch"])
-        
+            use_trainable = role in ["villager", "seer", "witch"]
+
         agent = ReActAgent(
             name=f"Player{i + 1}",
             sys_prompt=get_official_agent_prompt(f"Player{i + 1}"),
@@ -80,11 +81,11 @@ async def run_werewolves_workflow(
             max_iters=3,
         )
         players.append(agent)
-    
+
     try:
         # Run the werewolf game
         good_guy_win = await werewolves_game(players, roles)
-        
+
         # Calculate reward based on trainable_target
         is_success = False
         if trainable_target == "werewolf":
@@ -101,25 +102,25 @@ async def run_werewolves_workflow(
                 is_success = True
             else:
                 raw_reward = 0.0
-        
+
         metrics = {
             "success": float(is_success),
             "werewolf_win": float(not good_guy_win),
             "villager_win": float(good_guy_win),
             "trainable_target": trainable_target,
         }
-        
+
         return WorkflowOutput(
             reward=raw_reward,
             metrics=metrics,
         )
-    
+
     except BadGuyException as e:
         # If game execution fails, give a small penalty
         traceback.print_exc()
         print(
             f"Error during game execution: {e}. "
-            "Assigning penalty to trainable agents."
+            "Assigning penalty to trainable agents.",
         )
         return WorkflowOutput(
             reward=-0.1,
@@ -137,15 +138,15 @@ async def run_werewolves_workflow(
 
 def get_official_agent_prompt(name: str) -> str:
     """Get the system prompt for an agent.
-    
+
     Args:
         name (str): The name of the agent.
-    
+
     Returns:
         str: The system prompt.
     """
     from textwrap import dedent
-    
+
     system_prompt = dedent(
         f"""
         You're a werewolf game player named {name}.
@@ -238,28 +239,34 @@ def get_official_agent_prompt(name: str) -> str:
         - Your response should be specific and concise, provide clear reason and avoid unnecessary elaboration.
         - Generate your one-line response by using the `generate_response` function.
         - Don't repeat the others' speeches.
-        - [CRITICAL] Remember: REASONING is private (only you see it), STATEMENT is public (everyone sees it). Use this to your advantage!"""
+        - [CRITICAL] Remember: REASONING is private (only you see it), STATEMENT is public (everyone sees it). Use this to your advantage!""",
     )
     return system_prompt
 
 
 if __name__ == "__main__":
-    from agentscope.tuner import DatasetConfig, TunerModelConfig, AlgorithmConfig
-    
+    from agentscope.tuner import (
+        DatasetConfig,
+        TunerModelConfig,
+        AlgorithmConfig,
+    )
+
     # High-level configuration in code (easy to modify)
     config_path = Path(__file__).parent / "config.yaml"
 
     # Setup Model Path
-    trained_model_path = "Qwen/Qwen2.5-7B-Instruct" # fill in your model path here
-    auxiliary_model_path = "Qwen/Qwen3-30B-A3B-Instruct-2507" # fill in your auxiliary model path here
-    
+    trained_model_path = (
+        "Qwen/Qwen2.5-7B-Instruct"  # fill in your model path here
+    )
+    auxiliary_model_path = "Qwen/Qwen3-30B-A3B-Instruct-2507"  # fill in your auxiliary model path here
+
     # Dataset configuration
     dataset = DatasetConfig(
         path=str(Path(__file__).parent / "data"),
         split="train",
         total_steps=400,  # Total training steps
     )
-    
+
     # Model configuration (trainable model for werewolf players)
     model = TunerModelConfig(
         model_path=trained_model_path,
@@ -271,7 +278,7 @@ if __name__ == "__main__":
         tool_call_parser="hermes",
         reasoning_parser=None,
     )
-    
+
     # Auxiliary models (for non-werewolf players)
     auxiliary_models = {
         "participant": TunerModelConfig(
@@ -283,9 +290,9 @@ if __name__ == "__main__":
             tensor_parallel_size=1,
             tool_call_parser="hermes",
             reasoning_parser=None,
-        )
+        ),
     }
-    
+
     # Algorithm configuration
     algorithm = AlgorithmConfig(
         algorithm_type="multi_step_grpo",
@@ -295,7 +302,7 @@ if __name__ == "__main__":
         save_interval_steps=100,
         eval_interval_steps=100,
     )
-    
+
     # Run training with hybrid configuration
     # Code parameters above + detailed Trinity config from YAML
     tune(
@@ -307,4 +314,3 @@ if __name__ == "__main__":
         algorithm=algorithm,
         config_path=str(config_path),  # For cluster, explorer, trainer details
     )
-

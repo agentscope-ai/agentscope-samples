@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-branches, too-many-statements, no-name-in-module
+# flake8: noqa: E501
+# pylint: disable=too-many-branches, too-many-statements, no-name-in-module, W0707
 """A werewolf game implemented by agentscope with structured reasoning - 7 Player Version."""
 from utils import (
     majority_vote,
@@ -44,7 +45,9 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
         agents (`list[ReActAgent]`):
             A list of 7 agents.
     """
-    assert len(agents) == 7, "The 7-player werewolf game needs exactly 7 players."
+    assert (
+        len(agents) == 7
+    ), "The 7-player werewolf game needs exactly 7 players."
 
     # Init the players' status
     players = Players()
@@ -131,7 +134,10 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                         [
                             *msgs_vote,
                             await moderator(
-                                Prompts.to_wolves_res.format(votes, killed_player),
+                                Prompts.to_wolves_res.format(
+                                    votes,
+                                    killed_player,
+                                ),
                             ),
                         ],
                     )
@@ -226,17 +232,23 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                         Prompts.to_dead_player.format(killed_player),
                     )
                     await alive_players_hub.broadcast(msg_moderator)
-                    
+
                     # Leave a message with structured reasoning
                     dead_agent = players.name_to_agent[killed_player]
                     last_words_response = await dead_agent(
                         structured_model=PublicDiscussionModel,
                     )
-                    
+
                     # Extract reasoning and statement from metadata
-                    reasoning = last_words_response.metadata.get("reasoning", "")
-                    statement = last_words_response.metadata.get("statement", "")
-                    
+                    reasoning = last_words_response.metadata.get(
+                        "reasoning",
+                        "",
+                    )
+                    statement = last_words_response.metadata.get(
+                        "statement",
+                        "",
+                    )
+
                     # Only broadcast the public statement
                     public_last_msg = Msg(
                         name=dead_agent.name,
@@ -244,7 +256,7 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                         role="assistant",
                     )
                     await alive_players_hub.broadcast(public_last_msg)
-                    
+
                     # Let the dead player observe their own private reasoning
                     private_reasoning_msg = Msg(
                         name="self_thought",
@@ -272,7 +284,7 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                     ),
                 ),
             )
-            
+
             # Instead of sequential_pipeline, we manually handle each player
             # to separate reasoning from public statement
             for player in players.current_alive:
@@ -280,11 +292,11 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                 response = await player(
                     structured_model=PublicDiscussionModel,
                 )
-                
+
                 # Extract reasoning and statement from metadata
                 reasoning = response.metadata.get("reasoning", "")
                 statement = response.metadata.get("statement", "")
-                
+
                 # Only broadcast the public statement to all players
                 public_msg = Msg(
                     name=player.name,
@@ -292,7 +304,7 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                     role="assistant",
                 )
                 await alive_players_hub.broadcast(public_msg)
-                
+
                 # Let the player observe their own private reasoning
                 # This keeps it in their memory but not visible to others
                 private_msg = Msg(
@@ -330,25 +342,25 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                 prompt_msg = await moderator(
                     Prompts.to_dead_player.format(voted_player),
                 )
-                
+
                 # Get structured last words with reasoning
                 dead_agent = players.name_to_agent[voted_player]
                 last_words_response = await dead_agent(
                     prompt_msg,
                     structured_model=PublicDiscussionModel,
                 )
-                
+
                 # Extract reasoning and statement from metadata
                 reasoning = last_words_response.metadata.get("reasoning", "")
                 statement = last_words_response.metadata.get("statement", "")
-                
+
                 # Create public statement message
                 public_last_msg = Msg(
                     name=dead_agent.name,
                     content=statement,
                     role="assistant",
                 )
-                
+
                 # Store private reasoning for the dead player
                 private_reasoning_msg = Msg(
                     name="self_thought",
@@ -356,7 +368,7 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
                     role="assistant",
                 )
                 await dead_agent.observe(private_reasoning_msg)
-                
+
                 voting_msgs.extend([prompt_msg, public_last_msg])
 
             await alive_players_hub.broadcast(voting_msgs)
@@ -385,4 +397,3 @@ async def werewolves_game(agents: list[ReActAgent], roles) -> bool:
     alive_wolves = players.werewolves
     good_guy_win = len(alive_wolves) == 0
     return good_guy_win
-

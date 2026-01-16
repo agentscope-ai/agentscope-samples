@@ -14,32 +14,32 @@ checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints}
 algorithm:
   # Algorithm type: multi_step_grpo for multi-step Group Relative Policy Optimization
   algorithm_type: multi_step_grpo
-  
+
   # KL divergence loss function for regularization during training
   # "low_var_kl": low-variance KL loss suitable for multi-step optimization
   kl_loss_fn: "low_var_kl"
   kl_loss_fn_args:
     # KL coefficient: 0 means no KL penalty (pure reward optimization)
     kl_coef: 0
-  
+
   # Advantage function configuration for computing policy gradients
   advantage_fn_args:
     # Small epsilon value for numerical stability in advantage normalization
     epsilon: 1e-6
     # Normalize advantage by episode length (important for variable-length games)
     step_norm: true
-  
+
   # Number of rollouts per task (group size for GRPO)
   # Higher values provide better gradient estimates but require more compute
   repeat_times: 32
-  
+
   # Policy loss function arguments (PPO-style clipping)
   policy_loss_fn_args:
     # Lower bound for probability ratio clipping (prevents too large policy updates)
     clip_range_low: 0.2
     # Upper bound for probability ratio clipping
     clip_range_high: 0.28
-  
+
   # Optimizer configuration
   optimizer:
     # Learning rate for policy updates
@@ -80,7 +80,7 @@ buffer:
   # For multi-step GRPO, each rollout for task has multiple steps, so we need to accumulate the experiences for gradient update.
   # Hence we should choose a larger batch size for training (2048 > 16 * 32)
   train_batch_size: 2048
-  
+
   # Explorer input configuration (rollout data source)
   explorer_input:
     taskset:
@@ -106,7 +106,7 @@ buffer:
         trainable_target: good_guy
     # Evaluation datasets (empty for this experiment)
     eval_tasksets: []
-  
+
   # Trainer input configuration (training data source)
   trainer_input:
     experience_buffer:
@@ -135,7 +135,7 @@ explorer:
   # Number of times each task is repeated within a single runner
   # (usually 1; repeat_times is handled at algorithm level)
   max_repeat_times_per_runner: 1
-  
+
   # Over-rollout configuration (collect more data than needed)
   over_rollout:
     # Ratio of tasks to skip waiting for (0.2 = wait for 80% of batch_size, then proceed)
@@ -143,14 +143,14 @@ explorer:
     ratio: 0.2
     # Minimum wait time (seconds) after reaching the threshold before proceeding
     wait_after_min: 15
-  
+
   # Dynamic timeout configuration (adaptive timeout based on task completion time)
   dynamic_timeout:
     # Enable dynamic timeout adjustment
     enable: true
     # Timeout multiplier: timeout = average_task_time * ratio
     ratio: 4
-  
+
   # Rollout model configuration (trainable model for good guy players)
   rollout_model:
     # Number of vLLM engine instances for parallel inference
@@ -173,7 +173,7 @@ explorer:
     dtype: bfloat16
     # Random seed for reproducibility
     seed: 42
-  
+
   # Auxiliary models configuration (for werewolf players when training good guys)
   auxiliary_models:
     - # Model name identifier

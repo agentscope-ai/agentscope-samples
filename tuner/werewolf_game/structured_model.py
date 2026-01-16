@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
 """The structured output models used in the werewolf game."""
 from typing import Literal
 
@@ -16,7 +17,7 @@ class DiscussionModel(BaseModel):
 
 class PublicDiscussionModel(BaseModel):
     """The output format for public discussion with private reasoning.
-    
+
     This model separates private reasoning from public statements to prevent
     accidental information leakage (e.g., werewolves revealing their identity).
     """
@@ -30,7 +31,7 @@ class PublicDiscussionModel(BaseModel):
             "If you are a villager, you can analyze who might be the werewolf."
         ),
     )
-    
+
     statement: str = Field(
         description=(
             "Your PUBLIC statement to all players. This WILL be visible to everyone. "
@@ -93,4 +94,3 @@ def get_seer_model(agents: list[AgentBase]) -> type[BaseModel]:
         )
 
     return SeerModel
-
