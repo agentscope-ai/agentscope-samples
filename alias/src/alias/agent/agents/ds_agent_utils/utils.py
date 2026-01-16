@@ -95,21 +95,3 @@ def set_run_ipython_cell(sandbox):
     print(
         sandbox.call_tool("run_ipython_cell", {"code": summarize_chart_code}),
     )
-
-
-def install_package(sandbox):
-    pkgs = [
-        # "pandas",
-        # "matplotlib",
-        # "numpy",
-        # "seaborn",
-        # "scipy",
-        # "scikit-learn",
-        "agentscope",
-        "qdrant-client",
-    ]
-    command = f"pip install {' '.join(pkgs)}"
-    sandbox.call_tool(
-        name="run_shell_command",
-        arguments={"command": command},
-    )

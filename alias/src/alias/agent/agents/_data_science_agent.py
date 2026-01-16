@@ -31,7 +31,6 @@ from .ds_agent_utils import (
     files_filter_pre_reply_hook,
     add_ds_specific_tool,
     set_run_ipython_cell,
-    install_package,
 )
 from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH
 
@@ -70,7 +69,6 @@ class DataScienceAgent(AliasAgentBase):
             state_saving_dir=state_saving_dir,
         )
 
-        install_package(self.toolkit.sandbox)
         set_run_ipython_cell(self.toolkit.sandbox)
 
         self.uploaded_files: List[str] = []

@@ -1,0 +1,241 @@
+# ============================================
+# Project and Experiment Configuration
+# ============================================
+# Project name for grouping experiments
+project: AgentScope-Werewolves
+# Unique name for this specific experiment run
+name: Werewolves-7Player-GRPO
+# Root directory for saving checkpoints. Uses environment variable if set, otherwise defaults to ./checkpoints
+checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints}
+
+# ============================================
+# Algorithm Configuration
+# ============================================
+algorithm:
+  # Algorithm type: multi_step_grpo for multi-step Group Relative Policy Optimization
+  algorithm_type: multi_step_grpo
+
+  # KL divergence loss function for regularization during training
+  # "low_var_kl": low-variance KL loss suitable for multi-step optimization
+  kl_loss_fn: "low_var_kl"
+  kl_loss_fn_args:
+    # KL coefficient: 0 means no KL penalty (pure reward optimization)
+    kl_coef: 0
+
+  # Advantage function configuration for computing policy gradients
+  advantage_fn_args:
+    # Small epsilon value for numerical stability in advantage normalization
+    epsilon: 1e-6
+    # Normalize advantage by episode length (important for variable-length games)
+    step_norm: true
+
+  # Number of rollouts per task (group size for GRPO)
+  # Higher values provide better gradient estimates but require more compute
+  repeat_times: 32
+
+  # Policy loss function arguments (PPO-style clipping)
+  policy_loss_fn_args:
+    # Lower bound for probability ratio clipping (prevents too large policy updates)
+    clip_range_low: 0.2
+    # Upper bound for probability ratio clipping
+    clip_range_high: 0.28
+
+  # Optimizer configuration
+  optimizer:
+    # Learning rate for policy updates
+    lr: 1e-6
+
+# ============================================
+# Model Configuration
+# ============================================
+model:
+  # Path to the base model (trainable model for werewolf players)
+  # Uses environment variable if set, otherwise defaults to Qwen2.5-7B-Instruct
+  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen2.5-7B-Instruct}
+  # Maximum number of tokens the model can generate per response
+  max_response_tokens: 4096
+  # Total context length the model can handle (prompt + response)
+  max_model_len: 25600
+
+# ============================================
+# Cluster Configuration
+# ============================================
+cluster:
+  # Number of nodes in the Ray cluster
+  node_num: 4
+  # Number of GPUs per node (total GPUs = node_num * gpu_per_node = 32)
+  gpu_per_node: 8
+  # Ray cluster address: "auto" automatically detects the cluster
+  ray_address: auto
+
+# ============================================
+# Buffer Configuration (Data Pipeline)
+# ============================================
+buffer:
+  # Total training steps (iterations)
+  total_steps: 400
+  # Batch size for rollout collection (tasks per training step)
+  batch_size: 24
+  # Batch size for training (experiences per gradient update)
+  # For multi-step GRPO, each rollout for task has multiple steps, so we need to accumulate the experiences for gradient update.
+  # Hence we should choose a larger batch size for training (2048 > 16 * 32)
+  train_batch_size: 2048
+
+  # Explorer input configuration (rollout data source)
+  explorer_input:
+    taskset:
+      # Dataset name
+      name: werewolves
+      # Storage type: "file" reads from local file system
+      storage_type: file
+      # Path to the dataset directory containing train.jsonl
+      path: data
+      # Dataset split to use
+      split: 'train'
+      # Rollout generation arguments
+      rollout_args:
+        # Sampling temperature for exploration (1.0 = full stochasticity)
+        temperature: 1.0
+        # Maximum tokens per generation
+        max_tokens: 4096
+      # Workflow-specific arguments
+      workflow_args:
+        # Which side to train: "werewolf" or "good_guy" (villager, seer, witch)
+        # - "werewolf": Train werewolf players (default)
+        # - "good_guy": Train villager, seer, and witch players
+        trainable_target: werewolf
+    # Evaluation datasets (empty for this experiment)
+    eval_tasksets: []
+
+  # Trainer input configuration (training data source)
+  trainer_input:
+    experience_buffer:
+      # Name of the experience buffer
+      name: werewolves
+      # Storage type: "queue" for in-memory communication between explorer and trainer
+      storage_type: queue
+      # Maximum time (seconds) to wait for data from explorer before timeout
+      max_read_timeout: 7200
+      # Replay buffer configuration for experience reuse
+      replay_buffer:
+        # Enable replay buffer to reuse past experiences
+        enable: true
+
+# ============================================
+# Explorer Configuration (Rollout Generation)
+# ============================================
+explorer:
+  # Number of parallel workflow runners per rollout model instance
+  # Higher values = more parallel game simulations
+  runner_per_model: 16
+  # Maximum time (seconds) to wait for a single task completion
+  max_timeout: 3600
+  # Number of retries if a task fails or times out (0 = no retry)
+  max_retry_times: 0
+  # Number of times each task is repeated within a single runner
+  # (usually 1; repeat_times is handled at algorithm level)
+  max_repeat_times_per_runner: 1
+
+  # Over-rollout configuration (collect more data than needed)
+  over_rollout:
+    # Ratio of tasks to skip waiting for (0.2 = wait for 80% of batch_size, then proceed)
+    # Improves throughput by not waiting for slow tasks
+    ratio: 0.2
+    # Minimum wait time (seconds) after reaching the threshold before proceeding
+    wait_after_min: 15
+
+  # Dynamic timeout configuration (adaptive timeout based on task completion time)
+  dynamic_timeout:
+    # Enable dynamic timeout adjustment
+    enable: true
+    # Timeout multiplier: timeout = average_task_time * ratio
+    ratio: 4
+
+  # Rollout model configuration (trainable model for werewolf players)
+  rollout_model:
+    # Number of vLLM engine instances for parallel inference
+    engine_num: 16
+    # Tensor parallelism size (GPUs per engine instance)
+    tensor_parallel_size: 1
+    # Disable KV cache prefix sharing (usually False for training stability)
+    enable_prefix_caching: false
+    # Disable CUDA graph optimization (False = use CUDA graphs for faster inference)
+    enforce_eager: false
+    # Enable OpenAI-compatible API interface for vLLM
+    enable_openai_api: true
+    # Enable conversation history tracking
+    enable_history: true
+    # Enable automatic tool choice in function calling
+    enable_auto_tool_choice: true
+    # Tool call parser for structured outputs (hermes format)
+    tool_call_parser: hermes
+    # Data type for model weights and activations
+    dtype: bfloat16
+    # Random seed for reproducibility
+    seed: 42
+
+  # Auxiliary models configuration (for non-werewolf players: villagers, seer, witch)
+  auxiliary_models:
+    - # Model name identifier
+      name: participant
+      # Path to auxiliary model (stronger model for stable baseline opponents)
+      model_path: ${oc.env:TRINITY_AUXILIARY_MODEL_PATH,Qwen/Qwen3-30B-A3B-Instruct-2507}
+      # Number of vLLM engines for auxiliary model (fewer than rollout model)
+      engine_num: 8
+      # Tensor parallelism size
+      tensor_parallel_size: 1
+      # Disable prefix caching
+      enable_prefix_caching: false
+      # Disable CUDA graph optimization
+      enforce_eager: false
+      # Enable OpenAI API interface
+      enable_openai_api: true
+      # Enable automatic tool choice
+      enable_auto_tool_choice: true
+      # Tool call parser
+      tool_call_parser: hermes
+      # Data type
+      dtype: bfloat16
+      # Random seed
+      seed: 42
+
+# ============================================
+# Synchronizer Configuration (Weight Sync)
+# ============================================
+synchronizer:
+  # Synchronization style: "dynamic_by_explorer" = sync when explorer requests
+  # Alternatives: "fixed" (sync every N steps), "dynamic_by_trainer"
+  sync_style: dynamic_by_explorer
+  # Synchronization method: "nccl" uses NVIDIA NCCL for fast GPU-to-GPU communication
+  # Alternatives: "checkpoint" (slower, file-based sync)
+  sync_method: 'nccl'
+  # Sync weights every N training steps
+  sync_interval: 1
+  # Timeout (seconds) for weight synchronization before failing
+  sync_timeout: 72000
+
+# ============================================
+# Trainer Configuration (Model Training)
+# ============================================
+trainer:
+  # Save checkpoint every N training steps (0 = only save at end)
+  save_interval: 100
+  # Gradient clipping threshold to prevent exploding gradients
+  grad_clip: 1.0
+  # Use dynamic batch size to maximize GPU memory utilization
+  use_dynamic_bsz: true
+  # Maximum token length per GPU for memory management
+  # Higher = more efficient but requires more VRAM
+  max_token_len_per_gpu: 16384
+  # Ulysses sequence parallelism size for handling long sequences
+  # 2 = split sequence across 2 GPUs
+  ulysses_sequence_parallel_size: 2
+
+# ============================================
+# Monitor Configuration (Logging & Tracking)
+# ============================================
+monitor:
+  # Monitoring/logging backend: "wandb" for Weights & Biases
+  # Alternatives: "tensorboard"
+  monitor_type: wandb
+
