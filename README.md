@@ -72,7 +72,7 @@ This is a repository that **brings together a variety of ready-to-run Python age
 │   ├── frozen_lake/                        # Teach an agent to play a game requiring multiple steps
 │   ├── learn_to_ask/                       # Using LLM-as-a-judge to facilitate agent tuning
 │   ├── email_search/                       # Enhance the tool use ability of your agent
-│   ├── werewolf_game/                      # Enhance a multi-agent application
+│   ├── werewolves/                         # Enhance a multi-agent application
 │   └── data_augment/                       # Data augmentation for tuning
 ├── sample_template/                        # Template for new sample contributions
 └── README.md
