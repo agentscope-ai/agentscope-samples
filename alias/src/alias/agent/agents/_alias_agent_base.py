@@ -11,7 +11,7 @@ from agentscope.agent import ReActAgent
 from agentscope.model import ChatModelBase
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase, LongTermMemoryBase
-from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
+from agentscope.message import Msg, ToolUseBlock, ToolResultBlock
 
 from alias.agent.tools import AliasToolkit
 from alias.agent.utils.constants import DEFAULT_PLANNER_NAME
@@ -21,24 +21,6 @@ from alias.agent.agents.common_agent_utils import (
 )
 from alias.agent.utils.constants import DEFAULT_BROWSER_WORKER_NAME
 from alias.agent.utils.constants import MODEL_MAX_RETRIES
-
-
-def alias_agent_post_reply_hook(
-    self: "AliasAgentBase",
-    kwargs: dict[str, Any],  # pylint: disable=unused-argument
-    output: Any,
-):
-    """
-    This is a monkey patch to ensure that when the agent is interrupted in
-    a tool call, the control returns to user
-    """
-    if (
-        self.tool_call_interrupt_return
-        and isinstance(output, Msg)
-        and output.metadata
-        and output.metadata.get("is_interrupted", False)
-    ):
-        raise asyncio.CancelledError()
 
 
 class AliasAgentBase(ReActAgent):
@@ -53,7 +35,6 @@ class AliasAgentBase(ReActAgent):
         state_saving_dir: Optional[str] = None,
         sys_prompt: Optional[str] = None,
         max_iters: int = 10,
-        tool_call_interrupt_return: bool = True,
         long_term_memory: Optional[LongTermMemoryBase] = None,
         long_term_memory_mode: Literal[
             "agent_control",
@@ -77,14 +58,7 @@ class AliasAgentBase(ReActAgent):
         self.message_sending_mapping = {}
         self.state_saving_dir = state_saving_dir
         self.agent_stop_function_names = [self.finish_function_name]
-        self.tool_call_interrupt_return = tool_call_interrupt_return
 
-        # interrupted if the
-        self.register_instance_hook(
-            "post_reply",
-            "alias_agent_post_reply_hook",
-            alias_agent_post_reply_hook,
-        )
         # for message output to backend
         self.register_instance_hook(
             "post_print",
@@ -92,7 +66,16 @@ class AliasAgentBase(ReActAgent):
             alias_post_print_hook,
         )
 
-    async def _reasoning(self):
+        # register finish_function_name
+        if self.finish_function_name not in self.toolkit.tools:
+            self.toolkit.register_tool_function(
+                getattr(self, self.finish_function_name),
+            )
+
+    async def _reasoning(
+        self,
+        tool_choice: Literal["auto", "none", "required"] | None = None,
+    ):
         """Override _reasoning to add retry logic."""
 
         # Call the parent class's _reasoning method directly to
@@ -109,7 +92,8 @@ class AliasAgentBase(ReActAgent):
             if hasattr(original_method, "__wrapped__"):
                 # This is the wrapped version, get the original
                 original_method = original_method.__wrapped__
-            return await original_method(self)
+
+            return await original_method(self, tool_choice=tool_choice)
 
         for i in range(MODEL_MAX_RETRIES - 1):
             try:
@@ -132,21 +116,18 @@ class AliasAgentBase(ReActAgent):
         # final attempt
         await call_parent_reasoning()
 
-    async def _acting(self, tool_call: ToolUseBlock) -> Msg | None:
-        """Perform the acting process.
-
-        TODO: (part 2)
-        this is just a monkey patch for AS when not support interruption
-        during tool call; can be remove when AS framework updated
+    async def _acting(self, tool_call: ToolUseBlock) -> dict | None:
+        """Perform the acting process, and return the structured output if
+        it's generated and verified in the finish function call.
 
         Args:
             tool_call (`ToolUseBlock`):
                 The tool use block to be executed.
 
         Returns:
-            `Union[Msg, None]`:
-                Return a message to the user if the `_finish_function` is
-                called, otherwise return `None`.
+            `Union[dict, None]`:
+                Return the structured output if it's verified in the finish
+                function call.
         """
 
         tool_res_msg = Msg(
@@ -165,7 +146,6 @@ class AliasAgentBase(ReActAgent):
             # Execute the tool call
             tool_res = await self.toolkit.call_tool_function(tool_call)
 
-            response_msg = None
             # Async generator handling
             async for chunk in tool_res:
                 # Turn into a tool result block
@@ -191,28 +171,26 @@ class AliasAgentBase(ReActAgent):
                     tool_call["name"] != self.finish_function_name
                     or (
                         tool_call["name"] == self.finish_function_name
+                        and chunk.metadata
                         and not chunk.metadata.get("success")
                     )
                 ):
                     await self.print(tool_res_msg, chunk.is_last)
 
                 # Return message if generate_response is called successfully
-                if tool_call[
-                    "name"
-                ] in self.agent_stop_function_names and chunk.metadata.get(
-                    "success",
-                    True,
+                if (
+                    tool_call["name"] in self.agent_stop_function_names
+                    and chunk.metadata
+                    and chunk.metadata.get(
+                        "success",
+                        True,
+                    )
                 ):
-                    response_msg = chunk.metadata.get("response_msg")
+                    return chunk.metadata.get("structured_output")
                 elif chunk.is_interrupted:
-                    # TODO: monkey patch happens here
-                    response_msg = tool_res_msg
-                    if response_msg.metadata is None:
-                        response_msg.metadata = {"is_interrupted": True}
-                    else:
-                        response_msg.metadata["is_interrupted"] = True
+                    raise asyncio.CancelledError
 
-            return response_msg
+            return None
         finally:
             # Record the tool result message in the memory
             await self.memory.add(tool_res_msg)
@@ -228,16 +206,16 @@ class AliasAgentBase(ReActAgent):
         """
         response_msg = Msg(
             self.name,
-            content=[
-                TextBlock(
-                    type="text",
-                    text="I got interrupted by the user. "
-                    "Pivot to handle the user's new request.",
-                ),
-            ],
-            role="assistant",
-            metadata={},
+            "I noticed that you have interrupted me. What can I "
+            "do for you?",
+            "assistant",
+            metadata={
+                # Expose this field to indicate the interruption
+                "_is_interrupted": True,
+            },
         )
+
+        await self.print(response_msg, True)
         await self.memory.add(response_msg)
 
         # update and save agent states

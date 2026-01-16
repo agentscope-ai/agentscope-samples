@@ -4,10 +4,9 @@ import asyncio
 import json
 import os
 from functools import partial
-from typing import List, Dict, Optional, Any, Type, cast
+from typing import List, Dict, Optional, Any, Type, cast, Literal
 import uuid
 
-import shortuuid
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
@@ -15,7 +14,7 @@ from agentscope.model import ChatModelBase
 from agentscope.tool import ToolResponse
 from agentscope.tracing import trace_reply
 from loguru import logger
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from alias.agent.agents import AliasAgentBase
@@ -35,6 +34,13 @@ from .ds_agent_utils import (
     install_package,
 )
 from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH
+
+
+class DefaultStructuredResponse(BaseModel):
+    response: str = Field(
+        description="Just a placeholder. "
+        "Enter any character to trigger report generation",
+    )
 
 
 class DataScienceAgent(AliasAgentBase):
@@ -194,27 +200,140 @@ class DataScienceAgent(AliasAgentBase):
             "pre_reply",
             "files_filter_pre_reply_hook",
         )
-        return await super().reply(msg, structured_model)
+
+        if structured_model is None:
+            structured_model = DefaultStructuredResponse
+
+        # Record the input message(s) in the memory
+        await self.memory.add(msg)
+
+        # -------------- Retrieval process --------------
+        # Retrieve relevant records from the long-term memory if activated
+        await self._retrieve_from_long_term_memory(msg)
+        # Retrieve relevant documents from the knowledge base(s) if any
+        await self._retrieve_from_knowledge(msg)
+
+        # Control if LLM generates tool calls in each reasoning step
+        tool_choice: Literal["auto", "none", "required"] | None = None
+
+        # -------------- Structured output management --------------
+        self._required_structured_model = structured_model
+
+        # Register generate_response tool only when structured output
+        # is required
+        if self.finish_function_name not in self.toolkit.tools:
+            self.toolkit.register_tool_function(
+                getattr(self, self.finish_function_name),
+            )
+
+        # Set the structured output model
+        self.toolkit.set_extended_model(
+            self.finish_function_name,
+            structured_model,
+        )
+        tool_choice = "required"
+
+        # -------------- The reasoning-acting loop --------------
+        # Cache the structured output generated in the finish function call
+        structured_output = None
+        reply_msg = None
+        for _ in range(self.max_iters):
+            # -------------- The reasoning process --------------
+            msg_reasoning = await self._reasoning(tool_choice)
+
+            # -------------- The acting process --------------
+            futures = [
+                self._acting(tool_call)
+                for tool_call in msg_reasoning.get_content_blocks(
+                    "tool_use",
+                )
+            ]
+            # Parallel tool calls or not
+            if self.parallel_tool_calls:
+                structured_outputs = await asyncio.gather(*futures)
+            else:
+                # Sequential tool calls
+                structured_outputs = [await _ for _ in futures]
+
+            # -------------- Check for exit condition --------------
+            # Remove None results
+            structured_outputs = [_ for _ in structured_outputs if _]
+
+            msg_hint = None
+            # If the acting step generates structured outputs
+            if structured_outputs:
+                # Cache the structured output data
+                structured_output = structured_outputs[-1]
+
+                reply_msg = Msg(
+                    self.name,
+                    structured_output.get("response"),
+                    "assistant",
+                    metadata=structured_output,
+                )
+                break
+
+            if not msg_reasoning.has_content_blocks("tool_use"):
+                # If structured output is required but no tool call is
+                # made, remind the llm to go on the task
+                msg_hint = Msg(
+                    "user",
+                    "<system-hint>Structured output is "
+                    f"required, go on to finish your task or call "
+                    f"'{self.finish_function_name}' to generate the "
+                    f"required structured output.</system-hint>",
+                    "user",
+                )
+                await self._reasoning_hint_msgs.add(msg_hint)
+
+            if msg_hint and self.print_hint_msg:
+                await self.print(msg_hint)
+
+        # When the maximum iterations are reached
+        # and no reply message is generated
+        if reply_msg is None:
+            reply_msg = await self._summarizing()
+            reply_msg.metadata = structured_output
+            await self.memory.add(reply_msg)
+
+        # Post-process the memory, long-term memory
+        if self._static_control:
+            await self.long_term_memory.record(
+                [
+                    *([*msg] if isinstance(msg, list) else [msg]),
+                    *await self.memory.get_memory(),
+                    reply_msg,
+                ],
+            )
+
+        return reply_msg
 
     @retry(stop=stop_after_attempt(10), wait=wait_fixed(5), reraise=True)
     async def _reasoning(
         self,
+        tool_choice: str = "required",
     ) -> Msg:
         """Perform the reasoning process."""
         prompt = await self.formatter.format(
             msgs=[
                 Msg("system", self.sys_prompt, "system"),
                 *await self.memory.get_memory(),
+                # The hint messages to guide the agent's behavior, maybe empty
+                *await self._reasoning_hint_msgs.get_memory(),
             ],
         )
+
+        # Clear the hint messages after use
+        await self._reasoning_hint_msgs.clear()
 
         try:
             res = await self.model(
                 prompt,
                 tools=self.toolkit.get_json_schemas(),
+                tool_choice=tool_choice,
             )
         except Exception as e:
-            print(str(e))
+            logger.debug("Error while calling model in _reasoning: {}", e)
 
         # handle output from the model
         interrupted_by_user = False
@@ -238,18 +357,6 @@ class DataScienceAgent(AliasAgentBase):
             raise e from None
 
         finally:
-            if msg and not msg.has_content_blocks("tool_use"):
-                # Turn plain text response into a tool call of the finish
-                # function
-                msg.content = [
-                    ToolUseBlock(
-                        id=shortuuid.uuid(),
-                        type="tool_use",
-                        name=self.think_function_name,
-                        input={"response": msg.get_text_content()},
-                    ),
-                ]
-
             # None will be ignored by the memory
             await self.memory.add(msg)
 
@@ -279,17 +386,10 @@ class DataScienceAgent(AliasAgentBase):
     # pylint: disable=invalid-overridden-method, unused-argument
     async def generate_response(
         self,
-        response: str,
         **kwargs: Any,
     ) -> ToolResponse:
-        """Call this function when you have either completed the task
-        or cannot continue due to insurmountable reasons.
-        Provide in the `response` argument any information you believe
-        the user needs to be informed of.
-
-        Args:
-            response (`str`):
-                Your response to the user.
+        """
+        Generate required structured output by this function and return it
         """
         memory = await self.memory.get_memory()
         memory_log = "\n\n".join(
@@ -350,20 +450,15 @@ class DataScienceAgent(AliasAgentBase):
                 f"{self.detailed_report_path}."
             )
 
-        response_msg = Msg(
-            self.name,
-            response,
-            "assistant",
-        )
-
-        await self.print(response_msg, True)
+        kwargs["response"] = response
+        structured_output = {}
 
         # Prepare structured output
         if self._required_structured_model:
             try:
                 # Use the metadata field of the message to store the
                 # structured output
-                response_msg.metadata = (
+                structured_output = (
                     self._required_structured_model.model_validate(
                         kwargs,
                     ).model_dump()
@@ -379,10 +474,18 @@ class DataScienceAgent(AliasAgentBase):
                     ],
                     metadata={
                         "success": False,
-                        "response_msg": None,
+                        "structured_output": {},
                     },
                 )
 
+        await self.print(
+            Msg(
+                name=self.name,
+                content=response,
+                role="assistant",
+            ),
+            True,
+        )
         return ToolResponse(
             content=[
                 TextBlock(
@@ -392,7 +495,7 @@ class DataScienceAgent(AliasAgentBase):
             ],
             metadata={
                 "success": True,
-                "response_msg": response_msg,
+                "structured_output": structured_output,
             },
             is_last=True,
         )

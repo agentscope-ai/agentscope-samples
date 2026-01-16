@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=C2801, W0611, W0212
-from typing import Optional, Any
+from typing import Optional, Any, Callable
+from functools import partial
 
 from agentscope.model import ChatModelBase
 from agentscope.formatter import FormatterBase
 from agentscope.memory import MemoryBase
-from agentscope.tool import ToolResponse
-from agentscope.message import (
-    Msg,
-    TextBlock,
-)
 from dotenv import load_dotenv
 
 from alias.agent.agents import AliasAgentBase
@@ -50,21 +46,22 @@ class ReActWorker(AliasAgentBase):
             state_saving_dir=state_saving_dir,
         )
 
+        self._required_structured_model = WorkerResponse
+        self.reply: Callable = partial(
+            self.reply,
+            structured_model=self._required_structured_model,
+        )
+
         self.max_iters: int = max(self.max_iters, WORKER_MAX_ITER)
 
     def generate_response(
         self,
-        response: str = "",
-        task_done: bool = True,
-        subtask_progress_summary: str = "",
-        generated_files: dict[str, str] = None,
-    ) -> ToolResponse:
+        **kwargs,
+    ):  # pylint: disable=useless-parent-delegation
         """
         Generate a response summarizing the execution progress of the
         given subtask.
         Args:
-            response (str):
-                The response text (compatible with AgentScope finish function).
             task_done (bool):
                 REQUIRED! Whether the subtask was done or not.
             subtask_progress_summary (str):
@@ -76,37 +73,4 @@ class ReActWorker(AliasAgentBase):
                 paths of generated files (e.g. '/FULL/PATH/OF/FILE_1.md') and
                 the values are short descriptions about the generated files.
         """
-        if generated_files is None:
-            generated_files = {}
-
-        # If only response is provided,
-        # use it as subtask_progress_summary
-        if not subtask_progress_summary and response:
-            subtask_progress_summary = response
-
-        structure_response = WorkerResponse(
-            task_done=task_done,
-            subtask_progress_summary=subtask_progress_summary,
-            generated_files=generated_files,
-        )
-        response_msg = Msg(
-            self.name,
-            content=[
-                TextBlock(type="text", text=subtask_progress_summary),
-            ],
-            role="assistant",
-            metadata=structure_response.model_dump(),
-        )
-        return ToolResponse(
-            content=[
-                TextBlock(
-                    type="text",
-                    text="Successfully generated response.",
-                ),
-            ],
-            metadata={
-                "success": True,
-                "response_msg": response_msg,
-            },
-            is_last=True,
-        )
+        return super().generate_response(**kwargs)

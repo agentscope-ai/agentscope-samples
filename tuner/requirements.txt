@@ -1,0 +1,2 @@
+agentscope[full]>=1.0.12
+trinity-rft>=0.4.1

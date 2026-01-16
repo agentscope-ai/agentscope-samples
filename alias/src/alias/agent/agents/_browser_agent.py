@@ -10,7 +10,7 @@ import os
 import json
 import inspect
 from functools import wraps
-from typing import Type, Optional, Any
+from typing import Type, Optional, Any, Literal
 import asyncio
 import copy
 from loguru import logger
@@ -36,6 +36,9 @@ from alias.agent.agents import AliasAgentBase
 from alias.agent.agents.common_agent_utils import (
     WorkerResponse,
     get_user_input_to_mem_pre_reply_hook,
+    agent_load_states_pre_reply_hook,
+    save_post_reasoning_state,
+    save_post_action_state,
 )
 from alias.agent.agents._build_in_helper_browser._image_understanding import (
     image_understanding,
@@ -104,6 +107,10 @@ with open(
     _BROWSER_AGENT_SUMMARIZE_TASK_PROMPT = f.read()
 
 
+class EmptyModel(BaseModel):
+    pass
+
+
 async def browser_pre_reply_hook(
     self,
     kwargs: dict[str, Any],
@@ -150,6 +157,7 @@ async def browser_post_acting_hook(
                     ] = self._filter_execution_text(return_json["text"])
     if tool_call["name"] != self.finish_function_name or (
         tool_call["name"] == self.finish_function_name
+        and tool_res_msg.metadata
         and not tool_res_msg.metadata.get("success")
     ):
         await self.print(tool_res_msg)
@@ -278,6 +286,11 @@ class BrowserAgent(AliasAgentBase):
         # add input msg to memory
         self.register_instance_hook(
             "pre_reply",
+            "agent_load_states_pre_reply_hook",
+            agent_load_states_pre_reply_hook,
+        )
+        self.register_instance_hook(
+            "pre_reply",
             "get_user_input_to_mem_pre_reply_hook",
             get_user_input_to_mem_pre_reply_hook,
         )
@@ -287,9 +300,19 @@ class BrowserAgent(AliasAgentBase):
             browser_pre_reply_hook,
         )
         self.register_instance_hook(
+            "post_reasoning",
+            "save_post_reasoning_state",
+            save_post_reasoning_state,
+        )
+        self.register_instance_hook(
             "post_acting",
             "browser_post_acting_hook",
             browser_post_acting_hook,
+        )
+        self.register_instance_hook(
+            "post_acting",
+            "save_post_action_state",
+            save_post_action_state,
         )
 
     def _register_skill_tool(
@@ -343,6 +366,7 @@ class BrowserAgent(AliasAgentBase):
             or "gpt-5" in self.model.model_name
         )
 
+    # pylint: disable=R0912,R0915
     async def reply(
         self,
         msg: Msg | list[Msg] | None = None,
@@ -370,20 +394,38 @@ class BrowserAgent(AliasAgentBase):
             else ""
         )
 
+        if structured_model is None:
+            structured_model = EmptyModel
+
+        tool_choice: Literal["auto", "none", "required"] | None = None
+
         self._required_structured_model = structured_model
         # Record structured output model if provided
         if structured_model:
+            # Register generate_response tool only when structured output
+            # is required
+            if self.finish_function_name not in self.toolkit.tools:
+                self.toolkit.register_tool_function(
+                    getattr(self, self.finish_function_name),
+                )
+
             self.toolkit.set_extended_model(
                 self.finish_function_name,
                 structured_model,
             )
+            tool_choice = "required"
+        else:
+            # Remove generate_response tool if no structured output is required
+            self.toolkit.remove_tool_function(self.finish_function_name)
+
         # The reasoning-acting loop
+        structured_output = None
         reply_msg = None
         for iter_n in range(self.max_iters):
             self.iter_n = iter_n + 1
             await self._summarize_mem()
 
-            msg_reasoning = await self._pure_reasoning()
+            msg_reasoning = await self._pure_reasoning(tool_choice)
             tool_calls = msg_reasoning.get_content_blocks("tool_use")
             if tool_calls and tool_calls[0]["name"] == "browser_snapshot":
                 msg_reasoning = await self._reasoning_with_observation()
@@ -397,27 +439,69 @@ class BrowserAgent(AliasAgentBase):
 
             # Parallel tool calls or not
             if self.parallel_tool_calls:
-                acting_responses = await asyncio.gather(*futures)
+                structured_outputs = await asyncio.gather(*futures)
 
             else:
                 # Sequential tool calls
-                acting_responses = [await _ for _ in futures]
+                structured_outputs = [await _ for _ in futures]
 
-            # Find the first non-None replying message from the acting
-            for acting_msg in acting_responses:
-                reply_msg = reply_msg or acting_msg
+            # -------------- Check for exit condition --------------
+            # If structured output is still not satisfied
+            if self._required_structured_model:
+                # Remove None results
+                structured_outputs = [_ for _ in structured_outputs if _]
 
-            if reply_msg:
+                msg_hint = None
+                # If the acting step generates structured outputs
+                if structured_outputs:
+                    # Cache the structured output data
+                    structured_output = structured_outputs[-1]
+
+                    reply_msg = Msg(
+                        self.name,
+                        structured_output.get("subtask_progress_summary", ""),
+                        "assistant",
+                        metadata=structured_output,
+                    )
+                    break
+
+                if not msg_reasoning.has_content_blocks("tool_use"):
+                    # If structured output is required but no tool call is
+                    # made, remind the llm to go on the task
+                    msg_hint = Msg(
+                        "user",
+                        "<system-hint>Structured output is "
+                        f"required, go on to finish your task or call "
+                        f"'{self.finish_function_name}' to generate the "
+                        f"required structured output.</system-hint>",
+                        "user",
+                    )
+                    await self._reasoning_hint_msgs.add(msg_hint)
+                    # Require tool call in the next reasoning step
+                    tool_choice = "required"
+
+                if msg_hint and self.print_hint_msg:
+                    await self.print(msg_hint)
+
+            elif not msg_reasoning.has_content_blocks("tool_use"):
+                # Exit the loop when no structured output is required (or
+                # already satisfied) and only text response is generated
+                msg_reasoning.metadata = structured_output
+                reply_msg = msg_reasoning
                 break
-        # When the maximum iterations are reached
-        if not reply_msg:
-            reply_msg = await self._summarizing()
 
-        await self.memory.add(reply_msg)
+        # When the maximum iterations are reached
+        # and no reply message is generated
+        if reply_msg is None:
+            reply_msg = await self._summarizing()
+            reply_msg.metadata = structured_output
+            await self.memory.add(reply_msg)
+
         return reply_msg
 
     async def _pure_reasoning(
         self,
+        tool_choice: Literal["auto", "none", "required"] | None = None,
     ) -> Msg:
         msg = Msg(
             "user",
@@ -433,12 +517,18 @@ class BrowserAgent(AliasAgentBase):
                 Msg("system", self.sys_prompt, "system"),
                 *await self.memory.get_memory(),
                 msg,
+                # The hint messages to guide the agent's behavior, maybe empty
+                *await self._reasoning_hint_msgs.get_memory(),
             ],
         )
+
+        # Clear the hint messages after use
+        await self._reasoning_hint_msgs.clear()
 
         res = await self.model(
             prompt,
             tools=self.no_screenshot_tool_list,
+            tool_choice=tool_choice,
         )
         # handle output from the model
         interrupted_by_user = False
@@ -1260,15 +1350,6 @@ class BrowserAgent(AliasAgentBase):
                     subtask_progress_summary=summary_text,
                     generated_files={},
                 )
-
-                response_msg = Msg(
-                    self.name,
-                    content=[
-                        TextBlock(type="text", text=summary_text),
-                    ],
-                    role="assistant",
-                    metadata=structure_response.model_dump(),
-                )
                 return ToolResponse(
                     content=[
                         TextBlock(
@@ -1278,7 +1359,7 @@ class BrowserAgent(AliasAgentBase):
                     ],
                     metadata={
                         "success": True,
-                        "response_msg": response_msg,
+                        "structured_output": structure_response.model_dump(),
                     },
                     is_last=True,
                 )
@@ -1290,7 +1371,7 @@ class BrowserAgent(AliasAgentBase):
                             text=f"Here is a summary of current status:\n{summary_text}\nPlease continue.\n Following steps \n {finish_status}",
                         ),
                     ],
-                    metadata={"success": False, "response_msg": None},
+                    metadata={"success": False, "structured_output": None},
                     is_last=True,
                 )
         except Exception as e:
@@ -1310,8 +1391,10 @@ class BrowserAgent(AliasAgentBase):
         sys_prompt = (
             "You are an expert in task validation. "
             "Your job is to determine if the agent has completed its task"
-            " based on the provided summary. If finished, strictly reply "
-            '"BROWSER_AGENT_TASK_FINISHED", otherwise return the remaining '
+            " based on the provided summary. If the summary is `NO_ANSWER`, this task "
+            "is not over unless the task is determined as definitely not completed. "
+            "If finished, strictly reply "
+            '"BROWSER_AGENT_TASK_FINISHED" and your reason, otherwise return the remaining '
             "tasks or next steps."
         )
         # Extract user question from memory
