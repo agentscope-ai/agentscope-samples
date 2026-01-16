@@ -21,6 +21,10 @@ from structured_model import (
 )
 from prompt import EnglishPrompts as Prompts
 
+# Uncomment the following line to use Chinese prompts
+# from prompt import ChinesePrompts as Prompts
+
+
 from agentscope.agent import ReActAgent
 from agentscope.pipeline import (
     MsgHub,
