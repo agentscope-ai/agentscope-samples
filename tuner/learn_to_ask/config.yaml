@@ -27,4 +27,4 @@ trainer:
   use_dynamic_bsz: true
   ulysses_sequence_parallel_size: 1  # use sequence parallelism to reduce memory usage
 monitor:
-  monitor_type: wandb  # here we use tensorboard, you can also use wandb, mlflow or swanlab
+  monitor_type: wandb  # here we use wandb; you can also use tensorboard, mlflow or swanlab

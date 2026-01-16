@@ -56,7 +56,7 @@ def rollout(
     spec.loader.exec_module(module)
     rollout_prompt = module.rollout_prompt_med
 
-    with open(input_file_path, "r") as lines:
+    with open(input_file_path, "r", encoding="utf-8") as lines:
         sample_list = [json.loads(line.strip()) for line in lines]
     print(f"loaded samples: {len(sample_list)}")
 
@@ -67,12 +67,22 @@ def rollout(
             "messages"
         ]
 
-        prompt = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
+        # Some tokenizers (e.g., Qwen) support the `enable_thinking` argument,
+        # but others do not. Try with the argument first, and fall back if
+        # it is not accepted.
+        try:
+            prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=False,
+            )
+        except TypeError:
+            prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
 
         response_list = []
         for i in range(rollout_repeat):
@@ -85,6 +95,7 @@ def rollout(
                 print(f"rollout #{i}: {response}\n")
         record["rollouts"] = response_list
 
+        # append to output file
         with open(output_file_path, "a") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -109,7 +120,7 @@ def eval_sample(
     print(f"input_file_path: {input_file_path}")
     print(f"output_file_path: {output_file_path}")
 
-    with open(input_file_path, "r") as lines:
+    with open(input_file_path, "r", encoding="utf-8") as lines:
         sample_list = [json.loads(line.strip()) for line in lines]
     print(f"Total records: {len(sample_list)}")
 
@@ -160,12 +171,21 @@ def eval_sample(
                         {"role": "system", "content": sys_prompt},
                         {"role": "user", "content": user_content},
                     ]
-                    prompt = tokenizer.apply_chat_template(
-                        messages,
-                        tokenize=False,
-                        add_generation_prompt=True,
-                        enable_thinking=False,
-                    )
+                    try:
+                        prompt = tokenizer.apply_chat_template(
+                            messages,
+                            tokenize=False,
+                            add_generation_prompt=True,
+                            enable_thinking=False,
+                        )
+                    except TypeError:
+                        # Fallback for tokenizers that do not support the
+                        # Qwen-specific `enable_thinking` argument.
+                        prompt = tokenizer.apply_chat_template(
+                            messages,
+                            tokenize=False,
+                            add_generation_prompt=True,
+                        )
                     outputs = llm.generate(
                         [prompt],
                         sampling_params=sampling_params,
@@ -199,13 +219,14 @@ def eval_sample(
                 f"grade_result:{json_str}",
             )
             print(f"time_cost:{time.perf_counter() - time_probe}")
+        # append sample to output file
         with open(output_file_path, "a") as f:
             f.write(json.dumps(sample, ensure_ascii=False) + "\n")
         print("\n======================\n")
 
 
 def compute_score(input_file_path: str) -> None:
-    with open(input_file_path, "r") as lines:
+    with open(input_file_path, "r", encoding="utf-8") as lines:
         sample_list = [json.loads(line.strip()) for line in lines]
     continue_count, continue_content_score, continue_content_full = 0, 0, 0
     continue_decision_score = 0
@@ -246,18 +267,20 @@ def compute_score(input_file_path: str) -> None:
             total_format += grade["format_score"]
 
     result = {
-        "ave_continue_content": continue_content_score / continue_count,
-        "win_continue_content": continue_content_full / continue_count,
+        "ave_continue_content": continue_content_score
+        / max(1, continue_count),
+        "win_continue_content": continue_content_full / max(1, continue_count),
         "ave_continue_content if correct": continue_content_score_correct
-        / continue_count_correct,
+        / max(1, continue_count_correct),
         "win_continue_content if correct": continue_content_full_correct
-        / continue_count_correct,
-        "ave_continue_decision": continue_decision_score / continue_count,
-        "ave_stop_decision": stop_decision_score / stop_count,
+        / max(1, continue_count_correct),
+        "ave_continue_decision": continue_decision_score
+        / max(1, continue_count),
+        "ave_stop_decision": stop_decision_score / max(1, stop_count),
         "ave_total_decision": (continue_decision_score + stop_decision_score)
-        / (continue_count + stop_count),
-        "ave_total_format": total_format / (continue_count + stop_count),
-        "ave_total_reward": total_reward / (continue_count + stop_count),
+        / max(1, continue_count + stop_count),
+        "ave_total_format": total_format / max(1, continue_count + stop_count),
+        "ave_total_reward": total_reward / max(1, continue_count + stop_count),
     }
 
     print(f"total count: {continue_count + stop_count}")

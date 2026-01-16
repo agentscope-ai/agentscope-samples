@@ -5,7 +5,7 @@ import json
 import time
 from typing import Union
 
-from llm_info_extraction import LLM_info_extraction, parse_llm_output
+from llm_info_extraction import llm_info_extraction, parse_llm_output
 from message_splitter import split_session_to_json_lines
 
 
@@ -111,7 +111,7 @@ def process_session(
                 try:
                     # Call LLM info extraction
                     # (using mock function for testing)
-                    llm_response = LLM_info_extraction(
+                    llm_response = llm_info_extraction(
                         remaining_chat,
                         model_call_mode,
                         **kwargs,

@@ -11,7 +11,7 @@ tokenizer = None
 llm = None
 
 
-def LLM_info_extraction(
+def llm_info_extraction(
     remaining_chat: str,
     model_call_mode: str,
     **kwargs: dict,

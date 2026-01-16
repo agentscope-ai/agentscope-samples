@@ -53,10 +53,10 @@ async def run_react_agent(
         model (OpenAIChatModel): The language model to use.
         auxiliary_models (Dict[str, OpenAIChatModel]):
             A dictionary of additional chat models available for
-            LLM-as-a-Judge. Not used in this workflow.
+            LLM-as-a-Judge. Exactly one auxiliary model must be provided.
 
     Returns:
-        float: The reward obtained by solving the task.
+        WorkflowOutput: The workflow output containing the agent's response.
     """
     assert (
         len(auxiliary_models) == 1
@@ -117,7 +117,7 @@ def merge_msg_list(msg_list: List) -> str:
 
 async def llm_reward(
     task: Dict,
-    response: Msg,
+    response: str,
     auxiliary_models: Dict[str, OpenAIChatModel],
 ) -> Dict:
     from agentscope import logger

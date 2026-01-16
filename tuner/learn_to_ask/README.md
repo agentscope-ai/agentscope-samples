@@ -14,7 +14,7 @@ Here we use the `ReActAgent` for this task and no tools are required.
 ## Hardware Requirements
 
 - **Training with GPUs**: At least **8 H20 GPUs** (or equivalent).
-- **Training without GPUs**: You can use the **[Tinker backend](https://thinkingmachines.ai/tinker/)** without any GPUs.
+- **Training without GPUs**: You can use the **[Tinker](https://thinkingmachines.ai/tinker/)** without any GPUs.
 
 > 💡 All code and configuration files are located in:
 > `tuner/learn_to_ask/`
@@ -72,7 +72,8 @@ Split each conversation into **context–future pairs**, and extract ground-trut
 ```bash
 python tuner/learn_to_ask/data_prepare/1_info_extract_pipeline.py \
   --input_file /path/to/RealMedConv/train.jsonl \
-  --output_file tuner/learn_to_ask/data_raw/train_processed.jsonl
+  --output_file tuner/learn_to_ask/data_raw/train_processed.jsonl \
+  --model_path Qwen/Qwen2.5-32B-Instruct
 ```
 
 #### 🔹 Step B: Build Final Training Dataset
@@ -131,8 +132,8 @@ The workflow function `run_react_agent` implements how the `ReActAgent` works.
 ```python
 async def run_react_agent(
     task: Dict,
-    model: TunerModelConfig,
-    auxiliary_models: Dict[str, TunerModelConfig],
+    model: OpenAIChatModel,
+    auxiliary_models: Dict[str, OpenAIChatModel],
 ) -> WorkflowOutput:
     assert (
         len(auxiliary_models) == 1
@@ -180,7 +181,7 @@ The judge function `learn2ask_judge` implements reward calculation using LLM-as-
 async def learn2ask_judge(
     task: Dict,
     response: Msg,
-    auxiliary_models: Dict[str, TunerModelConfig],
+    auxiliary_models: Dict[str, OpenAIChatModel],
 ) -> JudgeOutput:
     assert (
         len(auxiliary_models) == 1
@@ -248,7 +249,7 @@ if __name__ == "__main__":
     fusion_mode = "default"  # How to combine rewards
     dataset = DatasetConfig(path="tuner/learn_to_ask/data", split="train")
 
-    tuner_model = TunerModelConfig(
+    tuner_model = OpenAIChatModel(
         model_path="Qwen/Qwen2.5-7B-Instruct",
         max_model_len=8192,
         tensor_parallel_size=1,  # Adjust based on your GPU setup
@@ -256,7 +257,7 @@ if __name__ == "__main__":
     )
 
     auxiliary_models = {
-        AUXILIARY_MODEL_NAME: TunerModelConfig(
+        AUXILIARY_MODEL_NAME: OpenAIChatModel(
             model_path="Qwen/Qwen2.5-32B-Instruct",  # Larger model for evaluation
             tensor_parallel_size=2,
             ...
@@ -286,7 +287,7 @@ model:
 
 Also, make sure to update the `model_path` in `tuner/learn_to_ask/main.py` to point to a model that’s compatible with Tinker.
 
-> 🔗 Learn more about Tinker: [Tinker Backend Documentation](https://modelscope.github.io/Trinity-RFT/en/main/tutorial/example_tinker_backend.html)
+> 🔗 Learn more about Tinker Backend: [Tinker Backend Documentation](https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/example_tinker_backend.html)
 
 ### Launch Training
 ```bash
