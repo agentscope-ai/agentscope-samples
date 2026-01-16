@@ -4,7 +4,7 @@ This example demonstrates how to use **AgentScope-Tuner** to enhance a math prob
 
 ## Task Setting
 
-We use the foundational [math-agent example](../react_agent/main.py) as our baseline to demonstrate the data enhancement capabilities. Notably, these data-centric techniques are generic and customizable, making them adaptable to other agent workflows.
+We use the foundational [math-agent example](https://github.com/agentscope-ai/agentscope/blob/main/examples/tuner/react_agent/main.py) as our baseline to demonstrate the data enhancement capabilities. Notably, these data-centric techniques are generic and customizable, making them adaptable to other agent workflows.
 
 ### Agent Goal and Type
 The agent's objective is to solve mathematical reasoning problems, learning to produce a correct final answer through a step-by-step thought process. The agent is implemented as a **`ReActAgent`**, which follows a reasoning-acting loop to solve tasks iteratively.
@@ -18,15 +18,15 @@ Training can be inefficient if tasks are too easy or too hard. This example addr
 To enable difficulty-based sampling, our training data needs to include features that represent the "difficulty" of each task.
 
 1.  **Base Dataset**: You can use any standard math problem dataset. A good example is the math data in [LLM360/guru-RL-92k](https://huggingface.co/datasets/LLM360/guru-RL-92k), which comes pre-annotated with pass rates from different LLMs, serving as direct difficulty features.
-2.  **Build Your Own Features**: If you use your own dataset, you can generate these features by pre-running several models of varying capabilities and recording their pass rates. This can be done within the [**Trinity-RFT**](https://github.com/modelscope/Trinity-RFT/pull/440) framework.
-3.  **Data Format**: The final dataset should be in HuggingFace format. In this example, data will be transferred to *GSM8K format* according to the [workflow](../react_agent/main.py). Besides the task content, it must include the difficulty feature columns you've defined (e.g., `qwen_7b_pass_rate`, `qwen_30b_pass_rate`).
+2.  **Build Your Own Features**: If you use your own dataset, you can generate these features by pre-running several models of varying capabilities and recording their pass rates. This can be done within the [**Trinity-RFT**](https://github.com/agentscope-ai/Trinity-RFT/pull/440) framework.
+3.  **Data Format**: The final dataset should be in HuggingFace format. In this example, data will be transferred to *GSM8K format* according to the [workflow](https://github.com/agentscope-ai/agentscope/blob/main/examples/tuner/react_agent/main.py). Besides the task content, it must include the difficulty feature columns you've defined (e.g. `qwen2.5_7b_pass_rate`).
 4.  **Example Data Preparation**: We provide a script for this example. Simply execute `python prepare_data.py` to generate the required dataset.
 
 ## Code Implementation
 
 ### Agent Workflow & Judge Function
 
-This example follows the foundational [math-agent example](../react_agent/main.py), adopting its `run_react_agent` and `gsm8k_judge` as the `workflow_func` and `judge_func`, respectively. This highlights a key benefit: you can apply training strategies without altering your core agent logic.
+This example follows the foundational [math-agent example](https://github.com/agentscope-ai/agentscope/blob/main/examples/tuner/react_agent/main.py), adopting its `run_react_agent` and `gsm8k_judge` as the `workflow_func` and `judge_func`, respectively. This highlights a key benefit: you can apply training strategies without altering your core agent logic.
 
 ### Design of Data-Centric Features
 
@@ -43,7 +43,7 @@ The `Task Selector` determines how samples are selected from a dataset. It can b
   - `offline_easy2hard`: Samples are sorted by a predefined feature for curriculum learning.
   - `difficulty_based` (Customized): An adaptive sampler based on task difficulty.
 
-> For more details on `Task Selector`, including how to implement a custom selector based on feedback signals, please refer to **Trinity-RFT**'s **[Selector Development Guide](https://github.com/modelscope/Trinity-RFT/blob/main/docs/sphinx_doc/source/tutorial/develop_selector.md)**.
+> For more details on `Task Selector`, including how to implement a custom selector based on feedback signals, please refer to **Trinity-RFT**'s **[Selector Development Guide](https://github.com/agentscope-ai/Trinity-RFT/blob/main/docs/sphinx_doc/source/tutorial/develop_selector.md)**.
 
 #### Data Processor
 
@@ -51,7 +51,7 @@ The `Data Processor` allows for real-time processing of **Task** and **Experienc
 
 For example, the `difficulty_based` selector requires a `pass_rate_calculator` operator to compute the agent's success rate for each task. This feedback is then used to adjust the sampling strategy.
 
-> For more details on `Data Processor`, please refer to **Trinity-RFT**'s **[Operator Development Guide](https://github.com/modelscope/Trinity-RFT/blob/main/docs/sphinx_doc/source/tutorial/develop_operator.md)**.
+> For more details on `Data Processor`, please refer to **Trinity-RFT**'s **[Operator Development Guide](https://github.com/agentscope-ai/Trinity-RFT/blob/main/docs/sphinx_doc/source/tutorial/develop_operator.md)**.
 
 
 ### Configuring the Experiments
@@ -97,19 +97,19 @@ buffer:
       split: "train"
       task_selector:
         selector_type: difficulty_based # Strategy of task selection
-        feature_keys: [ "qwen_7b_pass_rate", "qwen_30b_pass_rate" ]
+        feature_keys: [ "qwen2.5_7b_pass_rate", "qwen3_30b_pass_rate" ]
         kwargs: # Hyper-parameters for the selection algorithm
           m: 8
           # ...
 ```
 
-> The `difficulty_based` selector in this example is an implementation of the ***BOTS*** algorithm. For details on its inner workings, please refer to the [***BOTS paper***](https://arxiv.org/abs/2510.26374) and its [***tutorials***](https://github.com/modelscope/Trinity-RFT/blob/main/examples/bots/README.md).
+> The `difficulty_based` selector in this example is an implementation of the ***BOTS*** algorithm. For details on its inner workings, please refer to the [***BOTS paper***](https://arxiv.org/abs/2510.26374) and its [***tutorials***](https://github.com/agentscope-ai/Trinity-RFT/blob/main/examples/bots/README.md).
 
 ## How to Run
 
 ### Step 1: Prerequisites
 
-Ensure you have installed **AgentScope** and **Trinity-RFT** with [the guidance](../react_agent/README.md).
+Ensure you have installed **AgentScope** and **Trinity-RFT** with [the guidance](https://github.com/agentscope-ai/agentscope/blob/main/examples/tuner/react_agent/README.md#how-to-run).
 
 ### Step 2: Prepare the Dataset
 
