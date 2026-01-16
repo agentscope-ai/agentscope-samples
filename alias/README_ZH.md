@@ -401,6 +401,7 @@ runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox
 
 #### 3. 启动 AgentScope Runtime 服务
 
+##### 选项 A：使用命令行工具（推荐）
 使用 `alias_agent_runtime` 命令一键启动后端服务及 WebUI 界面：
 
 ```bash
@@ -410,10 +411,34 @@ alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general --web-ui
 **参数说明**：
 *   `--host` / `--port`: 指定服务的运行地址和端口（默认端口为 8090）。
 *   `--chat-mode`: 设置运行模式，可选 `general`, `dr`, `browser`, `ds`, `finance`（默认为 `general`）。
-*   `--web-ui` / `--no-web-ui`: 是否启动可视化 WebUI 界面。
-    *   使用 `--web-ui`（默认）：自动启动前端服务。
-    *   使用 `--no-web-ui`：仅启动后端 API 服务，不启动前端界面。
+*   `--web-ui` : 启用 AgentScope Runtime WebUI。若未指定该参数，则默认不启动 WebUI。
+
 > **注意**：首次启动并开启 `--web-ui` 时，系统会自动安装必要的前端依赖包，可能需要花费几分钟时间，请耐心等待。
+
+##### 选项 B：使用代码启动（开发者推荐）
+如果您希望在 Python 代码中集成或自定义启动逻辑，可以参考以下示例，结合 `AliasRunner` 和 `AgentApp`：
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from alias.server.runtime.runner.alias_runner import AliasRunner
+
+# 1. 初始化 AliasRunner
+# default_chat_mode 可选: "general", "dr", "browser", "ds", "finance"
+runner = AliasRunner(
+    default_chat_mode="general",
+)
+
+# 2. 创建 AgentApp 实例
+agent_app = AgentApp(
+    runner=runner,
+    app_name="Alias",
+    app_description="An LLM-empowered agent built on AgentScope and AgentScope-Runtime",
+)
+
+# 3. 运行服务
+# web_ui=True 将同时启动前端交互界面（默认端口 5173）
+agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
+```
 
 #### 4. 访问应用程序
 

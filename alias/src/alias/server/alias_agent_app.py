@@ -9,20 +9,19 @@ PORT = 8090
 def run_app(
     host: str = "127.0.0.1",
     port: int = PORT,
-    web_ui: bool = True,
+    web_ui: bool = False,
     chat_mode: str = "general",
 ) -> None:
     agent_app = AgentApp(
         runner=AliasRunner(
-            framework_type="AgentScope-Runtime",
             default_chat_mode=chat_mode,
         ),
         app_name="Alias",
         app_description=(
-            "An LLM-empowered agent built on AgentScope and AgentScope-runtime"
+            "An LLM-empowered agent built on AgentScope and AgentScope-Runtime"
         ),
     )
-    agent_app.run(web_ui=web_ui, host=host, port=port)
+    agent_app.run(host=host, port=port, web_ui=web_ui)
 
 
 def main() -> None:
@@ -34,14 +33,7 @@ def main() -> None:
     parser.add_argument(
         "--web-ui",
         action="store_true",
-        default=True,
-        help="Start AgentScope Runtime WebUI (default: True)",
-    )
-    parser.add_argument(
-        "--no-web-ui",
-        action="store_false",
-        dest="web_ui",
-        help="Disable AgentScope Runtime WebUI",
+        help="Start AgentScope Runtime WebUI (default: False)",
     )
     parser.add_argument(
         "--chat-mode",

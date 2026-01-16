@@ -7,7 +7,7 @@ import uuid
 from typing import Any, AsyncGenerator, Dict, Optional, Union
 
 from fastapi_limiter import FastAPILimiter
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.schemas.agent_schemas import (
@@ -35,22 +35,16 @@ from alias.server.utils.logger import setup_logger
 from alias.server.utils.redis import redis_client
 
 
-class CreateConversationIn(BaseModel):
-    user_id: str
-    name: str = "webui"
-    description: str = ""
-    chat_mode: str = "general"
-
-
 class AliasRunner(Runner):
+    FRAMEWORK_TYPE = "Alias"
+
     def __init__(
         self,
-        framework_type: str = "Native",
         default_chat_mode: str = "general",
         default_conv_name: str = "webui",
     ) -> None:
         super().__init__()
-        self.framework_type = framework_type
+        self.framework_type = self.FRAMEWORK_TYPE
         self.default_chat_mode = default_chat_mode
         self.default_conv_name = default_conv_name
 
@@ -165,141 +159,17 @@ class AliasRunner(Runner):
         self._session_conv_cache[session_id] = conv_id
         return conv_id
 
-    async def stream_query(
+    async def stream_query_native(
         self,
         request: Union[AgentRequest, dict],
         **kwargs: Any,
     ) -> AsyncGenerator[Any, None]:
-        # pylint: disable=too-many-return-statements
-        # pylint: disable=too-many-branches
-        # pylint: disable=too-many-statements
         if not self._health:
             raise RuntimeError(
                 "Runner has not been started. Please call "
                 "'await runner.start()' or use 'async with Runner()' "
                 "before calling 'stream_query'.",
             )
-
-        if self.framework_type == "AgentScope-Runtime":
-            if isinstance(request, AgentRequest):
-                req_dict = request.model_dump()
-            elif isinstance(request, dict):
-                req_dict = request
-            else:
-                if hasattr(request, "model_dump"):
-                    req_dict = request.model_dump()
-                else:
-                    req_dict = dict(request)
-
-            request_id = req_dict.get("id") or str(uuid.uuid4())
-            session_id = (
-                req_dict.get("session_id") or f"session_{uuid.uuid4()}"
-            )
-            seq_gen = SequenceNumberGenerator()
-
-            response = AgentResponse(id=request_id)
-            response.session_id = session_id
-            yield seq_gen.yield_with_sequence(response)
-
-            response.in_progress()
-            yield seq_gen.yield_with_sequence(response)
-
-            user_text = self._extract_text_from_agent_request(req_dict)
-            if not user_text:
-                err = Error(
-                    code="422",
-                    message="Empty input text in AgentRequest.input.",
-                )
-                yield seq_gen.yield_with_sequence(response.failed(err))
-                return
-
-            raw_user_id = req_dict.get("user_id") or session_id
-            user_uuid = self._to_uuid(
-                raw_user_id,
-            ) or self._stable_uuid_from_string(
-                str(raw_user_id),
-            )
-
-            conversation_id = self._to_uuid(req_dict.get("conversation_id"))
-            if conversation_id is None:
-                try:
-                    conversation_id = (
-                        await self._get_or_create_conversation_id(
-                            session_id=session_id,
-                            user_uuid=user_uuid,
-                        )
-                    )
-                except Exception as exc:
-                    err = Error(
-                        code="500",
-                        message=f"Failed to create conversation: {exc}",
-                    )
-                    yield seq_gen.yield_with_sequence(response.failed(err))
-                    return
-
-            task_id = self._to_uuid(req_dict.get("task_id")) or uuid.uuid4()
-
-            try:
-                req_chat_mode = (
-                    req_dict.get("chat_mode") or self.default_chat_mode
-                )
-
-                chat_request_obj = ChatRequest.model_validate(
-                    {
-                        "query": user_text,
-                        "chat_mode": req_chat_mode,
-                    },
-                )
-            except ValidationError as exc:
-                err = Error(
-                    code="422",
-                    message=f"ChatRequest validation failed: {exc}",
-                )
-                yield seq_gen.yield_with_sequence(response.failed(err))
-                return
-
-            try:
-                result = self.query_handler(
-                    user_id=user_uuid,
-                    conversation_id=conversation_id,
-                    task_id=task_id,
-                    chat_request=chat_request_obj,
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                async for event in adapt_alias_message_stream(result):
-                    try:
-                        if (
-                            getattr(event, "status", None)
-                            == RunStatus.Completed
-                            and getattr(event, "object", None) == "message"
-                        ):
-                            response.add_new_message(event)
-                    except Exception:
-                        pass
-
-                    yield seq_gen.yield_with_sequence(event)
-
-            except Exception as exc:
-                if isinstance(exc, BaseError):
-                    err = Error(code=str(exc.code), message=exc.message)
-                else:
-                    err = Error(
-                        code="500",
-                        message=f"Error happens in `query_handler`: {exc}",
-                    )
-                yield seq_gen.yield_with_sequence(response.failed(err))
-                return
-
-            try:
-                if response.output:
-                    response.usage = response.output[-1].usage
-            except Exception:
-                pass
-
-            yield seq_gen.yield_with_sequence(response.completed())
-            return
 
         req_dict = (
             request if isinstance(request, dict) else request.model_dump()
@@ -370,3 +240,132 @@ class AliasRunner(Runner):
             return
 
         yield "[DONE]"
+
+    async def stream_query(
+        self,
+        request: Union[AgentRequest, dict],
+        **kwargs: Any,
+    ) -> AsyncGenerator[Any, None]:
+        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-statements
+        if not self._health:
+            raise RuntimeError(
+                "Runner has not been started. Please call "
+                "'await runner.start()' or use 'async with Runner()' "
+                "before calling 'stream_query'.",
+            )
+
+        if isinstance(request, AgentRequest):
+            req_dict = request.model_dump()
+        elif isinstance(request, dict):
+            req_dict = request
+        else:
+            if hasattr(request, "model_dump"):
+                req_dict = request.model_dump()
+            else:
+                req_dict = dict(request)
+
+        request_id = req_dict.get("id") or str(uuid.uuid4())
+        session_id = req_dict.get("session_id") or f"session_{uuid.uuid4()}"
+        seq_gen = SequenceNumberGenerator()
+
+        response = AgentResponse(id=request_id)
+        response.session_id = session_id
+        yield seq_gen.yield_with_sequence(response)
+
+        response.in_progress()
+        yield seq_gen.yield_with_sequence(response)
+
+        user_text = self._extract_text_from_agent_request(req_dict)
+        if not user_text:
+            err = Error(
+                code="422",
+                message="Empty input text in AgentRequest.input.",
+            )
+            yield seq_gen.yield_with_sequence(response.failed(err))
+            return
+
+        raw_user_id = req_dict.get("user_id") or session_id
+        user_uuid = self._to_uuid(
+            raw_user_id,
+        ) or self._stable_uuid_from_string(
+            str(raw_user_id),
+        )
+
+        conversation_id = self._to_uuid(req_dict.get("conversation_id"))
+        if conversation_id is None:
+            try:
+                conversation_id = await self._get_or_create_conversation_id(
+                    session_id=session_id,
+                    user_uuid=user_uuid,
+                )
+            except Exception as exc:
+                err = Error(
+                    code="500",
+                    message=f"Failed to create conversation: {exc}",
+                )
+                yield seq_gen.yield_with_sequence(response.failed(err))
+                return
+
+        task_id = self._to_uuid(req_dict.get("task_id")) or uuid.uuid4()
+
+        try:
+            req_chat_mode = req_dict.get("chat_mode") or self.default_chat_mode
+
+            chat_request_obj = ChatRequest.model_validate(
+                {
+                    "query": user_text,
+                    "chat_mode": req_chat_mode,
+                },
+            )
+        except ValidationError as exc:
+            err = Error(
+                code="422",
+                message=f"ChatRequest validation failed: {exc}",
+            )
+            yield seq_gen.yield_with_sequence(response.failed(err))
+            return
+
+        try:
+            result = self.query_handler(
+                user_id=user_uuid,
+                conversation_id=conversation_id,
+                task_id=task_id,
+                chat_request=chat_request_obj,
+            )
+            if asyncio.iscoroutine(result):
+                result = await result
+
+            async for event in adapt_alias_message_stream(result):
+                try:
+                    if (
+                        getattr(event, "status", None) == RunStatus.Completed
+                        and getattr(event, "object", None) == "message"
+                    ):
+                        response.add_new_message(event)
+                except Exception:
+                    # Best-effort bookkeeping
+                    pass
+
+                yield seq_gen.yield_with_sequence(event)
+
+        except Exception as exc:
+            if isinstance(exc, BaseError):
+                err = Error(code=str(exc.code), message=exc.message)
+            else:
+                err = Error(
+                    code="500",
+                    message=f"Error happens in `query_handler`: {exc}",
+                )
+            yield seq_gen.yield_with_sequence(response.failed(err))
+            return
+
+        try:
+            if response.output:
+                response.usage = response.output[-1].usage
+        except IndexError:
+            # Avoid empty message
+            pass
+
+        yield seq_gen.yield_with_sequence(response.completed())
+        return

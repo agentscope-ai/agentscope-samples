@@ -10,6 +10,7 @@ from loguru import logger
 from starlette.types import Receive
 
 from alias.server.api.deps import CurrentUser
+from alias.server.exceptions.base import BaseError
 from alias.server.schemas.chat import (
     ChatRequest,
     StopChatPayload,
@@ -17,12 +18,15 @@ from alias.server.schemas.chat import (
 )
 from alias.server.services.chat_service import ChatService
 from alias.server.utils.request_context import request_context_var
+from alias.server.runtime.runner.alias_runner import AliasRunner
 
 router = APIRouter(prefix="/conversations", tags=["conversations/chat"])
 
 
 class EnhancedStreamingResponse(StreamingResponse):
-    """StreamingResponse with client disconnect handling."""
+    """
+    StreamingResponse with client disconnect handling.
+    """
 
     def __init__(
         self,
@@ -53,7 +57,10 @@ class EnhancedStreamingResponse(StreamingResponse):
 
 
 def _to_raw_sse_event(data: Any) -> str:
-    """Convert a chunk from runner.stream_query into a raw SSE event string."""
+    """
+    Convert a chunk from runner.stream_query_native into
+    a raw SSE event string.
+    """
     if data == "[DONE]":
         return "data: [DONE]\n\n"
 
@@ -64,13 +71,29 @@ def _to_raw_sse_event(data: Any) -> str:
 
 
 async def event_generator(
-    runner: Any,
+    runner: AliasRunner,
     request_dict: dict,
     **runner_kwargs: Any,
 ) -> AsyncIterator[str]:
-    """Convert AliasRunner.stream_query output into a raw SSE string stream."""
-    async for chunk in runner.stream_query(request_dict, **runner_kwargs):
-        yield _to_raw_sse_event(chunk)
+    """
+    Convert AliasRunner.stream_query_native output into
+    a raw SSE string stream.
+    """
+    try:
+        async for chunk in runner.stream_query_native(
+            request_dict,
+            **runner_kwargs,
+        ):
+            yield _to_raw_sse_event(chunk)
+    except Exception as e:
+        if not isinstance(e, BaseError):
+            e = BaseError(code=500, message=str(e))
+        error_data = {
+            "code": e.code,
+            "message": e.message,
+        }
+        yield _to_raw_sse_event(error_data)
+        yield _to_raw_sse_event("[DONE]")
 
 
 @router.post("/{conversation_id}/chat")

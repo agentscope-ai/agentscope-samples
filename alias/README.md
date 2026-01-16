@@ -401,6 +401,8 @@ runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox
 
 #### 3. Start AgentScope Runtime Service
 
+##### Option A: Using the Command Line Interface (Recommended)
+
 Use the `alias_agent_runtime` command to launch both the backend service and the WebUI with a single command:
 
 ```bash
@@ -408,13 +410,37 @@ alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general --web-ui
 ```
 
 **Parameter Descriptions**:
-*   `--host` / `--port`: Specifies the running address and port (default port is 8090).
-*   `--chat-mode`: Sets the default running mode. Options include `general`, `dr`, `browser`, `ds`, and `finance` (default: `general`).
-*   `--web-ui` / `--no-web-ui`: Controls whether to launch the visual WebUI.
-    *   `--web-ui` (Default): Automatically starts the frontend service.
-    *   `--no-web-ui`: Only starts the backend API service without the frontend interface.
+*   `--host` / `--port`: Specifies the host address and port for the service (default port is 8090).
+*   `--chat-mode`: Sets the operational mode. Available options: `general`, `dr`, `browser`, `ds`, `finance` (defaults to `general`).
+*   `--web-ui`: Enables the AgentScope Runtime WebUI. If this flag is omitted, the WebUI will not be started.
 
-> **Note**: When enabling `--web-ui` for the first time, the system will automatically install necessary frontend dependencies. This may take a few minutes; please wait patiently.
+> **Note**: When launching with `--web-ui` for the first time, the system will automatically install necessary frontend dependencies. This process may take a few minutes; please be patient.
+
+##### Option B: Programmatic Usage (Recommended for Developers)
+
+If you prefer to integrate or customize the startup logic within your Python code, you can use `AliasRunner` in conjunction with `AgentApp` as shown below:
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from alias.server.runtime.runner.alias_runner import AliasRunner
+
+# 1. Initialize AliasRunner
+# Available default_chat_mode options: "general", "dr", "browser", "ds", "finance"
+runner = AliasRunner(
+    default_chat_mode="general",
+)
+
+# 2. Create an AgentApp instance
+agent_app = AgentApp(
+    runner=runner,
+    app_name="Alias",
+    app_description="An LLM-empowered agent built on AgentScope and AgentScope-Runtime",
+)
+
+# 3. Run the service
+# Setting web_ui=True will also launch the frontend interface (default port: 5173)
+agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
+```
 
 #### 4. Access the Application
 

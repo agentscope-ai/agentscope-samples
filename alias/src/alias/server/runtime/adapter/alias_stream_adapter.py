@@ -27,6 +27,7 @@ def _try_deep_parse(val: Any) -> Any:
                 parsed = json.loads(content)
                 return _try_deep_parse(parsed)
             except Exception:
+                # If nested JSON parsing fails, treat it as a normal string.
                 return val
         return val
     if isinstance(val, list):
@@ -55,14 +56,22 @@ def _extract_alias_output_obj(content_str: str) -> Any:
         if isinstance(data, list) and data:
             return data[0].get("output")
     except Exception:
+        # Best-effort parse: if the string is not a valid
+        # JSON or doesn't follow the expected structure,
+        # fall back to returning the original string.
         pass
     return content_str
 
 
 class AliasAdapterState:
-    def __init__(self, mb: Any, cb: Any, runtime_type: str):
-        self.mb = mb
-        self.cb = cb
+    def __init__(
+        self,
+        message_builder: Any,
+        content_builder: Any,
+        runtime_type: str,
+    ):
+        self.mb = message_builder
+        self.cb = content_builder
         self.runtime_type = runtime_type
         self.last_content = ""
         self.is_completed = False
@@ -186,6 +195,9 @@ async def adapt_alias_message_stream(
                 yield state.mb.complete()
                 state.is_completed = True
             except Exception:
+                # Graceful cleanup: ignore errors during the
+                # finalization phase to ensure the main response
+                # stream can finish without crashing.
                 pass
 
     yield rb.completed()
