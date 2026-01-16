@@ -113,7 +113,7 @@ def eval_sample(
         sample_list = [json.loads(line.strip()) for line in lines]
     print(f"Total records: {len(sample_list)}")
 
-    def res_formater(res_content: str) -> dict:
+    def res_formatter(res_content: str) -> dict:
         pattern = r"<(\w+)>(.*?)</\1>"
         matches = re.findall(pattern, res_content)
         result = {}
@@ -173,7 +173,7 @@ def eval_sample(
                     for output in outputs:
                         response = output.outputs[0].text
                         print(f"Response: {response}\n")
-                    res_dict = res_formater(response)
+                    res_dict = res_formatter(response)
                     try:
                         format_score = float(res_dict.get("format_score", 0.0))
                         content_score = float(

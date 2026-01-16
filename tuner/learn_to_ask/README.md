@@ -7,7 +7,7 @@ This guide demonstrates how to train a proactive LLM using the **Learn2Ask** fra
 ## Task Setting
 
 In this example, given a user's chief complaint, the medical assistant agent proactively asks targeted questions to gather sufficient symptom information for a comprehensive assessment of the user's health condition. The querying process should be efficient: the agent must optimize question quality, and terminate the interview as soon as the collected information is adequate for subsequent clinical assessment or decision-making.
-Here we use the `ReActAgent` for this task and no tools is required.
+Here we use the `ReActAgent` for this task and no tools are required.
 
 ---
 
@@ -17,13 +17,13 @@ Here we use the `ReActAgent` for this task and no tools is required.
 - **Training without GPUs**: You can use the **[Tinker backend](https://thinkingmachines.ai/tinker/)** without any GPUs.
 
 > 💡 All code and configuration files are located in:
-> `examples/training/learn_to_ask/`
+> `tuner/learn_to_ask/`
 
 Key files:
-- Workflow & Training: `examples/training/learn_to_ask/main.py`
-- Prompts: `examples/training/learn_to_ask/prompt.py`
-- Training config: `examples/training/learn_to_ask/config.yaml`
-- Data preparation scripts: `examples/training/learn_to_ask/data_prepare/`
+- Workflow & Training: `tuner/learn_to_ask/main.py`
+- Prompts: `tuner/learn_to_ask/prompt.py`
+- Training config: `tuner/learn_to_ask/config.yaml`
+- Data preparation scripts: `tuner/learn_to_ask/data_prepare/`
 
 ---
 
@@ -39,8 +39,8 @@ You can use the following python scripts to download the dataset:
 ```python
 from huggingface_hub import snapshot_download
 
-# Download to local directory, e.g., `./examples/training/learn_to_ask/data`
-local_dir = "./examples/training/learn_to_ask/data"
+# Download to local directory, e.g., `./tuner/learn_to_ask/data`
+local_dir = "./tuner/learn_to_ask/data"
 snapshot_download(
     repo_id="datajuicer/RealMedConv",
     repo_type="dataset",
@@ -70,18 +70,18 @@ You need to convert raw conversation logs into training samples. This involves t
 Split each conversation into **context–future pairs**, and extract ground-truth symptom information (`info_truth`) from what happens next.
 
 ```bash
-python examples/training/learn_to_ask/data_prepare/1_info_extract_pipeline.py \
+python tuner/learn_to_ask/data_prepare/1_info_extract_pipeline.py \
   --input_file /path/to/RealMedConv/train.jsonl \
-  --output_file examples/training/learn_to_ask/data_raw/train_processed.jsonl
+  --output_file tuner/learn_to_ask/data_raw/train_processed.jsonl
 ```
 
 #### 🔹 Step B: Build Final Training Dataset
 Convert the processed samples into the final format used for training/testing.
 
 ```bash
-python examples/training/learn_to_ask/data_prepare/2_build_dataset.py \
-  --input_file examples/training/learn_to_ask/data_raw/train_processed.jsonl \
-  --output_file examples/training/learn_to_ask/data/train.jsonl
+python tuner/learn_to_ask/data_prepare/2_build_dataset.py \
+  --input_file tuner/learn_to_ask/data_raw/train_processed.jsonl \
+  --output_file tuner/learn_to_ask/data/train.jsonl
 ```
 
 ---
@@ -160,7 +160,7 @@ async def run_react_agent(
         memory=InMemoryMemory(),
         max_iters=1,
     )
-    messages = format_messages(sys_prompt, task["messages"])
+    messages = format_messages(task["messages"])
     response = await agent.reply(
         [
             Msg(name=x["role"], content=x["content"], role=x["role"])
@@ -230,7 +230,7 @@ async def learn2ask_judge(
 
 This reward function considers:
 - Action accuracy: `action_score`
-- Question quailty (Symptom coverage): `content_score`
+- Question quality (Symptom coverage): `content_score`
 - Format score: `format_score`
 
 See [main.py](./main.py) for implementation details.
@@ -240,13 +240,13 @@ See [main.py](./main.py) for implementation details.
 ## Configure and Train the Model
 
 ### Option A: Edit Python Script (Simple)
-Open `examples/training/learn_to_ask/main.py` and adjust settings:
+Open `tuner/learn_to_ask/main.py` and adjust settings:
 
 ```python
 if __name__ == "__main__":
     train_mode = "Ra+Rs"     # Use both action and symptom rewards
     fusion_mode = "default"  # How to combine rewards
-    dataset = DatasetConfig(path="examples/training/learn_to_ask/data", split="train")
+    dataset = DatasetConfig(path="tuner/learn_to_ask/data", split="train")
 
     tuner_model = TunerModelConfig(
         model_path="Qwen/Qwen2.5-7B-Instruct",
@@ -273,7 +273,7 @@ if __name__ == "__main__":
 ```
 
 ### Option B: Use YAML Config (Advanced)
-Edit `examples/training/learn_to_ask/train.yaml` for more control.
+Edit `tuner/learn_to_ask/config.yaml` for more control.
 
 #### 🌐 No GPU? Use Tinker!
 If you don’t have GPUs, enable the **Tinker backend** by setting:
@@ -284,13 +284,13 @@ model:
     enable: true  # ← Set this to true
 ```
 
-Also, make sure to update the `model_path` in `examples/training/learn_to_ask/main.py` to point to a model that’s compatible with Tinker.
+Also, make sure to update the `model_path` in `tuner/learn_to_ask/main.py` to point to a model that’s compatible with Tinker.
 
 > 🔗 Learn more about Tinker: [Tinker Backend Documentation](https://modelscope.github.io/Trinity-RFT/en/main/tutorial/example_tinker_backend.html)
 
 ### Launch Training
 ```bash
-python examples/training/learn_to_ask/main.py
+python tuner/learn_to_ask/main.py
 ```
 
 ---
@@ -303,10 +303,10 @@ Use the **rollout-and-evaluate pipeline**:
 
 Run evaluation:
 ```bash
-python examples/training/learn_to_ask/data_prepare/3_rollout_then_evaluate.py \
+python tuner/learn_to_ask/data_prepare/3_rollout_then_evaluate.py \
   --eval_model_path path/to/your/trained/model \
   --grader_model_path Qwen/Qwen2.5-32B-Instruct \
-  --test_file_path examples/training/learn_to_ask/data/test.jsonl \
+  --test_file_path tuner/learn_to_ask/data/test.jsonl \
   --rollout_file_path path/to/rollout.jsonl \
   --eval_file_path path/to/output.jsonl
 ```
@@ -398,7 +398,7 @@ If you use this code or framework, please cite our work:
       author={Fei Wei and Daoyuan Chen and Ce Wang and Yilun Huang and Yushuo Chen and Xuchen Pan and Yaliang Li and Bolin Ding},
       year={2025},
       eprint={2510.25441},
-      archievePrefix={arXiv},
+      archivePrefix={arXiv},
       primaryClass={cs.AI},
       url={https://arxiv.org/abs/2510.25441}
 }

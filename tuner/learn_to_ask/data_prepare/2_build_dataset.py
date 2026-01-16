@@ -50,14 +50,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_file",
         type=str,
-        default="examples/learn_to_ask/data_raw/train_processed.jsonl",
+        default="tuner/learn_to_ask/data_raw/train_processed.jsonl",
     )
 
     # The final file for training or testing
     parser.add_argument(
         "--output_file",
         type=str,
-        default="examples/learn_to_ask/data/train.jsonl",
+        default="tuner/learn_to_ask/data/train.jsonl",
     )
 
     args = parser.parse_args()

@@ -149,12 +149,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_file",
         type=str,
-        default="examples/learn_to_ask/data_raw/train_origin.jsonl",
+        default="tuner/learn_to_ask/data_raw/train_origin.jsonl",
     )
     parser.add_argument(
         "--output_file",
         type=str,
-        default="examples/learn_to_ask/data_raw/train_processed.jsonl",
+        default="tuner/learn_to_ask/data_raw/train_processed.jsonl",
     )
     parser.add_argument(
         "--model_call_mode",
