@@ -8,7 +8,7 @@ This directory contains several examples of how to use the AgentScope Tuner for 
 | Frozen Lake       | Make an agent to navigate the Frozen Lake environment in multi-step interactions.  | [frozen_lake](./frozen_lake)    | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Learn to Ask      | Using LLM as a judge to provide feedback to facilitate agent tuning.               | [learn_to_ask](./learn_to_ask)  | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Email Search      | Enhance the tool use ability of your agent on tasks without ground truth.          | [email_search](./email_search)  | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Werewolf Game     | Enhance the agent's performance in a multi-agent game setting.                     | [werewolf_game](./werewolf_game)| ✅ | ✅ | ✅ | ✅ | ❌ |
+| Werewolf Game     | Enhance the agent's performance in a multi-agent game setting.                     | [werewolves](./werewolves)| ✅ | ✅ | ✅ | ✅ | ❌ |
 | Data Augment      | Data augmentation for better tuning results.                                       | [data_augment](./data_augment)  | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 Each example contains a README file with detailed instructions on how to set up and run the tuning process for that specific scenario. Feel free to explore and modify the examples to suit your needs!
