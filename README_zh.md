@@ -67,6 +67,13 @@
 │   └── ace_bench/                          # 基准测试与评估工具
 │
 ├── data_juicer_agent/                      # 数据处理多智能体系统
+├── tuner/                                  # 用 AgentScope Tuner 调优 AgentScope 应用
+│   ├── math_agent/                         # 快速入门调优示例
+│   ├── frozen_lake/                        # 教一个智能体玩需要多步操作的游戏
+│   ├── learn_to_ask/                       # 使用 LLM 作为评委辅助智能体训练
+│   ├── email_search/                       # 提升智能体的工具使用能力
+│   ├── werewolves/                         # 强化多智能体应用能力
+│   └── data_augment/                       # 增强用于调优的数据
 ├── sample_template/                        # 新样例贡献模板
 └── README.md
 ```

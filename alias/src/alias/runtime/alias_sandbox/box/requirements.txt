@@ -1,9 +1,9 @@
 ipython==8.31.0
 fastapi==0.115.6
 uvicorn==0.34.0
-pydantic==2.10.5
+pydantic==2.12.5
 requests==2.32.3
-mcp==1.9.0
+mcp==1.25.0
 aiofiles
 uv
 gitpython
@@ -14,3 +14,5 @@ scikit-learn
 scipy
 seaborn
 matplotlib
+agentscope[full]==1.0.11
+qdrant-client==1.15.1
