@@ -349,7 +349,129 @@ The results show that even a smaller 4B model can learn effective strategies to 
 
 ### Qualitative Results
 
-After training, the good guy models exhibit advanced reasoning patterns:
+#### Before Training: Mob Mentality & Critical Errors
+
+Untrained models make fundamental reasoning errors that doom the good guy team:
+- **Mob voting**: Villagers follow accusations without logical analysis, accidentally eliminating teammates
+- **Poor resource management**: Witch wastes potions or fails to self-rescue when targeted
+- **No evidence integration**: Players ignore Seer's verified information, act on vague suspicions
+
+#### After Training: Strategic Coordination & Witch Carry
+
+After training, the good guy models exhibit advanced reasoning and team coordination.
+
+**Summary of Improvements:**
+
+| Aspect | Before Training | After Training |
+|--------|----------------|----------------|
+| Voting Logic | Mob mentality, blind following | Evidence-chain analysis, logical deduction |
+| Potion Usage | Wasted or unused | Self-rescue at critical moments, precise poisoning |
+| Team Coordination | Mutual suspicion | Trust verified information, follow logical leads |
+
+Below is a concrete example comparing similar scenario before and after training.
+
+**Concrete Example:**
+
+**Setup (Day 1):** Seer is killed on Night 1. In their final statement, Seer reveals verified information about another player.
+
+---
+
+**❌ Before Training: Villagers Vote Out Their Own Witch**
+
+*Game State:* Seer (Player7) dies Night 1, but in final statement gives a vague warning: "Player4 has a powerful role, be careful..." (Player4 is actually the Witch!)
+
+*What happens:*
+- Player1 (Villager) immediately suspects Player4 based on the ambiguous warning
+- Other villagers blindly follow without questioning the logic
+- Player4 (Witch) defends herself but fails to reveal her role clearly
+- **Result: Player4 (Witch) is voted out 5:1** — Good guys lose their strongest asset
+
+*Private Reasoning from Player1 (Villager):*
+```
+"Player7's warning wasn't random—it was a signal about Player4.
+Player4 is being defensive, which is suspicious.
+I should vote Player4 out to protect the team."
+```
+
+*Public Statement:*
+```
+❌ "I agree with Player7's warning—trust no one blindly. Player4, your behavior
+has been quiet so far. I think we should seriously consider voting out Player4."
+```
+
+**Why it fails:**
+- Villager acts as "mob leader" without evidence analysis
+- Ignores that Seer's warning could have multiple interpretations
+- Doesn't consider Player4 might be a special role worth protecting
+- **Final Result: Werewolves win** — Witch eliminated Day 1, no potions used
+
+---
+
+**✅ After Training: Witch Carries with Strategic Play**
+
+*Game State:* Seer (Player2) dies Night 1, but leaves clear information: "I checked Player4 and confirmed they are a villager."
+
+*What happens (multi-round strategic play):*
+
+**Night 2 — Witch Self-Rescue:**
+When werewolves target Player1 (Witch), she makes a critical decision:
+
+*Private Reasoning from Player1 (Witch):*
+```
+"I'm the witch, and I was just targeted by werewolves.
+The seer is dead, so I'm the last special role standing.
+If I die now, villagers have no way to eliminate werewolves at night.
+
+Strategy: Self-rescue is worth it. I preserve myself to gather more
+information during Day 2, and save my poison for when I can identify
+a werewolf with high confidence."
+```
+
+*Result:* Witch survives, announces her identity on Day 2, gains villagers' trust.
+
+**Day 2 — Villagers Follow Logic:**
+With Witch confirmed, villagers analyze behavior patterns:
+
+*Private Reasoning from Player4 (Villager):*
+```
+"Player1 claimed witch and self-rescued—this is verifiable since
+no one died last night. I trust her now.
+
+Player5 has been pushing aggressive votes without evidence.
+Combined with Player1's analysis, Player5 is most suspicious."
+```
+
+*Public Statement:*
+```
+✅ "I support Player1's assessment. Player5's behavior has been inconsistent—
+they were quick to accuse others but offered no logical reasoning.
+I vote to eliminate Player5."
+```
+
+**Night 3 — Decisive Poison:**
+*Private Reasoning from Player1 (Witch):*
+```
+"Player5 (werewolf) is out. One werewolf remains.
+Player6 has been too quiet and always followed the majority without
+contributing original analysis—classic deep cover behavior.
+
+I'm confident Player6 is the last werewolf. Using poison now."
+```
+
+*Result:* Witch poisons Player6 (werewolf). **Good guys win.**
+
+**Why it works:**
+- Witch preserves healing potion for self-rescue at critical moment
+- Villagers trust verified information (Witch's self-rescue proof)
+- Team builds consensus through logical deduction, not mob voting
+- Witch uses poison decisively based on behavioral analysis
+- **Final Result: Good guys win** — Witch single-handedly eliminates both werewolves
+
+---
+
+This demonstrates the essence of trained good guy behavior: **strategic resource management, evidence-based reasoning, and team coordination**. The model learns that self-preservation of special roles and logical consensus-building are more valuable than aggressive early voting.
+
+**Role-Specific Advanced Patterns:**
 
 - **Seer**: Strategic target selection, information concealment in public statements, evidence integration
 - **Witch**: Resource management (preserve potions for critical moments), protect high-value targets, evidence-based decisions
