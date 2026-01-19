@@ -349,18 +349,18 @@ The results show that even a smaller 4B model can learn effective strategies to 
 
 ### Qualitative Results
 
-#### Before Training: Mob Mentality & Critical Errors
+**Before Training: Mob Mentality & Critical Errors**
 
 Untrained models make fundamental reasoning errors that doom the good guy team:
 - **Mob voting**: Villagers follow accusations without logical analysis, accidentally eliminating teammates
-- **Poor resource management**: Witch wastes potions or fails to self-rescue when targeted
-- **No evidence integration**: Players ignore Seer's verified information, act on vague suspicions
+- **Poor resource management**: Witch wastes potions or fails rescue teammate targeted
+- **No evidence integration**: Players ignore key information, act on vague suspicions
 
-#### After Training: Strategic Coordination & Witch Carry
+**After Training: Strategic Coordination & Witch Carry**
 
 After training, the good guy models exhibit advanced reasoning and team coordination.
 
-**Summary of Improvements:**
+#### Summary of Improvements
 
 | Aspect | Before Training | After Training |
 |--------|----------------|----------------|
@@ -370,9 +370,9 @@ After training, the good guy models exhibit advanced reasoning and team coordina
 
 Below is a concrete example comparing similar scenario before and after training.
 
-**Concrete Example:**
+#### Concrete Example
 
-**Setup (Day 1):** Seer is killed on Night 1. In their final statement, Seer reveals verified information about another player.
+**Similar Scenario(Day 1):** Seer is killed on Night 1. In their final statement, Seer reveals verified information about another player.
 
 ---
 
