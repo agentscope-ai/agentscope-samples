@@ -25,7 +25,7 @@ from alias.server.db.init_db import (
 )
 from alias.server.core.task_manager import task_manager
 from alias.server.exceptions.base import BaseError
-from alias.server.runtime.adapter.alias_stream_adapter import (
+from alias.runtime.runtime_compat.adapter.alias_stream_adapter import (
     adapt_alias_message_stream,
 )
 from alias.server.schemas.chat import ChatRequest

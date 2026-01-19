@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 from typing import Optional
-from alias.server.runtime.runner.alias_runner import AliasRunner
+from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
 
 _lock: Optional[asyncio.Lock] = None
 _runner: Optional[AliasRunner] = None

@@ -18,7 +18,7 @@ from alias.server.schemas.chat import (
 )
 from alias.server.services.chat_service import ChatService
 from alias.server.utils.request_context import request_context_var
-from alias.server.runtime.runner.alias_runner import AliasRunner
+from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
 
 router = APIRouter(prefix="/conversations", tags=["conversations/chat"])
 
@@ -45,8 +45,8 @@ class EnhancedStreamingResponse(StreamingResponse):
             message = await receive()
             if message["type"] == "http.disconnect":
                 logger.warning(
-                    "Chat stopped by disconnect from client: task_id=%s",
-                    self.task_id,
+                    f"Chat stopped by disconnect from client: "
+                    f"task_id={self.task_id}",
                 )
                 service = ChatService()
                 await service.stop_chat(
@@ -108,7 +108,7 @@ async def chat(
     task_id = uuid.UUID(request_id) if request_id else uuid.uuid4()
     user_id = current_user.id
 
-    from alias.server.runtime.runner.alias_runner_singleton import (
+    from alias.runtime.runtime_compat.runner.alias_runner_singleton import (
         get_alias_runner,
     )
 

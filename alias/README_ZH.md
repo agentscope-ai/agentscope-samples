@@ -373,7 +373,7 @@ bash script/start_memory_service.sh
 
 ### 🌐 基础用法 -- AgentScope Runtime 部署
 
-Alias 现在支持基于 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 快速启动，并提供开箱即用的 WebUI 交互界面（基于AgentScope Runtime 的 WebUI）。
+Alias 现已适配 [AgentScope Runtime](https://github.com/agentscope-ai/agentscope-runtime/)，您可以利用 AgentScope Runtime 将 Alias 快速部署为标准后端服务。启动后，通过配套的 AgentScope Runtime API 即可轻松调用 Alias 所提供的服务。
 
 #### 1. 前期准备
 
@@ -401,17 +401,19 @@ runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox
 
 #### 3. 启动 AgentScope Runtime 服务
 
+您可以根据使用场景，选择通过命令行或 Python 代码启动服务。
+
 ##### 选项 A：使用命令行工具（推荐）
-使用 `alias_agent_runtime` 命令一键启动后端服务及 WebUI 界面：
+使用 `alias_agent_runtime` 命令一键启动后端服务：
 
 ```bash
-alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general --web-ui
+alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general
 ```
 
 **参数说明**：
 *   `--host` / `--port`: 指定服务的运行地址和端口（默认端口为 8090）。
 *   `--chat-mode`: 设置运行模式，可选 `general`, `dr`, `browser`, `ds`, `finance`（默认为 `general`）。
-*   `--web-ui` : 启用 AgentScope Runtime WebUI。若未指定该参数，则默认不启动 WebUI。
+*   `--web-ui` : (可选) 启用 AgentScope Runtime WebUI 以开启可视化交互界面。若仅需调用 API，请忽略此参数。
 
 > **注意**：首次启动并开启 `--web-ui` 时，系统会自动安装必要的前端依赖包，可能需要花费几分钟时间，请耐心等待。
 
@@ -436,18 +438,16 @@ agent_app = AgentApp(
 )
 
 # 3. 运行服务
-# web_ui=True 将同时启动前端交互界面（默认端口 5173）
-agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
+# 如需启用可视化调试界面，可设置 web_ui=True
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 #### 4. 访问应用程序
 
-服务启动后，您可以通过访问以下地址与 Alias 进行交互：
+服务启动后，您可以通过以下方式访问 Alias：
 
-*   **前端交互界面**：`http://localhost:5173`
-*   **Runtime API 服务**：`http://localhost:8090/process`
-
-通过 WebUI，您可以直观地查看智能体的思考过程以及工具调用轨迹等信息。
+*   **Runtime API 调用**：通过标准 HTTP POST 请求访问 `http://localhost:8090/process`。这是将 Alias 集成至第三方前端或后端工作流的主要方式。
+*   **可视化监控 (可选)**：若启动时开启了 `--web-ui` 参数，可通过 `http://localhost:5173` 访问 WebUI。该界面主要用于开发者观察智能体的思考过程以及工具调用轨迹等调试信息。
 
 ## ⚖️ 许可证
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from agentscope_runtime.engine.app import AgentApp
 
-from alias.server.runtime.runner.alias_runner import AliasRunner
+from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
 
 PORT = 8090
 
