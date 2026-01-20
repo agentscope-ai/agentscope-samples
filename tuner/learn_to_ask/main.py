@@ -249,7 +249,6 @@ if __name__ == "__main__":
         temperature=1.0,
         tensor_parallel_size=1,
         inference_engine_num=4,
-        reasoning_parser=None,
     )
     aux_models = {
         AUXILIARY_MODEL_NAME: TunerModelConfig(
@@ -259,7 +258,6 @@ if __name__ == "__main__":
             temperature=0.7,
             tensor_parallel_size=2,
             inference_engine_num=1,
-            reasoning_parser=None,
         ),
     }
     algorithm = AlgorithmConfig(

@@ -289,6 +289,8 @@ Also, make sure to update the `model_path` in `tuner/learn_to_ask/main.py` to po
 
 > 🔗 Learn more about Tinker Backend: [Tinker Backend Documentation](https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/example_tinker_backend.html)
 
+> In this provided example, training is configured for 4 epochs. When using Tinker, the total token consumption is approximately 112 million tokens, resulting in an estimated cost of approximately 18$.
+
 ### Launch Training
 ```bash
 python tuner/learn_to_ask/main.py
