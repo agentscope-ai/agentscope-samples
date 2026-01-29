@@ -103,12 +103,15 @@ async def gsm8k_judge(
 
 if __name__ == "__main__":
     dataset = DatasetConfig(
-        path="openai/gsm8k",
+        path="/mnt/data_cpfs/taoshuchang.tsc/deepresearch/AgentJet_new/dataset_gsm8k",
         name="main",
         split="train",
+        total_epochs=4,  # Add this line to set the number of epochs
     )
+    from pathlib import Path
+    config_path = Path(__file__).parent / "config.yaml"
     tuner_model = TunerModelConfig(
-        model_path="Qwen/Qwen3-0.6B",
+        model_path="/mnt/data_cpfs/taoshuchang.tsc/models/Qwen3-8B",
         max_model_len=24576,
         max_tokens=16384,
         temperature=1.0,
@@ -127,4 +130,9 @@ if __name__ == "__main__":
         train_dataset=dataset,
         model=tuner_model,
         algorithm=algorithm,
+        config_path=str(config_path),  # For cluster, explorer, trainer details
     )
+
+"""
+python main.py 
+"""
