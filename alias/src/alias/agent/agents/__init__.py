@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from alias.agent.agents._alias_agent_base import AliasAgentBase
+from alias.agent.agents._qa_agent import QAAgent
 from alias.agent.agents._meta_planner import MetaPlanner
 from alias.agent.agents._browser_agent import BrowserAgent
 from alias.agent.agents._react_worker import ReActWorker
@@ -11,6 +12,7 @@ from alias.agent.agents._data_science_agent import (
     DataScienceAgent,
     init_ds_toolkit,
 )
+from alias.agent.agents._qa_agent import QAAgent
 
 __all__ = [
     "AliasAgentBase",
@@ -19,6 +21,7 @@ __all__ = [
     "ReActWorker",
     "DeepResearchAgent",
     "DataScienceAgent",
+    "QAAgent",
     "init_ds_toolkit",
     "init_dr_toolkit",
 ]
