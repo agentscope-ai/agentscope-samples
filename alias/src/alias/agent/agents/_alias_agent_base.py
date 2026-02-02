@@ -28,7 +28,7 @@ class AliasAgentBase(ReActAgent):
     async def create(
         cls,
         name: str,
-        model: str = 'qwen3-max',
+        model: str = "qwen3-max",
         system_prompt: Optional[str] = None,
         tools: Optional[List[str]] = None,
         worker_full_toolkit: Optional[AliasToolkit] = None,
@@ -39,7 +39,8 @@ class AliasAgentBase(ReActAgent):
 
         This is a convenience factory method that sets up the agent with
         appropriate defaults. Tools are registered via share_tools from
-        worker_full_toolkit when both tools and worker_full_toolkit are provided.
+        worker_full_toolkit when both tools and worker_full_toolkit are
+        provided.
 
         Args:
             name: The unique identifier name for the agent instance.
@@ -47,10 +48,13 @@ class AliasAgentBase(ReActAgent):
                 Must be a key in MODEL_FORMATTER_MAPPING from run.py.
             system_prompt: The system prompt. If None, uses default prompt.
             tools: List of tool names to register in the agent's toolkit.
-                Used together with worker_full_toolkit; tools are copied via share_tools.
-            worker_full_toolkit: Source toolkit containing all tools. When provided
-                together with tools, the specified tools are shared into the agent's toolkit.
-            use_long_term_memory_service: Whether to enable long-term memory service.
+                Used together with worker_full_toolkit; tools are copied
+                via share_tools.
+            worker_full_toolkit: Source toolkit containing all tools.
+            When provided together with tools, the specified tools are shared
+            into the agent's toolkit.
+            use_long_term_memory_service: Whether to enable long-term memory
+            service.
 
         Returns:
             A configured AliasAgentBase instance.
@@ -94,18 +98,20 @@ class AliasAgentBase(ReActAgent):
                     "running.",
                 )
 
-        # Build toolkit: use worker_full_toolkit's sandbox if provided, then share_tools
+        # Build toolkit: use worker_full_toolkit's sandbox if provided,
+        # then share_tools
         if worker_full_toolkit is not None:
             toolkit = AliasToolkit(
                 sandbox=worker_full_toolkit.sandbox,
                 add_all=False,
             )
             if tools:
-                # Validate that each requested tool exists in worker_full_toolkit
+                # Validate that each requested tool exists
+                # in worker_full_toolkit
                 for tool_name in tools:
                     if tool_name not in worker_full_toolkit.tools:
                         raise ValueError(
-                            f"Tool '{tool_name}' is not available in worker_full_toolkit. "
+                            f"Tool '{tool_name}' is not available. ",
                         )
                 share_tools(worker_full_toolkit, toolkit, tools)
                 logger.info(f"Shared tools into agent toolkit: {tools}")
@@ -128,7 +134,7 @@ class AliasAgentBase(ReActAgent):
         )
 
         return agent
-    
+
     def __init__(
         self,
         name: str,

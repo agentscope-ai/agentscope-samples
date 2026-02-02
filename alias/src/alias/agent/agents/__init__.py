@@ -12,7 +12,6 @@ from alias.agent.agents._data_science_agent import (
     DataScienceAgent,
     init_ds_toolkit,
 )
-from alias.agent.agents._qa_agent import QAAgent
 
 __all__ = [
     "AliasAgentBase",

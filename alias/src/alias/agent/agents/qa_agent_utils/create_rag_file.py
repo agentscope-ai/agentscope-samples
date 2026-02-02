@@ -96,10 +96,12 @@ def collection_exists(collection_name: str) -> bool:
         return False
     try:
         import urllib.request
-        with urllib.request.urlopen(
-            f"http://{QDRANT_HOST}:{QDRANT_PORT}/collections/{collection_name}",
-            timeout=2,
-        ) as response:
+
+        url = (
+            f"http://{QDRANT_HOST}:{QDRANT_PORT}/collections/"
+            f"{collection_name}"
+        )
+        with urllib.request.urlopen(url, timeout=2) as response:
             return response.status == 200
     except Exception:
         return False

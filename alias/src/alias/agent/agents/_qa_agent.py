@@ -2,20 +2,15 @@
 """
 QAAgent: A specialized agent for question answering with RAG capabilities.
 
-This agent extends AliasAgentBase to provide GitHub MCP tools and RAG (Retrieval-Augmented Generation)
-functionality for answering questions based on a knowledge base stored in Qdrant.
+This agent extends AliasAgentBase to provide GitHub MCP tools and
+RAG (Retrieval-Augmented Generation) for a knowledge base in Qdrant.
 """
 import hashlib
 import os
-import re
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
 from loguru import logger
-
-if TYPE_CHECKING:
-    from alias.agent.tools import AliasToolkit
-
 from agentscope.embedding import DashScopeTextEmbedding
 from agentscope.message import TextBlock
 from agentscope.mcp import HttpStatelessClient
@@ -30,6 +25,9 @@ from alias.agent.agents.qa_agent_utils.create_rag_file import (
     start_qdrant_container,
     split_faq_records,
 )
+
+if TYPE_CHECKING:
+    from alias.agent.tools import AliasToolkit
 
 # Qdrant configuration
 QDRANT_HOST = "127.0.0.1"
@@ -59,27 +57,32 @@ class QAAgent(AliasAgentBase):
         """
         try:
             # Try to load from the built-in prompt file
-            prompt_file = Path(__file__).parent / "qa_agent_utils" / "build_in_prompt" / "qaagent_base_sys_prompt.md"
+            prompt_file = (
+                Path(__file__).parent
+                / "qa_agent_utils"
+                / "build_in_prompt"
+                / "qaagent_base_sys_prompt.md"
+            )
             if prompt_file.exists():
                 prompt = prompt_file.read_text(encoding="utf-8")
                 return prompt.format(name=name)
         except Exception as e:
             logger.warning(f"Could not load default QA prompt: {e}")
-        
+
         # Fallback to a simple default prompt
         return (
             f"You are a helpful assistant named {name}.\n\n"
-            "**IMPORTANT**: When answering questions, you MUST use the `retrieve_knowledge` tool "
-            "to search for answers in the knowledge base FIRST before providing any answer. "
-            "Do not answer based solely on your training data if the question might be in the knowledge base.\n\n"
+            "**IMPORTANT**: You MUST use the `retrieve_knowledge` tool to "
+            "search the knowledge base FIRST before answering. "
+            "Do not answer from training data alone if the question may be in "
+            "the knowledge base.\n\n"
             "The `query` parameter is crucial for retrieval quality. "
-            "You may try multiple different queries to get the best results. "
-            "Adjust the `limit` and `score_threshold` parameters to control "
-            "the number and relevance of results.\n\n"
+            "Try multiple queries; adjust `limit` and `score_threshold` "
+            "for number and relevance of results.\n\n"
         )
 
     @classmethod
-    async def create(
+    async def create(  # pylint: disable=too-many-branches,too-many-statements
         cls,
         name: str,
         model: str = "qwen3-max",
@@ -98,11 +101,12 @@ class QAAgent(AliasAgentBase):
             model: The model name (e.g., "qwen3-max", "qwen-vl-max").
             system_prompt: The system prompt. If None, uses default prompt.
             tools: Tool names to register from worker_full_toolkit.
-            worker_full_toolkit: Optional. If provided, use this toolkit (same sandbox/share_tools as AliasAgentBase).
-                If None, create sandbox and full toolkit internally.
-            use_long_term_memory_service: Whether to enable long-term memory service.
-            file: List of file paths to process and add to the knowledge base. None to use default or skip.
-            collection_name: Name of the Qdrant collection for RAG. None to use default 'as_faq'.
+            worker_full_toolkit: Optional. If provided, use this toolkit (same
+                sandbox/share_tools as AliasAgentBase). If None, create
+                sandbox and full toolkit internally.
+            use_long_term_memory_service: Whether to enable long-term memory.
+            file: List of file paths to process. None to use default or skip.
+            collection_name: Qdrant collection. None = default 'as_faq'.
 
         Returns:
             A configured QAAgent instance with RAG capabilities.
@@ -111,20 +115,24 @@ class QAAgent(AliasAgentBase):
         if file is not None and not isinstance(file, list):
             raise ValueError("file must be a list of file paths or None")
 
-        # Resolve collection_name for this agent (RAG tool will use this collection)
-        coll_name = collection_name if collection_name is not None else DEFAULT_COLLECTION_NAME
+        # Resolve collection_name (RAG tool uses this collection)
+        coll_name = (
+            collection_name
+            if collection_name is not None
+            else DEFAULT_COLLECTION_NAME
+        )
 
         qdrant_running = check_container_running(QDRANT_CONTAINER_NAME)
 
         if not qdrant_running:
-            # RAG not initialized: start Qdrant first, then init by (file, collection_name)
+            # RAG not initialized: start Qdrant, init (file, collection)
             try:
                 start_qdrant_container()
             except Exception as e:
                 logger.warning(f"Could not start Qdrant container: {e}")
                 logger.warning("RAG functionality may not work properly")
             else:
-                # Resolve (files to process, collection_name) for initial load
+                # Resolve (files to process, collection) for initial load
                 if file is None and collection_name is None:
                     files_to_process = [DEFAULT_RAG_FILE_PATH]
                     init_collection = DEFAULT_COLLECTION_NAME
@@ -139,26 +147,34 @@ class QAAgent(AliasAgentBase):
                     init_collection = collection_name
                 await cls._process_files(files_to_process, init_collection)
         else:
-            # Qdrant already running: collection_name is the one this agent will use
+            # Qdrant running: collection_name is the one this agent uses
             if file:
                 await cls._process_files(file, coll_name)
             elif not collection_exists(coll_name):
                 logger.info(
-                    f"Collection '{coll_name}' does not exist; using default file to populate.",
+                    f"Collection '{coll_name}' does not exist; "
+                    "using default file to populate.",
                 )
                 if DEFAULT_RAG_FILE_PATH.exists():
-                    await cls._process_files([DEFAULT_RAG_FILE_PATH], coll_name)
+                    await cls._process_files(
+                        [DEFAULT_RAG_FILE_PATH],
+                        coll_name,
+                    )
                 else:
-                    logger.warning(f"Default RAG file not found: {DEFAULT_RAG_FILE_PATH}")
+                    logger.warning(
+                        f"Default RAG file not found: {DEFAULT_RAG_FILE_PATH}",
+                    )
 
         # Use default system prompt if not provided
         if system_prompt is None:
             system_prompt = cls._get_default_system_prompt(name)
 
-        # Use caller's worker_full_toolkit, or build sandbox + full toolkit internally
+        # Use worker_full_toolkit or build sandbox + toolkit internally
         if worker_full_toolkit is None:
             try:
-                from alias.runtime.alias_sandbox.alias_sandbox import AliasSandbox
+                from alias.runtime.alias_sandbox.alias_sandbox import (
+                    AliasSandbox,
+                )
                 from alias.agent.tools import AliasToolkit
                 from alias.agent.tools.add_tools import add_tools
 
@@ -168,7 +184,10 @@ class QAAgent(AliasAgentBase):
                 try:
                     await add_tools(worker_full_toolkit)
                 except Exception as e:
-                    logger.warning(f"add_tools failed: {e}; continuing with sandbox tools only")
+                    logger.warning(
+                        f"add_tools failed: {e}; "
+                        "continuing with sandbox tools only",
+                    )
                 logger.info("Created sandbox and full toolkit for QAAgent")
             except Exception as e:
                 logger.warning(f"Could not create sandbox for QAAgent: {e}")
@@ -192,7 +211,7 @@ class QAAgent(AliasAgentBase):
 
     @staticmethod
     async def _process_files(
-        file_paths: List[Union[str, Path]],
+        file_paths: Sequence[Union[str, Path]],
         collection_name: str,
     ) -> None:
         """
@@ -202,7 +221,10 @@ class QAAgent(AliasAgentBase):
             file_paths: List of file paths to process.
             collection_name: Name of the Qdrant collection to add documents to.
         """
-        logger.info(f"Processing {len(file_paths)} file(s) for collection '{collection_name}'")
+        logger.info(
+            f"Processing {len(file_paths)} file(s) "
+            f"for collection '{collection_name}'",
+        )
 
         # Create knowledge base instance
         knowledge = SimpleKnowledge(
@@ -245,12 +267,17 @@ class QAAgent(AliasAgentBase):
             for faq_record in faq_records:
                 # If the record is short enough, use it as-is
                 if len(faq_record) <= 2048:
-                    doc_id = hashlib.sha256(faq_record.encode("utf-8")).hexdigest()
+                    doc_id = hashlib.sha256(
+                        faq_record.encode("utf-8"),
+                    ).hexdigest()
                     all_documents.append(
                         Document(
                             id=doc_id,
                             metadata=DocMetadata(
-                                content=TextBlock(type="text", text=faq_record),
+                                content=TextBlock(
+                                    type="text",
+                                    text=faq_record,
+                                ),
                                 doc_id=doc_id,
                                 chunk_id=0,
                                 total_chunks=1,
@@ -269,10 +296,15 @@ class QAAgent(AliasAgentBase):
                 f"to collection '{collection_name}'",
             )
         else:
-            logger.warning("No documents were processed from the provided files")
+            logger.warning(
+                "No documents were processed from the provided files",
+            )
 
     @staticmethod
-    async def _register_rag_tool(agent: "QAAgent", collection_name: str) -> None:
+    async def _register_rag_tool(
+        agent: "QAAgent",
+        collection_name: str,
+    ) -> None:
         """
         Register the retrieve_knowledge tool for RAG.
 
@@ -300,16 +332,17 @@ class QAAgent(AliasAgentBase):
             )
             agent.toolkit.register_tool_function(
                 knowledge.retrieve_knowledge,
-                func_description=(  # Provide a clear description for the tool
-                    "Quickly retrieve answers to questions related to "
-                    "the knowledge base. The `query` parameter is crucial "
-                    "for retrieval quality."
-                    "You may try multiple different queries to get the best "
-                    "results. Adjust the `limit` and `score_threshold` "
-                    "parameters to control the number and relevance of results."
+                func_description=(
+                    "Quickly retrieve answers from the knowledge base. "
+                    "The `query` parameter is crucial for retrieval quality. "
+                    "Try multiple queries; adjust `limit` and "
+                    "`score_threshold` for relevance of results."
                 ),
             )
-            logger.info(f"Registered retrieve_knowledge tool with collection '{collection_name}'")
+            logger.info(
+                f"Registered retrieve_knowledge tool "
+                f"with collection '{collection_name}'",
+            )
         except Exception as e:
             print(traceback.format_exc())
             raise e from None
@@ -328,8 +361,7 @@ class QAAgent(AliasAgentBase):
         if not github_token:
             logger.error(
                 "Missing GITHUB_TOKEN; GitHub MCP tools cannot be used. "
-                "Please export GITHUB_TOKEN in your environment before "
-                "proceeding.",
+                "Please export GITHUB_TOKEN in your environment.",
             )
         else:
             try:
