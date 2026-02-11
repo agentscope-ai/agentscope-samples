@@ -101,7 +101,9 @@ def init():
         self,
         msgs,
         request: AgentRequest = None,
+        **kwargs,
     ):
+        # pylint: disable=unused-argument
         session_id = request.session_id
         user_id = request.user_id
 
