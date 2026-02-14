@@ -1,0 +1,151 @@
+# ============================================================
+# Local Deep Research Configuration File
+# ============================================================
+# This file is used to configure various services and parameters
+# for the Local Deep Research system.
+# API Keys should be set via environment variables (.env) to avoid exposure.
+# ============================================================
+
+provide_settings:
+  # ------------------------------------------------------------
+  # Large Language Model (LLM) Configuration
+  # ------------------------------------------------------------
+  llm:
+    provider: "DashScope"  # LLM provider, supported: "OpenAI", "DashScope"
+    config:
+      model: "qwen-max"  # Model name, e.g., gpt-4, qwen-max, DeepSeek-V3.1, etc.
+      base_url: "https://one-api.nowcoder.com"  # API base URL (OpenAI-compatible endpoint)
+      api_key: null  # API key (recommended to set via environment variable DASHSCOPE_API_KEY or OPENAI_API_KEY)
+      enable_thinking: false  # Enable thinking mode (supports ZhipuAI/GLM thinking feature, default: false)
+
+  # ------------------------------------------------------------
+  # Embedding Model Configuration
+  # ------------------------------------------------------------
+  # Supported providers:
+  #   - SiliconflowEmbedding: Siliconflow embedding models
+  #   - OpenAIEmbedding: OpenAI-compatible embedding models
+  #   - AliyunEmbedding: Aliyun DashScope embedding models
+  #   - SentenceTransformerEmbedding: Local Sentence Transformers models
+  # ------------------------------------------------------------
+  embedding:
+    provider: "SiliconflowEmbedding"  # Embedding model provider
+    config:
+      model: "BAAI/bge-m3"  # Embedding model name
+      base_url: "https://api.siliconflow.cn/v1"  # API base URL
+      api_key: null  # API key (recommended to set via environment variable SILICONFLOW_API_KEY)
+
+  # ------------------------------------------------------------
+  # File Loader Configuration
+  # ------------------------------------------------------------
+  # Usage: config.set_provider_config("file_loader", "FileLoaderName", {})
+  # 
+  # Supported file loaders:
+  #   - PDFLoader: PDF file loader (default, no extra dependencies)
+  #     Supported formats: .pdf, .md, .txt
+  #     Usage example:
+  #       config.set_provider_config("file_loader", "PDFLoader", {})
+  #   
+  #   - TextLoader: Plain text file loader (no extra dependencies)
+  #     Supported formats: .txt, .md
+  #     Usage example:
+  #       config.set_provider_config("file_loader", "TextLoader", {})
+  #   
+  #   - JsonFileLoader: JSON file loader (no extra dependencies)
+  #     Supported formats: .json
+  #     Usage example:
+  #       config.set_provider_config("file_loader", "JsonFileLoader", {})
+  #   
+  #   - DoclingLoader: Advanced document loader
+  #     Installation: pip install docling
+  #     Supported formats: See https://docling-project.github.io/docling/usage/supported_formats/
+  #     Usage example:
+  #       config.set_provider_config("file_loader", "DoclingLoader", {})
+  #     More info: https://docling-project.github.io/docling/
+  #   
+  #   - UnstructuredLoader: Universal document loader
+  #     Installation: 
+  #       - Ingest pipeline: pip install unstructured-ingest
+  #       - All formats: pip install "unstructured[all-docs]"
+  #       - PDF only: pip install "unstructured[pdf]"
+  #     Supported formats: PDF, Word, Excel, PowerPoint, and many more
+  #     API Mode (Optional):
+  #       - Set environment variables: UNSTRUCTURED_API_KEY and UNSTRUCTURED_API_URL
+  #       - Get API key from: https://unstructured.io/
+  #     Local Mode:
+  #       - Simply don't set the API environment variables
+  #     Usage example:
+  #       config.set_provider_config("file_loader", "UnstructuredLoader", {})
+  #     More info:
+  #       - Documentation: https://docs.unstructured.io/ingestion/overview
+  #       - Installation: https://docs.unstructured.io/open-source/installation/full-installation
+  # ------------------------------------------------------------
+  file_loader:
+    provider: "PDFLoader"  # File loader type
+    config: {}  # Loader configuration parameters (may vary by loader type)
+
+  # ------------------------------------------------------------
+  # Web Crawler Configuration
+  # ------------------------------------------------------------
+  # Usage: config.set_provider_config("web_crawler", "CrawlerName", {})
+  # 
+  # Supported web crawlers:
+  #   - FireCrawlCrawler: FireCrawl web crawler (RECOMMENDED)
+  #     Requirements: Set env variable FIRECRAWL_API_KEY
+  #     API Key: Get from https://www.firecrawl.dev/
+  #     Usage example:
+  #       config.set_provider_config("web_crawler", "FireCrawlCrawler", {})
+  #     More info: https://docs.firecrawl.dev/introduction
+  #   
+  #   - JinaCrawler: Jina AI Reader web crawler
+  #     Requirements: Set env variable JINA_API_TOKEN or JINAAI_API_KEY
+  #     API Key: Get from https://jina.ai/reader/
+  #     Usage example:
+  #       config.set_provider_config("web_crawler", "JinaCrawler", {})
+  #     More info: https://jina.ai/reader/
+  #   
+  #   - DoclingCrawler: Docling web crawler
+  #     Installation: pip install docling
+  #     Usage example:
+  #       config.set_provider_config("web_crawler", "DoclingCrawler", {})
+  #     More info: https://docling-project.github.io/docling/
+  #   
+  #   - Crawl4AICrawler: Crawl4AI web crawler
+  #     Installation: pip install crawl4ai && crawl4ai-setup
+  #     Note: Run crawl4ai-setup after installation to set up browser
+  #     Usage example:
+  #       config.set_provider_config("web_crawler", "Crawl4AICrawler", {})
+  #     More info: https://docs.crawl4ai.com/
+  # ------------------------------------------------------------
+  web_crawler:
+    provider: "FireCrawlCrawler"  # Web crawler type
+    config: {}  # Crawler configuration parameters (e.g., API keys, timeout settings, etc.)
+
+  # ------------------------------------------------------------
+  # Vector Database Configuration
+  # ------------------------------------------------------------
+  vector_db:
+    provider: "Milvus"  # Vector database provider (currently only Milvus is supported)
+    config:
+      default_collection: "deepsearcher"  # Default collection name
+      uri: "http://localhost:19530"  # Milvus server address
+      token: "root:Milvus"  # Authentication token (username:password)
+      db: "default"  # Database name
+      hybrid: false  # Enable hybrid search (combining vector and keyword search, default: false)
+
+# ------------------------------------------------------------
+# Query Settings
+# ------------------------------------------------------------
+# Controls behavior parameters for research queries
+# ------------------------------------------------------------
+query_settings:
+  max_iter: 3  # Maximum number of iterations (max rounds for research agent to search and analyze)
+  max_depth: 3  # Maximum search depth (max levels for recursive search)
+
+# ------------------------------------------------------------
+# Document Loading Settings
+# ------------------------------------------------------------
+# Controls document chunking and loading parameters
+# ------------------------------------------------------------
+load_settings:
+  chunk_size: 1500  # Document chunk size (maximum characters per text chunk)
+  chunk_overlap: 100  # Chunk overlap size (overlapping characters between adjacent chunks for context continuity)

@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary Files
+tmp/
+*.tmp
+*.log
+
+# Uploads
+uploads/
+
+# Agent Logs
+logs/
+agent/log/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Milvus Data
+milvus_data/
+
+# Test Files
+test_document.txt
+*.test.md
+
+# Reports
+*_detailed_report.md
+*_inprocess_report_*.md
+
+AGENTS.md
+config.yaml
