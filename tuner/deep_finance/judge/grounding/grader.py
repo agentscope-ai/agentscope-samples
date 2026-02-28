@@ -80,7 +80,7 @@ class GroundingGrader(BaseGrader):
 
         return OpenAIChatModel(**kwargs)
 
-    async def aevaluate(
+    async def _aevaluate(
         self,
         traj: Any,
         **_: Any,
