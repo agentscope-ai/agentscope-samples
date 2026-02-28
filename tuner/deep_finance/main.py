@@ -26,19 +26,12 @@ python main_deep_finance.py \\
 from __future__ import annotations
 
 import os
-
-# Load environment variables from .env file
-from dotenv import load_dotenv
-_env_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-    ".env"
-)
-if os.path.exists(_env_path):
-    load_dotenv(_env_path)
-    print(f"Loaded environment variables from: {_env_path}")
+import asyncio
+import random
+import logging
 
 import argparse
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from agentscope.tuner import (
     tune,
@@ -51,13 +44,140 @@ from agentscope.tuner import (
 from agentscope.agent import ReActAgent
 from agentscope.model import OpenAIChatModel
 from agentscope.formatter import OpenAIChatFormatter
+from agentscope.tool import Toolkit
+from agentscope.mcp import HttpStatelessClient
 from agentscope.message import Msg
 
-from _deep_finance_judge import DeepFinanceJudgeEngine, DeepFinanceJudgeConfig
+from deep_finance_judge import deep_finance_judge
+from metric_helper.tool_metric_helper import extract_tool_stats_from_agent, compute_single_tool_metrics
 from prompt.tool_prompt_builder import get_tool_prompt_template
 
 
 
+
+# MCP (finance-mcp) Toolkit cache (process-local)
+_FINANCE_MCP_TOOLKIT: Optional[Toolkit] = None
+_FINANCE_MCP_TOOLKIT_LOCK: asyncio.Lock = asyncio.Lock()
+
+
+async def get_finance_mcp_toolkit() -> Toolkit:
+    """Create (once per process) and return a Toolkit backed by the finance-mcp MCP server."""
+    global _FINANCE_MCP_TOOLKIT
+    
+    # Setup debug logger
+    logger = logging.getLogger("deep_finance.finance_mcp")
+    logger.setLevel(logging.DEBUG)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s [%(levelname)s] [PID:%(process)d] %(name)s: %(message)s'
+        ))
+        logger.addHandler(handler)
+    
+    pid = os.getpid()
+    logger.debug("[PID:%d] get_finance_mcp_toolkit called, cached=%s", pid, _FINANCE_MCP_TOOLKIT is not None)
+    
+    if _FINANCE_MCP_TOOLKIT is not None:
+        logger.debug("[PID:%d] Returning cached toolkit", pid)
+        return _FINANCE_MCP_TOOLKIT
+
+    async with _FINANCE_MCP_TOOLKIT_LOCK:
+        if _FINANCE_MCP_TOOLKIT is not None:
+            logger.debug("[PID:%d] Returning cached toolkit (after lock)", pid)
+            return _FINANCE_MCP_TOOLKIT
+
+        # Jitter to avoid thundering-herd when many workers start together.
+        jitter_max = float(os.getenv("FINANCE_MCP_INIT_JITTER_MAX_S", "15"))
+        jitter_sleep = random.uniform(0, jitter_max) if jitter_max > 0 else 0
+        logger.debug("[PID:%d] Jitter sleep: %.2fs (max=%.1fs)", pid, jitter_sleep, jitter_max)
+        if jitter_sleep > 0:
+            await asyncio.sleep(jitter_sleep)
+
+        transport = os.getenv("FINANCE_MCP_TRANSPORT", "sse").strip() or "sse"
+        base_url = os.getenv("FINANCE_MCP_URL", "http://22.14.51.14:8040/sse")
+        url = base_url
+
+        timeout_s = 100
+        sse_read_timeout_s = 1000
+        max_retries = int(os.getenv("FINANCE_MCP_INIT_MAX_RETRIES", "5"))
+
+        logger.info("[PID:%d] MCP config: transport=%s, url=%s, timeout=%d, sse_read_timeout=%d, max_retries=%d",
+                    pid, transport, url, timeout_s, sse_read_timeout_s, max_retries)
+
+        headers: Dict[str, str] = {}
+        auth_token = os.getenv("FINANCE_MCP_AUTH_TOKEN")
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
+
+        toolkit = Toolkit()
+
+        # Create tool group before registering MCP client (required for non-"basic" group names)
+        toolkit.create_tool_group(
+            group_name="finance-mcp",
+            description="Finance MCP tools for stock analysis, financial data retrieval, and market research",
+            active=True,  # Make it active so tools are included in JSON schema
+        )
+        logger.debug("[PID:%d] Created tool group 'finance-mcp'", pid)
+
+        # Construct client with best-effort compatibility across AgentScope versions.
+        client_kwargs: Dict[str, Any] = {
+            "name": "finance-mcp",
+            "transport": transport,
+            "url": url,
+        }
+        if headers:
+            client_kwargs["headers"] = headers
+
+        logger.debug("[PID:%d] Creating HttpStatelessClient with kwargs: %s", pid, client_kwargs)
+        try:
+            client = HttpStatelessClient(
+                **client_kwargs,
+                timeout=timeout_s,
+                sse_read_timeout=sse_read_timeout_s,
+            )
+            logger.debug("[PID:%d] HttpStatelessClient created successfully (with timeout args)", pid)
+        except TypeError as te:
+            logger.warning("[PID:%d] HttpStatelessClient TypeError (fallback without timeout): %s", pid, te)
+            client = HttpStatelessClient(**client_kwargs)
+            logger.debug("[PID:%d] HttpStatelessClient created successfully (without timeout args)", pid)
+
+        last_err: Optional[Exception] = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.debug("[PID:%d] Attempt %d/%d: Calling client.list_tools()...", pid, attempt, max_retries)
+                
+                # First test list_tools directly
+                tools_list = await client.list_tools()
+                logger.info("[PID:%d] Attempt %d: list_tools returned %d tools: %s",
+                            pid, attempt, len(tools_list), [t.name for t in tools_list])
+                
+                if len(tools_list) == 0:
+                    raise ValueError("list_tools returned empty list - MCP server may not have tools registered")
+                
+                logger.debug("[PID:%d] Attempt %d: Calling toolkit.register_mcp_client()...", pid, attempt)
+                await toolkit.register_mcp_client(client, group_name="finance-mcp")
+                
+                _FINANCE_MCP_TOOLKIT = toolkit
+                schemas = toolkit.get_json_schemas()
+                logger.info("[PID:%d] finance-mcp toolkit ready: transport=%s url=%s tools=%d",
+                            pid, transport, url, len(schemas))
+                logger.debug("[PID:%d] Registered tool schemas: %s", pid, [s.get('function', {}).get('name') for s in schemas])
+                return toolkit
+                
+            except Exception as e:
+                import traceback
+                last_err = e
+                backoff = min(2 ** (attempt - 1), 16)
+                sleep_s = backoff + random.uniform(0, 0.5)
+                logger.warning("[PID:%d] Attempt %d/%d FAILED: %s", pid, attempt, max_retries, repr(e))
+                logger.debug("[PID:%d] Full traceback:\n%s", pid, traceback.format_exc())
+                if attempt < max_retries:
+                    logger.debug("[PID:%d] Retrying in %.1fs...", pid, sleep_s)
+                    await asyncio.sleep(sleep_s)
+
+        # If we got here, init failed after retries.
+        logger.error("[PID:%d] All %d attempts failed. Last error: %s", pid, max_retries, repr(last_err))
+        raise RuntimeError(f"Failed to initialize finance-mcp toolkit for {url}: {last_err!r}") from last_err
 
 # Prompt template cache
 _PROMPT_TEMPLATE_CACHE: str | None = None
@@ -90,16 +210,6 @@ def _build_system_prompt() -> str:
     
     return system_prompt
 
-
-# Process-local lazy judge engine (created on first judge call)
-_DEEPFINANCE_JUDGE_ENGINE: DeepFinanceJudgeEngine | None = None
-
-def _get_deepfinance_judge_engine() -> DeepFinanceJudgeEngine:
-    global _DEEPFINANCE_JUDGE_ENGINE
-    if _DEEPFINANCE_JUDGE_ENGINE is None:
-        cfg = DeepFinanceJudgeConfig.from_env()
-        _DEEPFINANCE_JUDGE_ENGINE = DeepFinanceJudgeEngine(cfg)
-    return _DEEPFINANCE_JUDGE_ENGINE
 
 def _extract_sys_and_user(task: Dict[str, Any]) -> tuple[str, str]:
     """
@@ -149,83 +259,95 @@ async def run_deep_finance(
     model: OpenAIChatModel,
     auxiliary_models: Dict[str, OpenAIChatModel] | None = None,
 ) -> WorkflowOutput:
-    """
-    DeepFinance workflow (Route B skeleton).
-    TODO: attach AgentScope tools/toolkits to the ReActAgent.
-    """
+    """DeepFinance workflow (Route B skeleton)."""
+    import time
+    
     assert (
         auxiliary_models is None or len(auxiliary_models) == 0
     ), "No auxiliary models are used in this workflow (for now)."
 
     sys_prompt, user_query = _extract_sys_and_user(task)
+    toolkit = await get_finance_mcp_toolkit()
 
     agent = ReActAgent(
         name="deep_finance_react",
         sys_prompt=sys_prompt,
         model=model,
-        enable_meta_tool=True,
+        enable_meta_tool=False,
         formatter=OpenAIChatFormatter(),
-        # TODO(Route B): pass toolkit=... once tools are ready.
-        # toolkit=your_toolkit,
+        toolkit=toolkit,
     )
 
-    response = await agent.reply(
-        msg=Msg("user", user_query, role="user"),
-    )
-
-    # If you want to pass trajectory/stats to the judge later, prefer attaching to response.metadata.
-    # Many AgentScope message classes allow arbitrary fields; if yours doesn't, you can instead
-    # store runtime info in task["_runtime"] (dict) and read it in judge_func.
-    #
-    # Example (enable later):
-    # response.metadata = response.metadata or {}
-    # response.metadata["task_id"] = task.get("task_id")
-
-    return WorkflowOutput(response=response)
-
-
-async def deep_finance_judge(
-    task: Dict[str, Any],
-    response: Msg,
-    auxiliary_models: Dict[str, OpenAIChatModel] | None = None,
-) -> JudgeOutput:
-    """
-    DeepFinance judge (presentation_quality only).
-
-    Reads best-effort trajectory from:
-      - response.metadata["conversation_history"] (if provided by workflow)
-    Falls back to minimal messages otherwise.
-
-    Notes:
-      - RM / grounding / tool-penalty are DISABLED in this phase.
-    """
-    _ = auxiliary_models  # not used
-
-    engine = _get_deepfinance_judge_engine()
-    reward, metrics = await engine.evaluate_one(task=task, response=response)
-    return JudgeOutput(reward=reward, metrics=metrics)
+    start_time = time.time()
+    response = await agent.reply(msg=Msg("user", user_query, role="user"))
+    total_time = time.time() - start_time
+    
+    # 提取 tool_stats 并计算 metrics
+    tool_stats = await extract_tool_stats_from_agent(agent, total_time)
+    metrics = compute_single_tool_metrics(tool_stats)
+    
+    # 提取对话历史用于 trajectory 保存
+    conversation_history = []
+    try:
+        memory_msgs = await agent.memory.get_memory()
+        for msg in memory_msgs:
+            # 处理 content，确保可序列化
+            content = msg.content
+            if hasattr(content, 'model_dump'):
+                content = content.model_dump()
+            elif not isinstance(content, (str, list, dict, type(None))):
+                content = str(content)
+            
+            msg_dict = {"role": msg.role, "content": content}
+            # 保留 tool_calls 等额外字段
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                msg_dict["tool_calls"] = msg.tool_calls
+            if hasattr(msg, 'tool_call_id') and msg.tool_call_id:
+                msg_dict["tool_call_id"] = msg.tool_call_id
+            if hasattr(msg, 'name') and msg.name:
+                msg_dict["name"] = msg.name
+            conversation_history.append(msg_dict)
+    except Exception as e:
+        logging.warning(f"Failed to extract conversation history: {e}")
+    
+    # 提取 response 内容，转换为 dict 格式（确保跨进程序列化安全）
+    response_content = response.content if hasattr(response, 'content') else str(response)
+    if hasattr(response_content, 'model_dump'):
+        response_content = response_content.model_dump()
+    elif not isinstance(response_content, (str, list, dict, type(None))):
+        response_content = str(response_content)
+    
+    # 构建 response dict（供 judge 使用）
+    # 使用 dict 格式而不是 Msg 对象，确保 metadata 能够正确跨进程传递
+    response_dict = {
+        "content": response_content,
+        "role": getattr(response, "role", "assistant"),
+        "metadata": {
+            "conversation_history": conversation_history,
+            "tool_stats": tool_stats,
+            "task_id": task.get("task_id"),
+            "query": user_query,
+        }
+    }
+    
+    return WorkflowOutput(response=response_dict, metrics=metrics)
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="DeepFinance training entry (tuner style).")
 
     # Dataset
-    p.add_argument("--dataset_path", type=str, default="/mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/data", help="Path to DeepFinance dataset directory. Defaults to ./data")
+    p.add_argument("--dataset_path", type=str, default="./data", help="Path to DeepFinance dataset directory. Defaults to ./data")
     p.add_argument("--split", type=str, default="train", help="Dataset split, e.g. train/validation/test.")
     p.add_argument("--total_epochs", type=int, default=4, help="Total number of epochs to run.")
 
     # Model (aligned with config.yaml)
+    p.add_argument("--config_path", type=str, default="/mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/yaml/config30b.yaml", help="Yaml config file path.")
     p.add_argument("--model_path", type=str, default="/mnt/data_cpfs/taoshuchang.tsc/models/Qwen3-8B", help="Base model path for tuning.")
-    p.add_argument("--max_model_len", type=int, default=24576, help="Maximum token length for both input and output.")
-    p.add_argument("--max_tokens", type=int, default=16384, help="Maximum tokens generated in response.")
-    p.add_argument("--temperature", type=float, default=1.0)
     p.add_argument("--inference_engine_num", type=int, default=4, help="Number of vllm inference model instances.")
-    p.add_argument("--tensor_parallel_size", type=int, default=1, help="Tensor parallel size for each model instance.")
-
     # Algorithm (aligned with config.yaml)
     p.add_argument("--algorithm_type", type=str, default="multi_step_grpo", help="Algorithm type for training.")
     p.add_argument("--group_size", type=int, default=8, help="Group size for GRPO algorithm (corresponds to repeat_times in config.yaml).")
-    p.add_argument("--learning_rate", type=float, default=1e-6)
     p.add_argument("--batch_size", type=int, default=32, help="Batch size for each step.")
 
     return p
@@ -233,76 +355,17 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     from pathlib import Path
-    config_path = Path(__file__).parent / "config.yaml"
+    
     args = _build_arg_parser().parse_args()
 
     # Default dataset path: ./data (same as learn_to_ask style)
-    dataset_path = args.dataset_path or os.path.join(os.path.dirname(__file__), "data")
+    config_path = args.config_path
 
-    # ==================== DEBUG: Data Preview ====================
-    print("\n" + "="*60)
-    print("DEBUG: Data Loading Preview")
-    print("="*60)
-    
-    # Preview dataset
-    from datasets import load_dataset
-    print(f"\n[Dataset Path]: {dataset_path}")
-    print(f"[Split]: {args.split}")
-    
-    try:
-        ds = load_dataset(dataset_path, split=args.split)
-        print(f"[Total Samples]: {len(ds)}")
-        
-        if len(ds) > 0:
-            sample = ds[0]
-            print(f"\n[Sample 0 Keys]: {list(sample.keys())}")
-            print(f"[Sample 0 task_id]: {sample.get('task_id', 'N/A')}")
-            print(f"[Sample 0 query]: {sample.get('query', 'N/A')[:100]}..." if len(sample.get('query', '')) > 100 else f"[Sample 0 query]: {sample.get('query', 'N/A')}")
-            print(f"[Sample 0 domain]: {sample.get('domain', 'N/A')}")
-            print(f"[Sample 0 split]: {sample.get('split', 'N/A')}")
-            
-            # Test _extract_sys_and_user
-            sys_prompt, user_query = _extract_sys_and_user(sample)
-            print(f"\n[Extracted sys_prompt length]: {len(sys_prompt)} chars")
-            print(f"[Extracted user_query]: {user_query[:100]}..." if len(user_query) > 100 else f"[Extracted user_query]: {user_query}")
-            print(f"[sys_prompt preview (first 200 chars)]:\n{sys_prompt[:200]}...")
-    except Exception as e:
-        print(f"[ERROR loading dataset]: {e}")
-    
-    print("\n" + "="*60)
-    print("DEBUG: End of Preview")
-    print("="*60 + "\n")
-    # ==================== END DEBUG ====================
-
-    dataset = DatasetConfig(
-        path=dataset_path,
-        split=args.split,
-        total_epochs=args.total_epochs,
-    )
-
-    tuner_model = TunerModelConfig(
-        model_path=args.model_path,
-        max_model_len=args.max_model_len,
-        max_tokens=args.max_tokens,
-        temperature=args.temperature,
-        inference_engine_num=args.inference_engine_num,
-        tensor_parallel_size=args.tensor_parallel_size,
-    )
-
-    algorithm = AlgorithmConfig(
-        algorithm_type=args.algorithm_type,
-        group_size=args.group_size,
-        learning_rate=args.learning_rate,
-        batch_size=args.batch_size,
-    )
-
+    # Load all settings (model, dataset, algorithm, cluster, etc.) from config.yaml
     tune(
         workflow_func=run_deep_finance,
         judge_func=deep_finance_judge,
-        train_dataset=dataset,
-        model=tuner_model,
-        algorithm=algorithm,        
-        config_path=str(config_path),  # For cluster, explorer, trainer details
+        config_path=str(config_path),
     )
 
 
@@ -310,6 +373,11 @@ if __name__ == "__main__":
     main()
 
 """
-python main.py 
+python main.py
+ray stop --force 
+ray start --head
+rm -r /mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/checkpoints
+set -a && source /mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/.env && set +a && python main.py --config_path=/mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/config.yaml
+
 
 """
