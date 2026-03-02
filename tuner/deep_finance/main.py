@@ -281,34 +281,10 @@ async def run_deep_finance(
     start_time = time.time()
     response = await agent.reply(msg=Msg("user", user_query, role="user"))
     total_time = time.time() - start_time
-    
+
     # 提取 tool_stats 并计算 metrics
     tool_stats = await extract_tool_stats_from_agent(agent, total_time)
     metrics = compute_single_tool_metrics(tool_stats)
-    
-    # 提取对话历史用于 trajectory 保存
-    conversation_history = []
-    try:
-        memory_msgs = await agent.memory.get_memory()
-        for msg in memory_msgs:
-            # 处理 content，确保可序列化
-            content = msg.content
-            if hasattr(content, 'model_dump'):
-                content = content.model_dump()
-            elif not isinstance(content, (str, list, dict, type(None))):
-                content = str(content)
-            
-            msg_dict = {"role": msg.role, "content": content}
-            # 保留 tool_calls 等额外字段
-            if hasattr(msg, 'tool_calls') and msg.tool_calls:
-                msg_dict["tool_calls"] = msg.tool_calls
-            if hasattr(msg, 'tool_call_id') and msg.tool_call_id:
-                msg_dict["tool_call_id"] = msg.tool_call_id
-            if hasattr(msg, 'name') and msg.name:
-                msg_dict["name"] = msg.name
-            conversation_history.append(msg_dict)
-    except Exception as e:
-        logging.warning(f"Failed to extract conversation history: {e}")
     
     # 提取 response 内容，转换为 dict 格式（确保跨进程序列化安全）
     response_content = response.content if hasattr(response, 'content') else str(response)
@@ -323,7 +299,6 @@ async def run_deep_finance(
         "content": response_content,
         "role": getattr(response, "role", "assistant"),
         "metadata": {
-            "conversation_history": conversation_history,
             "tool_stats": tool_stats,
             "task_id": task.get("task_id"),
             "query": user_query,

@@ -72,3 +72,4 @@ tuner/deep_finance/scripts/**
 tuner/deep_finance/yaml/**
 tuner/deep_finance/yaml_template/**
 tuner/deep_finance/config/**
+tuner/deep_finance/trajectory/**

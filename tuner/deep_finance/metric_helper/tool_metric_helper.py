@@ -5,7 +5,6 @@ Specialized module for extracting tool-related statistics from ReActAgent.
 
 Metrics directory structure:
 - tool_stats/           Overall statistics (success rate, cache hit rate, etc.)
-- tool_time/            Time consumption statistics by tool
 """
 
 from typing import Dict, Any
@@ -36,8 +35,6 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
         'total_errors': 0,
         'cache_hits': 0,
         'cache_misses': 0,
-        'tool_time': {},
-        'tool_call_time': 0.0,
     }
     
     try:
@@ -64,9 +61,6 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
             tool_uses = msg.get_content_blocks("tool_use") if hasattr(msg, 'get_content_blocks') else []
             for tool_use in tool_uses:
                 tool_stats['total_calls'] += 1
-                tool_name = tool_use.get('name', 'unknown') if isinstance(tool_use, dict) else getattr(tool_use, 'name', 'unknown')
-                if tool_name not in tool_stats['tool_time']:
-                    tool_stats['tool_time'][tool_name] = []
             
             # 提取 tool_result blocks 判断成功/失败
             tool_results = msg.get_content_blocks("tool_result") if hasattr(msg, 'get_content_blocks') else []
@@ -96,13 +90,6 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
                     logger.warning(f"[DEBUG_TOOL_RESULT] tool_use_id={tool_use_id} status={status} result_preview(100 words): {preview}")
     except Exception as e:
         logging.warning(f"Failed to extract tool stats from memory: {e}")
-    
-    # 估算平均工具调用时间
-    if tool_stats['total_calls'] > 0 and total_time > 0:
-        avg_time = total_time / tool_stats['total_calls']
-        for tool_name in tool_stats['tool_time']:
-            tool_stats['tool_time'][tool_name].append(avg_time)
-        tool_stats['tool_call_time'] = total_time
     
     return tool_stats
 
@@ -142,18 +129,6 @@ def compute_single_tool_metrics(tool_stats: Dict[str, Any], prefix: str = "") ->
         f"{prefix}tool_stats/tool_cache_misses": float(cache_misses),
         f"{prefix}tool_stats/tool_cache_hit_rate": float(cache_hit_rate),
     })
-    
-    # 按工具区分的耗时统计
-    tool_time = tool_stats.get('tool_time', {})
-    for tool_name, time_list in tool_time.items():
-        if time_list and isinstance(time_list, list):
-            metrics[f"{prefix}tool_time/{tool_name}/mean"] = float(np.mean(time_list))
-            metrics[f"{prefix}tool_time/{tool_name}/max"] = float(np.max(time_list))
-            metrics[f"{prefix}tool_time/{tool_name}/count"] = float(len(time_list))
-    
-    tool_call_time = tool_stats.get('tool_call_time', 0.0)
-    if tool_call_time > 0:
-        metrics[f"{prefix}tool_time/total_tool_call_time"] = float(tool_call_time)
     
     return metrics
 

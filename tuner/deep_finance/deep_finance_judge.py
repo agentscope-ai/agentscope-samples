@@ -27,7 +27,6 @@ from judge import (
     load_reference_answers_from_file,
 )
 from metric_helper.reward_metric_helper import build_judge_metrics
-from metric_helper import maybe_save_trajectory
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +42,9 @@ class DeepFinanceJudgeConfig:
     openjudge_base_url: str
     openjudge_api_key: str
     concurrency: int = 6
+    
+    # Finance Judge 单独的模型配置
+    finance_judge_llm: str = ""
     
     # 权重配置
     finance_rm_weight: float = 1.0
@@ -62,6 +64,7 @@ class DeepFinanceJudgeConfig:
             openjudge_base_url=os.environ.get("OPENJUDGE_BASE_URL", ""),
             openjudge_api_key=os.environ.get("OPENJUDGE_API_KEY", ""),
             concurrency=int(os.environ.get("OPENJUDGE_CONCURRENCY", "6")),
+            finance_judge_llm=os.environ.get("FINANCE_JUDGE_LLM", ""),
             finance_rm_weight=float(os.environ.get("FINANCE_RM_WEIGHT", "1.0")),
             presentation_quality_weight=float(os.environ.get("JUDGE_PRESENTATION_QUALITY_WEIGHT", "0.25")),
             grounding_weight=float(os.environ.get("JUDGE_GROUNDING_WEIGHT", "0.0")),
@@ -113,6 +116,7 @@ class DeepFinanceJudgeEngine:
     def __init__(self, cfg: DeepFinanceJudgeConfig):
         self.cfg = cfg
         self._model: Optional[OpenAIChatModel] = None
+        self._finance_model: Optional[OpenAIChatModel] = None  # Finance Judge 单独的模型
         self._finance_evaluator: Optional[FinanceCompositionEvaluator] = None
         
         # 设置权重并归一化
@@ -166,10 +170,22 @@ class DeepFinanceJudgeEngine:
             )
         return self._model
     
+    def _init_finance_model(self) -> OpenAIChatModel:
+        """懒加载 Finance Judge 单独的模型"""
+        if self._finance_model is None:
+            # 如果配置了单独的 FINANCE_JUDGE_LLM，则使用它；否则回退到 OPENJUDGE_LLM
+            model_name = self.cfg.finance_judge_llm if self.cfg.finance_judge_llm else self.cfg.openjudge_llm
+            self._finance_model = OpenAIChatModel(
+                model=model_name,
+                base_url=self.cfg.openjudge_base_url,
+                api_key=self.cfg.openjudge_api_key,
+            )
+        return self._finance_model
+    
     def _init_finance_evaluator(self) -> Optional[FinanceCompositionEvaluator]:
-        """懒加载 FinanceCompositionEvaluator"""
+        """懒加载 FinanceCompositionEvaluator（使用独立的 Finance Judge 模型）"""
         if self._finance_enabled and self._finance_evaluator is None:
-            model = self._init_model()
+            model = self._init_finance_model()
             self._finance_evaluator = FinanceCompositionEvaluator(model=model)
         return self._finance_evaluator
     
@@ -224,11 +240,8 @@ class DeepFinanceJudgeEngine:
         Returns:
             (reward, metrics) - reward 值和用于 monitor 的 metrics
         """
-        # DEBUG 模式：设置环境变量 DEBUG_REWARD=1 开启
-        debug_reward = os.environ.get("DEBUG_REWARD", "0") == "1"
-        
         judge_start_time = time.time()
-        
+
         # 提取任务信息
         task_id = task.get("task_id", "unknown")
         query = task.get("main_query", task.get("query", ""))
@@ -238,8 +251,6 @@ class DeepFinanceJudgeEngine:
         history = self._build_history_from_response(task, response)
         
         if not history:
-            if debug_reward:
-                logger.warning(f"[DEBUG_REWARD] task_id={task_id} EMPTY_HISTORY -> reward=0.0")
             return 0.0, {"rewards/final_reward": 0.0, "error": 1.0}
         
         # 准备 Finance 评估参数
@@ -255,15 +266,7 @@ class DeepFinanceJudgeEngine:
                 "domain": domain
             }
         
-        if debug_reward:
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} domain={domain} rm_enabled={self._finance_enabled} has_ref_ans={bool(ref_ans)}")
-            # 打印 query 前50个词
-            query_preview = ' '.join(query.split()[:50])
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} query_preview(50 words): {query_preview}")
-            # 打印 assistant 回复前100个词
-            if assistants:
-                ans_preview = ' '.join(assistants[-1].split()[:100])
-                logger.warning(f"[DEBUG_REWARD] task_id={task_id} assistant_preview(100 words): {ans_preview}")
+
         
         # 转换为 OpenJudge 格式
         openjudge_sample = self._convert_to_openjudge_format(history, query, task_id, chat_date)
@@ -294,18 +297,7 @@ class DeepFinanceJudgeEngine:
         # 最终 reward
         final_reward = fused_reward + penalty
         judge_total_time = time.time() - judge_start_time
-        
-        # DEBUG: 打印 reward 计算详情
-        if debug_reward:
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} === REWARD BREAKDOWN ===")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} finance_score={finance_score:.4f}")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} grader_scores={grader_scores}")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} contributions={contributions}")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} fused_reward={fused_reward:.4f}")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} tool_calls={tool_stats.get('total_calls', 0)} penalty={penalty:.4f}")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} final_reward={final_reward:.4f} (fused={fused_reward:.4f} + penalty={penalty:.4f})")
-            logger.warning(f"[DEBUG_REWARD] task_id={task_id} grading_time={grading_time:.2f}s total_time={judge_total_time:.2f}s")
-        
+
         # 构建 metrics
         metrics = build_judge_metrics(
             final_reward=final_reward,
@@ -500,25 +492,5 @@ async def deep_finance_judge(
     
     engine = _get_judge_engine()
     reward, metrics = await engine.evaluate_one(task=task, response=response)
-    
-    # 保存 trajectory（根据环境变量 SAVE_TRAJECTORY 决定是否启用）
-    task_id = task.get("task_id", "unknown")
-    prefix = "eval" if task_id.startswith("val_") else "train"
-    
-    # 从 response.metadata 获取 conversation_history
-    conversation_history = []
-    if isinstance(response, dict):
-        metadata = response.get("metadata", {})
-        conversation_history = metadata.get("conversation_history", []) if isinstance(metadata, dict) else []
-    elif hasattr(response, "metadata") and isinstance(response.metadata, dict):
-        conversation_history = response.metadata.get("conversation_history", [])
-    
-    maybe_save_trajectory(
-        task_id=task_id,
-        reward=reward,
-        conversation_history=conversation_history,
-        metrics=metrics,
-        prefix=prefix,
-    )
     
     return JudgeOutput(reward=reward, metrics=metrics)
