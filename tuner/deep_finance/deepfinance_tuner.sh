@@ -15,7 +15,7 @@ export DEBUG_REWARD=1
 # Ray 调试模式配置
 #===============================================================================
 
-SUFFIX="deepfinance_tuner_nothink"     # 实验后缀，影响日志和实验名称
+SUFFIX="deepfinance_tuner_eval"     # 实验后缀，影响日志和实验名称
 PREFIX="agentscope_tuner"             # 实验前缀，影响日志文件夹
 PROJECT_NAME="AgentScope-DeepFinance" # 项目名称
 
@@ -103,11 +103,14 @@ MASTER_IP_FILE="${LOG_DIR}/master_ip_${SUFFIX}.txt"
 TRAIN_LOG="${LOG_DIR}/train_${SUFFIX}_${CURRENT_TIME}.log"
 
 # 配置文件路径
-CONFIG_TEMPLATE="${SCRIPT_DIR}/yaml_template/config_template.yaml"
+CONFIG_TEMPLATE="${SCRIPT_DIR}/config_template.yaml"
 CONFIG_FILE="${SCRIPT_DIR}/yaml/${SUFFIX}.yaml"
 CHECKPOINT_DIR="${SCRIPT_DIR}/checkpoints/${SUFFIX}"
 DATA_PATH="${SCRIPT_DIR}/data"
 DATA_SPLIT="train"
+
+# 测试集评估配置
+EVAL_INTERVAL=10                           # 每 10 步评估一次测试集
 #===============================================================================
 # 3. 动态生成配置文件
 #===============================================================================
@@ -135,6 +138,8 @@ sed -e "s|{{PROJECT_NAME}}|${PROJECT_NAME}|g" \
     -e "s|{{MAX_RESPONSE_TOKENS}}|${MAX_RESPONSE_TOKENS}|g" \
     -e "s|{{DATA_PATH}}|${DATA_PATH}|g" \
     -e "s|{{DATA_SPLIT}}|${DATA_SPLIT}|g" \
+    -e "s|{{VAL_DATA_PATH}}|${VAL_DATA_PATH}|g" \
+    -e "s|{{EVAL_INTERVAL}}|${EVAL_INTERVAL}|g" \
     -e "s|{{ENGINE_NUM}}|${ENGINE_NUM}|g" \
     -e "s|{{TENSOR_PARALLEL_SIZE}}|${TENSOR_PARALLEL_SIZE}|g" \
     -e "s|{{RUNNER_PER_MODEL}}|${RUNNER_PER_MODEL}|g" \
@@ -224,6 +229,8 @@ echo "  Presentation Quality: ${PRESENTATION_QUALITY_WEIGHT}"
 echo "  Grounding: ${GROUNDING_WEIGHT}"
 echo "  Audit: ${AUDIT_WEIGHT}"
 echo "  Config File: ${CONFIG_FILE}"
+echo "  测试集路径: ${VAL_DATA_PATH}"
+echo "  测试集评估间隔: 每 ${EVAL_INTERVAL} 步"
 
 #===============================================================================
 # 6.1 Master 节点启动流程

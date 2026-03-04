@@ -293,6 +293,30 @@ async def run_deep_finance(
     elif not isinstance(response_content, (str, list, dict, type(None))):
         response_content = str(response_content)
     
+    # ========== 保存 article 到 jsonl 文件 ==========
+    # 从 task.workflow_args 中获取 trajectory_save_dir
+    workflow_args = task.get("workflow_args", {})
+    trajectory_save_dir = workflow_args.get("trajectory_save_dir")
+    
+    # 添加详细的日志和错误处理
+    task_id = task.get("task_id") or task.get("id") or "unknown"
+    
+    # 如果 trajectory_save_dir 为 None，使用默认备份路径
+    if trajectory_save_dir is None:
+        trajectory_save_dir = os.path.join(
+            os.path.dirname(__file__), 
+            "trajectory", 
+            "backup"
+        )
+        logging.warning(
+            "[ArticleSaver] trajectory_save_dir is None! "
+            "task_id=%s, workflow_args keys=%s. "
+            "Falling back to backup dir: %s",
+            task_id, list(workflow_args.keys()), trajectory_save_dir
+        )
+    else:
+        logging.info("[ArticleSaver] Saving article to: %s (task_id=%s)", trajectory_save_dir, task_id)
+
     # 构建 response dict（供 judge 使用）
     # 使用 dict 格式而不是 Msg 对象，确保 metadata 能够正确跨进程传递
     response_dict = {

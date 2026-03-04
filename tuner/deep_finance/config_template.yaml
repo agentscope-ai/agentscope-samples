@@ -1,0 +1,87 @@
+# AgentScope Tuner 配置模板
+# 参考: https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/trinity_configs.html
+project: {{PROJECT_NAME}}
+name: {{EXPERIMENT_NAME}}
+
+# 检查点保存目录
+checkpoint_root_dir: {{CHECKPOINT_DIR}}
+
+algorithm:
+  algorithm_type: multi_step_grpo  # GRPO-based algorithm for multi-step reasoning
+  repeat_times: {{GROUP_SIZE}}     # repeat each training sample N times
+
+model:
+  model_path: {{MODEL_PATH}}
+  max_response_tokens: {{MAX_RESPONSE_TOKENS}}
+  max_model_len: {{MAX_MODEL_LEN}}
+  temperature: 1.0
+
+cluster:
+  node_num: {{NODE_NUM}}          # 节点数
+  gpu_per_node: {{GPU_PER_NODE}}  # 每节点 GPU 数
+
+buffer:
+  total_epochs: {{TOTAL_EPOCHS}}
+  batch_size: {{BATCH_SIZE}}
+  train_batch_size: {{TRAIN_BATCH_SIZE}}
+  explorer_input:
+    taskset:
+      name: deep_finance
+      storage_type: file
+      path: {{DATA_PATH}}
+      split: '{{DATA_SPLIT}}'
+      rollout_args:
+        temperature: 1.0
+        max_tokens: 10000
+      workflow_args:
+        max_env_steps: {{MAX_ENV_STEPS}}     # 每个样本最多交互轮数
+    # 测试集评估配置
+    eval_tasksets:
+      - name: deep_finance_eval
+        storage_type: file
+        path: {{DATA_PATH}}
+        split: 'validation'
+        rollout_args:
+          temperature: 0.0   # 测试时使用 greedy decoding
+          max_tokens: 10000
+        workflow_args:
+          max_env_steps: {{MAX_ENV_STEPS}}
+  trainer_input:
+    experience_buffer:
+      name: deep_finance
+      storage_type: queue
+      max_read_timeout: 7200
+
+explorer:
+  eval_interval: {{EVAL_INTERVAL}}   # 每 N 步评估一次测试集
+  runner_per_model: {{RUNNER_PER_MODEL}}
+  max_timeout: {{MAX_TIMEOUT}}
+  rollout_model:
+    engine_num: {{ENGINE_NUM}}
+    tensor_parallel_size: {{TENSOR_PARALLEL_SIZE}}
+    gpu_memory_utilization: {{GPU_MEMORY_UTILIZATION}}
+    max_model_len: {{MAX_MODEL_LEN}}  # 必须在 rollout_model 下配置，才能传递给 vLLM 引擎
+    enable_prefix_caching: false
+    enforce_eager: false
+    enable_openai_api: true
+    enable_history: true
+    enable_auto_tool_choice: true
+    enable_thinking: false  # 禁用模型思考模式，直接输出工具调用
+    tool_call_parser: hermes
+    dtype: bfloat16
+    seed: 42
+
+synchronizer:
+  sync_style: dynamic_by_explorer
+  sync_method: 'nccl'
+  sync_interval: 1
+  sync_timeout: 1800
+
+trainer:
+  save_interval: {{SAVE_INTERVAL}}
+  grad_clip: 1.0
+  use_dynamic_bsz: true
+  ulysses_sequence_parallel_size: {{SEQ_PARALLEL_SIZE}}
+
+monitor:
+  monitor_type: wandb

@@ -26,7 +26,7 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
     import os
     
     # DEBUG 模式：设置环境变量 DEBUG_TOOL_RESULT=1 开启
-    debug_tool_result = True
+
     logger = logging.getLogger("tool_metric_helper")
     
     tool_stats = {
@@ -41,20 +41,6 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
         memory_msgs = await agent.memory.get_memory()
         
         # DEBUG: 打印 memory 消息结构
-        if debug_tool_result:
-            logger.warning(f"[DEBUG_TOOL_STATS] memory has {len(memory_msgs)} messages")
-            for i, msg in enumerate(memory_msgs):
-                msg_type = type(msg).__name__
-                has_gcb = hasattr(msg, 'get_content_blocks')
-                content_type = type(msg.content).__name__ if hasattr(msg, 'content') else 'N/A'
-                content_preview = str(msg.content)[:200] if hasattr(msg, 'content') else 'N/A'
-                logger.warning(f"[DEBUG_TOOL_STATS] msg[{i}] type={msg_type} has_get_content_blocks={has_gcb} content_type={content_type}")
-                logger.warning(f"[DEBUG_TOOL_STATS] msg[{i}] content_preview: {content_preview}")
-                # 尝试直接检查 content 中是否有 tool_use/tool_result
-                if hasattr(msg, 'content') and isinstance(msg.content, list):
-                    for j, block in enumerate(msg.content):
-                        block_type = block.get('type', 'unknown') if isinstance(block, dict) else type(block).__name__
-                        logger.warning(f"[DEBUG_TOOL_STATS] msg[{i}] block[{j}] type={block_type}")
         
         for msg in memory_msgs:
             # 提取 tool_use blocks
@@ -71,23 +57,6 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
                 else:
                     tool_stats['success_calls'] += 1
                 
-                # DEBUG: 打印工具返回结果的前100个词
-                if debug_tool_result:
-                    tool_use_id = tool_result.get('tool_use_id', 'unknown') if isinstance(tool_result, dict) else getattr(tool_result, 'tool_use_id', 'unknown')
-                    content = tool_result.get('content', '') if isinstance(tool_result, dict) else getattr(tool_result, 'content', '')
-                    if isinstance(content, list):
-                        # 处理 content 为 list 的情况
-                        content_str = ' '.join(
-                            item.get('text', '') if isinstance(item, dict) else str(item) 
-                            for item in content
-                        )
-                    else:
-                        content_str = str(content) if content else ''
-                    # 取前100个词
-                    words = content_str.split()[:100]
-                    preview = ' '.join(words)
-                    status = "ERROR" if is_error else "SUCCESS"
-                    logger.warning(f"[DEBUG_TOOL_RESULT] tool_use_id={tool_use_id} status={status} result_preview(100 words): {preview}")
     except Exception as e:
         logging.warning(f"Failed to extract tool stats from memory: {e}")
     
