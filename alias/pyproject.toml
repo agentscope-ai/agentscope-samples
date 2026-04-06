@@ -45,7 +45,8 @@ dependencies = [
     "agentscope-runtime>=1.0.0",
     "aiosqlite>=0.21.0",
     "asyncpg>=0.30.0",
-    "itsdangerous>=2.2.0"
+    "itsdangerous>=2.2.0",
+    "polars>=1.37.1"
 ]
 
 [tool.setuptools]

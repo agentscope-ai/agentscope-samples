@@ -137,11 +137,12 @@ async def files_filter_pre_reply_hook(
     # Even if the user only uploaded supplementary files in this interaction,
     # We will also check whether the previously uploaded files are relevant
     # to the question.
-    self.uploaded_files = list(
-        set(files_list) | set(getattr(self, "uploaded_files", [])),
+
+    uploaded_files = list(
+        set(files_list) | set(self.data_manager.get_local_data_sources()),
     )
 
-    if len(self.uploaded_files) < 100:
+    if len(uploaded_files) < 100:
         logger.info(
             "Scalable files filtering: not enough files to filter.",
         )
@@ -164,7 +165,7 @@ await files_filter(query, files_list, api_key=api_key)
 
         files_filter_code += template.substitute(
             query=safe_query,
-            files_list=repr(self.uploaded_files),
+            files_list=repr(uploaded_files),
             api_key=safe_api_key,
         )
 

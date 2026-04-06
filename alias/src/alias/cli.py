@@ -9,12 +9,10 @@ for the Alias agent application.
 """
 import argparse
 import asyncio
-import os
 import signal
 import sys
 import traceback
 import webbrowser
-from typing import Optional
 
 from loguru import logger
 
@@ -28,7 +26,10 @@ from alias.agent.run import (
     arun_datascience_agent,
     arun_finance_agent,
 )
-from alias.agent.tools.sandbox_util import copy_local_file_to_workspace
+from alias.agent.utils.prepare_data_source import (
+    get_data_source_config_from_file,
+)
+
 from alias.runtime.alias_sandbox.alias_sandbox import AliasSandbox
 
 
@@ -60,7 +61,7 @@ def _safe_sigint_handler(signum, frame):  # pylint: disable=W0613
 async def run_agent_task(
     user_msg: str,
     mode: str = "general",
-    files: Optional[list[str]] = None,
+    user_data_config: list | None = None,
     use_long_term_memory_service: bool = False,
 ) -> None:
     """
@@ -69,7 +70,8 @@ async def run_agent_task(
     Args:
         user_msg: The user's task/query
         mode: Agent mode ('general', 'dr', 'ds', 'browser', 'finance')
-        files: List of local file paths to upload to sandbox workspace
+        user_data: (Config for) User data sources, used for data science \
+                    agent only
         use_long_term_memory_service: Enable long-term memory service.
     """
     global _original_sigint_handler
@@ -84,6 +86,7 @@ async def run_agent_task(
 
     # Initialize session
     session = MockSessionService(
+        data_config=user_data_config,
         use_long_term_memory_service=use_long_term_memory_service,
     )
 
@@ -118,35 +121,6 @@ async def run_agent_task(
     )
     logger.info(f"Sandbox desktop URL: {sandbox.desktop_url}")
     webbrowser.open(sandbox.desktop_url)
-    # Upload files to sandbox if provided
-    if files:
-        target_paths = []
-        logger.info(
-            f"Uploading {len(files)} file(s) to sandbox workspace...",
-        )
-        for file_path in files:
-            if not os.path.exists(file_path):
-                logger.error(f"File not found: {file_path}")
-                continue
-
-            # Get the filename and construct target path in workspace
-            filename = os.path.basename(file_path)
-            target_path = f"/workspace/{filename}"
-
-            logger.info(f"Uploading {file_path} to {target_path}")
-            result = copy_local_file_to_workspace(
-                sandbox=sandbox,
-                local_path=file_path,
-                target_path=target_path,
-            )
-
-            if result.get("isError"):
-                raise ValueError(f"Failed to upload {file_path}: {result}")
-            logger.info(f"Successfully uploaded to {result}")
-
-            target_paths.append(result.get("content", [])[0].get("text"))
-
-        user_msg += "\n\nUser uploaded files:\n" + "\n".join(target_paths)
 
     # Create initial user message (regardless of whether files were uploaded)
     initial_user_message = UserMessage(
@@ -301,12 +275,28 @@ def main():
     )
 
     run_parser.add_argument(
+        "--datasource",
         "--files",
-        "-f",
-        type=str,
+        "-d",
+        dest="datasource",
         nargs="+",
-        help="Local file paths to upload to sandbox workspace "
-        "for agent to use (e.g., --files file1.txt file2.csv)",
+        help=(
+            "Data sources for the agent to use. Multiple formats supported:\n"
+            "  • Local files: ./data.txt, /absolute/path/file.json\n"
+            "  • Databases: postgresql://localhost/db, sqlite:///data.db\n"
+            "Example: "
+            "    --datasource file.txt postgresql://localhost/db\n"
+            "    --files file.txt"
+        ),
+    )
+
+    # If you need to deeply customize your data source
+    # (e.g., specify an MCP server), use this parameter to
+    # provide a configuration file
+    run_parser.add_argument(
+        "--dataconfig",
+        "-dc",
+        help=("Path to the data source configuration file"),
     )
 
     run_parser.add_argument(
@@ -333,11 +323,29 @@ def main():
     # Handle commands
     if args.command == "run":
         try:
+            user_data = None
+            data_endpoint = (
+                args.datasource if hasattr(args, "datasource") else None
+            )
+            if data_endpoint:
+                # List of endpoints to data sources
+                user_data = (
+                    data_endpoint
+                    if isinstance(data_endpoint, list)
+                    else [data_endpoint]
+                )
+            else:
+                # Configuration file
+                if hasattr(args, "dataconfig") and args.dataconfig:
+                    user_data = get_data_source_config_from_file(
+                        args.dataconfig,
+                    )
+
             asyncio.run(
                 run_agent_task(
                     user_msg=args.task,
                     mode=args.mode,
-                    files=args.files if hasattr(args, "files") else None,
+                    user_data_config=user_data,
                     use_long_term_memory_service=(
                         args.use_long_term_memory
                         if hasattr(args, "use_long_term_memory")

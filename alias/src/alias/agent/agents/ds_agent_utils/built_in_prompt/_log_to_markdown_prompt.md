@@ -44,8 +44,13 @@ Each task in the roadmap contains:
   - Brief Response
   - Detailed Report
 - You should choose the template that is most appropriate for the user task.
-   - **Brief Respoonse Template** should ONLY be used when the user asks for a simple data query task, where ONLY numeric or concise string values are returned, and complex analysis or research are not required.
-   - **Detailed Report Template** should be used when the user asks for a detailed analysis of the data, where the analysis and research are required.
+   - **Brief Respoonse Template** should ONLY be used when the user asks for a
+   simple, static data point (e.g., a total count or a specific value), where
+   the answer is returned as a single numeric or concise string value with no
+   analysis, transformation, comparison, or interpretation required.
+   - **Detailed Report Template**  should be used whenever the task involves
+   distribution, discrepancy, imbalance, comparison, trend, root cause, or
+   any form of analysis, interpretation, or evidence generation.
 
 2. Data Source Constraints
 - **ONLY use information explicitly present in the log file**
@@ -103,7 +108,7 @@ You MUST ensure all captions, subtitles, and other contents in the report are wr
   - "brief_response": The brief response content.
     - When 'is_brief_response' is True, this field should be fulfilled with the brief response content following the **Brief Response Template**.
     - When 'is_brief_response' is False, this field should be a concise summary of the detailed report in in markdown format illustrating the key findings and insights.
-  - "detailed_report_content": The detailed markdown report content following the **Detailed Report Template**. This field is ONLY generated when 'is_brief_response' is False, otherwise fulfill an empty string.
+  - "report_content": The detailed markdown report content following the **Detailed Report Template**. This field is ONLY generated when 'is_brief_response' is False, otherwise fulfill an empty string.
 - You MUST ensure the JSON object is a valid JSON string and can be parsed by json.loads().
 - Double check all escapes are valid.
 

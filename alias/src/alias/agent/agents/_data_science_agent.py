@@ -23,6 +23,7 @@ from alias.agent.tools import AliasToolkit, share_tools
 from alias.agent.agents.common_agent_utils import (
     get_user_input_to_mem_pre_reply_hook,
 )
+from alias.agent.agents.data_source.data_source import DataSourceManager
 from .ds_agent_utils import (
     ReportGenerator,
     LLMPromptSelector,
@@ -50,7 +51,8 @@ class DataScienceAgent(AliasAgentBase):
         formatter: FormatterBase,
         memory: MemoryBase,
         toolkit: AliasToolkit,
-        sys_prompt: str = None,
+        data_manager: DataSourceManager = None,
+        sys_prompt: str = "",
         max_iters: int = 30,
         tmp_file_storage_dir: str = "/workspace",
         state_saving_dir: Optional[str] = None,
@@ -71,17 +73,16 @@ class DataScienceAgent(AliasAgentBase):
 
         set_run_ipython_cell(self.toolkit.sandbox)
 
-        self.uploaded_files: List[str] = []
-
         self.todo_list: List[Dict[str, Any]] = []
 
-        self.infer_trajectories: List[List[Msg]] = []
+        self.tmp_file_storage_dir = tmp_file_storage_dir
+
+        self.data_manager = data_manager
 
         self.detailed_report_path = os.path.join(
             tmp_file_storage_dir,
             "detailed_report.html",
         )
-        self.tmp_file_storage_dir = tmp_file_storage_dir
 
         self.todo_list_prompt = get_prompt_from_file(
             os.path.join(
@@ -91,12 +92,19 @@ class DataScienceAgent(AliasAgentBase):
             False,
         )
 
-        self._sys_prompt = get_prompt_from_file(
-            os.path.join(
-                PROMPT_DS_BASE_PATH,
-                "_agent_system_workflow_prompt.md",
-            ),
-            False,
+        self._sys_prompt = (
+            cast(
+                str,
+                get_prompt_from_file(
+                    os.path.join(
+                        PROMPT_DS_BASE_PATH,
+                        "_agent_system_workflow_prompt.md",
+                    ),
+                    False,
+                ),
+            )
+            + "\n\n"
+            + sys_prompt
         )
 
         # load prompts and initialize selector
@@ -167,7 +175,7 @@ class DataScienceAgent(AliasAgentBase):
 
         logger.info(
             f"[{self.name}] "
-            "DeepInsightAgent initialized (fully model-driven).",
+            "DataScienceAgent initialized (fully model-driven).",
         )
 
     @property
@@ -427,26 +435,57 @@ class DataScienceAgent(AliasAgentBase):
             memory_log=memory_log,
         )
 
-        response, report = await report_generator.generate_report()
+        (
+            response,
+            report_md,
+            report_html,
+        ) = await report_generator.generate_report()
 
-        if report:
-            # report = report.replace(self.tmp_file_storage_dir, ".")
+        if report_md:
+            md_report_path = os.path.join(
+                self.tmp_file_storage_dir,
+                "detailed_report.md",
+            )
+
             await self.toolkit.call_tool_function(
                 ToolUseBlock(
                     type="tool_use",
                     id=str(uuid.uuid4()),
                     name="write_file",
                     input={
-                        "path": self.detailed_report_path,
-                        "content": report,
+                        "path": md_report_path,
+                        "content": report_md,
                     },
                 ),
             )
             response = (
                 f"{response}\n\n"
-                "The detailed report has been saved to "
-                f"{self.detailed_report_path}."
+                "The detailed report (markdown version) has been saved to "
+                f"{md_report_path}."
             )
+
+            if report_html:
+                html_report_path = os.path.join(
+                    self.tmp_file_storage_dir,
+                    "detailed_report.html",
+                )
+
+                await self.toolkit.call_tool_function(
+                    ToolUseBlock(
+                        type="tool_use",
+                        id=str(uuid.uuid4()),
+                        name="write_file",
+                        input={
+                            "path": html_report_path,
+                            "content": report_html,
+                        },
+                    ),
+                )
+                response = (
+                    f"{response}\n\n"
+                    "The detailed report (html version) has been saved to "
+                    f"{html_report_path}."
+                )
 
         kwargs["response"] = response
         structured_output = {}

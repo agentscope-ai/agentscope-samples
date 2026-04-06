@@ -112,8 +112,11 @@ def truncate_long_text_post_hook(
 def _add_tool_postprocessing_func(toolkit: AliasToolkit) -> None:
     for tool_func, _ in toolkit.tools.items():
         if tool_func.startswith("run_ipython_cell"):
-            funcs: list = [ansi_escape_post_hook]
-            funcs.append(summarize_plt_chart_hook)
+            funcs: list = [
+                ansi_escape_post_hook,
+                summarize_plt_chart_hook,
+                truncate_long_text_post_hook,
+            ]
             toolkit.tools[tool_func].postprocess_func = partial(
                 run_ipython_cell_post_hook,
                 funcs,

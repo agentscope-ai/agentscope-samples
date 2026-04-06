@@ -698,7 +698,7 @@ class MetaPlanner(AliasAgentBase):
     ):
         """
         Directly enter the data science mode.
-        Use this when the user provides some data files and ask for processing.
+        Use this for COMPLEX, CODE-BASED data analysis.
 
         Args:
             user_query (`str`):

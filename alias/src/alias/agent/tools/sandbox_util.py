@@ -5,6 +5,7 @@ import json
 import os
 import tarfile
 from pathlib import Path
+import shlex
 from typing import Optional
 
 from loguru import logger
@@ -172,7 +173,7 @@ def get_workspace_file(
         )
     tool_result = sandbox.call_tool(
         "run_shell_command",
-        arguments={"command": f"base64 -i {file_path}"},
+        arguments={"command": f"base64 -i {shlex.quote(file_path)}"},
     )
     return tool_result["content"][0]["text"]
 
@@ -194,7 +195,7 @@ def create_or_edit_workspace_file(
         }
     sandbox.call_tool(
         "run_shell_command",
-        arguments={"command": f"touch {file_path}"},
+        arguments={"command": f"touch {shlex.quote(file_path)}"},
     )
     fill_result = sandbox.call_tool(
         "write_file",
@@ -222,7 +223,7 @@ def create_workspace_directory(
         }
     tool_result = sandbox.call_tool(
         "run_shell_command",
-        arguments={"command": f"mkdir -p {directory_path}"},
+        arguments={"command": f"mkdir -p {shlex.quote(directory_path)}"},
     )
     return tool_result
 
@@ -246,7 +247,7 @@ def delete_workspace_file(
         }
     tool_result = sandbox.call_tool(
         "run_shell_command",
-        arguments={"command": f"rm -rf {file_path}"},
+        arguments={"command": f"rm -rf {shlex.quote(file_path)}"},
     )
     return tool_result
 
@@ -280,7 +281,7 @@ def download_workspace_file_from_oss(
     tool_result = sandbox.call_tool(
         "run_shell_command",
         arguments={
-            "command": f"wget -O {to_path} {oss_url}",
+            "command": f"wget -O {shlex.quote(to_path)} {oss_url}",
         },
     )
     print(f"{tool_result}")
@@ -306,7 +307,7 @@ def delete_workspace_directory(
         }
     tool_result = sandbox.call_tool(
         "run_shell_command",
-        arguments={"command": f"rm -rf {directory_path}"},
+        arguments={"command": f"rm -rf {shlex.quote(directory_path)}"},
     )
     return tool_result
 

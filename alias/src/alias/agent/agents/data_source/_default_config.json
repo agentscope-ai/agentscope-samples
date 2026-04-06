@@ -1,0 +1,21 @@
+{
+  "relational_db": {
+    "mcp_server": {
+      "mcp_alchemy": {
+        "command": "uvx",
+        "args": [
+          "--from",
+          "mcp-alchemy==2025.8.15.91819",
+          "--with",
+          "psycopg2-binary",
+          "--refresh-package",
+          "mcp-alchemy",
+          "mcp-alchemy"
+        ],
+        "env": {
+          "DB_URL": "${endpoint}"
+        }
+      }
+    }
+  }
+}

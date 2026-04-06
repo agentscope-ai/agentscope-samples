@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=W0612,E0611,C2801
+
 import os
-import traceback
+
 from datetime import datetime
 import asyncio
+import traceback
 from typing import Literal
 
 from loguru import logger
@@ -17,27 +19,33 @@ from alias.agent.agents import (
     BrowserAgent,
     DeepResearchAgent,
     MetaPlanner,
-    DataScienceAgent,
-    init_ds_toolkit,
     init_dr_toolkit,
 )
+
 from alias.agent.agents.meta_planner_utils._worker_manager import share_tools
 from alias.agent.mock import MockSessionService as SessionService
 from alias.agent.tools import AliasToolkit
-
 from alias.agent.utils.constants import (
     BROWSER_AGENT_DESCRIPTION,
     DEFAULT_DEEP_RESEARCH_AGENT_NAME,
     DEEPRESEARCH_AGENT_DESCRIPTION,
     DS_AGENT_DESCRIPTION,
 )
-from alias.agent.tools.add_tools import add_tools
-from alias.agent.agents.ds_agent_utils import (
-    add_ds_specific_tool,
+from alias.agent.utils.prepare_data_source import (
+    add_data_source_tools,
+    prepare_data_sources,
 )
+from alias.agent.tools.add_tools import add_tools
 from alias.agent.memory.longterm_memory import AliasLongTermMemory
 from alias.server.clients.memory_client import MemoryClient
+from alias.agent.agents._data_science_agent import (
+    DataScienceAgent,
+    init_ds_toolkit,
+)
 
+from alias.agent.utils.llm_call_manager import (
+    LLMCallManager,
+)
 
 MODEL_FORMATTER_MAPPING = {
     "qwen3-max": [
@@ -104,8 +112,27 @@ async def arun_meta_planner(
     # Init deep research toolkit
     deep_research_toolkit = init_dr_toolkit(worker_full_toolkit)
 
-    # Init BI agent toolkit
+    # Init data science agent toolkit
     ds_toolkit = init_ds_toolkit(worker_full_toolkit)
+
+    # Initialize data source manager
+    llm_call_manager = LLMCallManager(
+        base_model_name=MODEL_CONFIG_NAME,
+        vl_model_name=VL_MODEL_NAME,
+        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
+    )
+    data_manager = await prepare_data_sources(
+        session_service=session_service,
+        sandbox=sandbox,
+        llm_call_manager=llm_call_manager,
+    )
+    add_data_source_tools(
+        data_manager,
+        worker_full_toolkit,
+        browser_toolkit,
+        deep_research_toolkit,
+        ds_toolkit,
+    )
 
     try:
         model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
@@ -175,13 +202,15 @@ async def arun_meta_planner(
             description=DEEPRESEARCH_AGENT_DESCRIPTION,
             worker_type="built-in",
         )
-        # === add BI agent ===
+        # === add data science agent ===
         ds_agent = DataScienceAgent(
             name="Data_Science_Agent",
             model=model,
             formatter=formatter,
             memory=InMemoryMemory(),
             toolkit=ds_toolkit,
+            data_manager=data_manager,
+            sys_prompt=data_manager.get_data_skills(),
             max_iters=30,
             session_service=session_service,
         )
@@ -219,6 +248,19 @@ async def arun_deepresearch_agent(
         "run_shell_command",
     ]
     share_tools(global_toolkit, worker_toolkit, test_tool_list)
+
+    llm_call_manager = LLMCallManager(
+        base_model_name=MODEL_CONFIG_NAME,
+        vl_model_name=VL_MODEL_NAME,
+        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
+    )
+    await prepare_data_sources(
+        session_service,
+        sandbox,
+        worker_toolkit,
+        llm_call_manager,
+    )
+
     worker_agent = DeepResearchAgent(
         name="Deep_Research_Agent",
         model=model,
@@ -285,6 +327,18 @@ async def arun_finance_agent(
         active=True,
     )
 
+    llm_call_manager = LLMCallManager(
+        base_model_name=MODEL_CONFIG_NAME,
+        vl_model_name=VL_MODEL_NAME,
+        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
+    )
+    await prepare_data_sources(
+        session_service,
+        sandbox,
+        worker_toolkit,
+        llm_call_manager,
+    )
+
     worker_agent = DeepResearchAgent(
         name="Deep_Research_Agent",
         model=model,
@@ -326,17 +380,21 @@ async def arun_datascience_agent(
     session_service: SessionService,  # type: ignore[valid-type]
     sandbox: Sandbox = None,
 ):
-    global_toolkit = AliasToolkit(sandbox, add_all=True)
-    # await add_tools(global_toolkit)
-    worker_toolkit = AliasToolkit(sandbox)
     model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
-    test_tool_list = [
-        "write_file",
-        "run_ipython_cell",
-        "run_shell_command",
-    ]
-    share_tools(global_toolkit, worker_toolkit, test_tool_list)
-    add_ds_specific_tool(worker_toolkit)
+
+    global_toolkit = AliasToolkit(sandbox, add_all=True)
+    worker_toolkit = init_ds_toolkit(global_toolkit)
+    llm_call_manager = LLMCallManager(
+        base_model_name=MODEL_CONFIG_NAME,
+        vl_model_name=VL_MODEL_NAME,
+        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
+    )
+    data_manager = await prepare_data_sources(
+        session_service=session_service,
+        sandbox=sandbox,
+        binded_toolkit=worker_toolkit,
+        llm_call_manager=llm_call_manager,
+    )
 
     try:
         worker_agent = DataScienceAgent(
@@ -345,6 +403,8 @@ async def arun_datascience_agent(
             formatter=formatter,
             memory=InMemoryMemory(),
             toolkit=worker_toolkit,
+            data_manager=data_manager,
+            sys_prompt=data_manager.get_data_skills(),
             max_iters=30,
             session_service=session_service,
         )
@@ -360,6 +420,7 @@ async def arun_datascience_agent(
     finally:
         try:
             await global_toolkit.close_mcp_clients()
+            await worker_toolkit.close_mcp_clients()
         except (RuntimeError, asyncio.CancelledError) as e:
             # Event loop might be closed during shutdown
             if "Event loop is closed" in str(e) or isinstance(
@@ -386,6 +447,18 @@ async def arun_browseruse_agent(
         add_all=True,
         is_browser_toolkit=True,
     )
+    llm_call_manager = LLMCallManager(
+        base_model_name=MODEL_CONFIG_NAME,
+        vl_model_name=VL_MODEL_NAME,
+        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
+    )
+    await prepare_data_sources(
+        session_service,
+        sandbox,
+        browser_toolkit,
+        llm_call_manager,
+    )
+
     logger.info("Init browser toolkit")
     try:
         browser_agent = BrowserAgent(

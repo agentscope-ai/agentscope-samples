@@ -208,10 +208,25 @@ alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial perform
 # 数据科学（Data Science）模式
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files ./docs/data/incident_records.csv
+  --datasource ./docs/data/incident_records.csv
 ```
 
-**注意**：使用 `--files` 上传的文件会自动复制到沙盒中的 `/workspace`。生成的文件可在 `sessions_mount_dir` 的子目录中找到。
+#### 输入/输出管理
+
+**输入：**
+- 使用 `--datasource` 参数指定数据源，支持多种格式 (向后兼容，也支持使用 `--files`):
+  - **本地文件**：如 `./data.txt` 或 `/absolute/path/file.json`
+  - **数据库 DSN**：支持 PostgreSQL、SQLite 等关系型数据库，格式如 `postgresql://user:password@host:port/database`
+
+  示例： `--datasource file.txt postgresql://user:password@localhost:5432/mydb`
+- 指定的数据源会自动进行 profile（分析），并为模型提供高效访问数据源的指导。
+- 上传的文件会自动复制到沙盒中的 `/workspace` 目录。
+
+
+
+**输出：**
+- 生成的文件存储在 `sessions_mount_dir` 的子目录中，可以在该位置找到所有输出结果。
+
 
 #### 启用长期记忆服务（仅限通用模式）
 要在通用模式下启用长期记忆服务，您需要：

@@ -5,9 +5,9 @@ import json
 from typing import Union
 from agentscope.message import Msg
 from tenacity import retry, stop_after_attempt, wait_fixed
-from .ds_config import PROMPT_DS_BASE_PATH
 
-MODEL_MAX_RETRIES = 50
+from alias.agent.utils.constants import MODEL_MAX_RETRIES
+from .ds_config import PROMPT_DS_BASE_PATH
 
 
 def get_prompt_from_file(
@@ -36,10 +36,16 @@ async def model_call_with_retry(
     tool_json_schemas=None,
     tool_choice=None,
     msg_name="model_call",
+    structured_model=None,
 ) -> Msg:
     prompt = await formatter.format(msgs=msgs)
 
-    res = await model(prompt, tools=tool_json_schemas, tool_choice=tool_choice)
+    res = await model(
+        prompt,
+        tools=tool_json_schemas,
+        tool_choice=tool_choice,
+        structured_model=structured_model,
+    )
 
     if model.stream:
         msg = Msg(msg_name, [], "assistant")

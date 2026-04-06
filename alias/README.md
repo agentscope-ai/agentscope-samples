@@ -207,10 +207,23 @@ alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial perform
 # Data Science mode
 alias_agent run --mode ds \
   --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --files ./docs/data/incident_records.csv
+  --datasource ./docs/data/incident_records.csv
 ```
 
-**Note**: Files uploaded with `--files` are automatically copied to `/workspace` in the sandbox. Generated files are available in `sessions_mount_dir` subdirectories.
+#### Input/Output Management
+
+**Input:**
+- Use the `--datasource` parameter (with aliases `--files` for backward compatibility) to specify data sources, supporting multiple formats:
+  - **Local files**: such as `./data.txt` or `/absolute/path/file.json`
+  - **Database DSN**: supports relational databases like PostgreSQL and SQLite, with format like `postgresql://user:password@host:port/database`
+
+  Examples: `--datasource file.txt postgresql://user:password@localhost:5432/mydb`
+
+- Specified data sources will be automatically profiled (analyzed) and provide guidance for efficient data source access to the model.
+- Uploaded files are automatically copied to the `/workspace` directory in the sandbox.
+
+**Output:**
+- Generated files are stored in subdirectories of `sessions_mount_dir`, where all output results can be found.
 
 #### Enable Long-Term Memory Service (General Mode Only)
 To enable the long-term memory service in General mode, you need to:
