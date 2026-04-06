@@ -29,7 +29,6 @@ RM_WEIGHT=0.5                         # Finance 评估权重
 PRESENTATION_QUALITY_WEIGHT=0.2       # 报告呈现质量
 GROUNDING_WEIGHT=0.1                  # 引用规范性评估
 AUDIT_WEIGHT=0.2                      # 引用逻辑审计
-EBTU_WEIGHT=0.0                       # EBTU 证据优先可追溯性审计
 
 # 集群配置（从环境变量获取）
 NODE_NUM=${WORLD_SIZE:-1}             # 节点数量，从环境变量 WORLD_SIZE 获取，默认为 1
@@ -45,7 +44,7 @@ MAX_MODEL_LEN=50000                   # 最大模型长度
 MAX_RESPONSE_TOKENS=8000              # 最大响应 token 数
 
 
-ENGINE_NUM=64                         # vllm 推理实例数 (explorer_gpu = 32 × 1 = 32, trainer_gpu = 64 - 32 = 32)
+ENGINE_NUM=${NODE_NUM}//2                         # vllm 推理实例数 (explorer_gpu = 32 × 1 = 32, trainer_gpu = 64 - 32 = 32)
 TENSOR_PARALLEL_SIZE=1                # 张量并行度
 RUNNER_PER_MODEL=8                    # 每模型并行 runner 数 (从 16 减少到 8，降低 CPU 内存压力)
 MAX_TIMEOUT=1200                      # 单次 rollout 超时秒数
@@ -162,7 +161,6 @@ export FINANCE_RM_WEIGHT="${RM_WEIGHT}"
 export JUDGE_PRESENTATION_QUALITY_WEIGHT="${PRESENTATION_QUALITY_WEIGHT}"
 export JUDGE_GROUNDING_WEIGHT="${GROUNDING_WEIGHT}"
 export JUDGE_AUDIT_WEIGHT="${AUDIT_WEIGHT}"
-export JUDGE_EBTU_WEIGHT="${EBTU_WEIGHT}"
 
 # Judge 参考答案路径（从 .env 映射）
 export JUDGE_TRAIN_REF_ANS_PATH="${TRAIN_REF_ANS_PATH}"

@@ -22,7 +22,6 @@ from judge import (
     PresentationQualityGrader, 
     GroundingGrader, 
     AuditGrader, 
-    EBTUTraceabilityGrader,
     FinanceCompositionEvaluator,
     load_reference_answers_from_file,
 )
@@ -51,7 +50,6 @@ class DeepFinanceJudgeConfig:
     presentation_quality_weight: float = 0.25
     grounding_weight: float = 0.0
     audit_weight: float = 0.0
-    ebtu_weight: float = 0.0
     
     # 参考答案路径
     train_ref_ans_path: str = ""
@@ -69,7 +67,6 @@ class DeepFinanceJudgeConfig:
             presentation_quality_weight=float(os.environ.get("JUDGE_PRESENTATION_QUALITY_WEIGHT", "0.25")),
             grounding_weight=float(os.environ.get("JUDGE_GROUNDING_WEIGHT", "0.0")),
             audit_weight=float(os.environ.get("JUDGE_AUDIT_WEIGHT", "0.0")),
-            ebtu_weight=float(os.environ.get("JUDGE_EBTU_WEIGHT", "0.0")),
             train_ref_ans_path=os.environ.get("JUDGE_TRAIN_REF_ANS_PATH", ""),
             val_ref_ans_path=os.environ.get("JUDGE_VAL_REF_ANS_PATH", ""),
         )
@@ -125,7 +122,6 @@ class DeepFinanceJudgeEngine:
             "presentation_quality": cfg.presentation_quality_weight,
             "grounding": cfg.grounding_weight,
             "audit": cfg.audit_weight,
-            "ebtu": cfg.ebtu_weight,
         }
         positive_weights = {k: v for k, v in self.w.items() if v > 0}
         total = sum(positive_weights.values())
@@ -217,10 +213,6 @@ class DeepFinanceJudgeEngine:
             ),
             "audit": GraderConfig(
                 grader=AuditGrader(model=model),
-                mapper=lambda data: {"traj": data},
-            ),
-            "ebtu": GraderConfig(
-                grader=EBTUTraceabilityGrader(model=model),
                 mapper=lambda data: {"traj": data},
             ),
         }
