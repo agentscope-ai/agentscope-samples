@@ -133,9 +133,37 @@ cd OpenJudge
 pip install -e .
 ```
 
-### 2. 准备环境变量
+### 2. 安装启动 Finance MCP 服务
 
-复制一份配置文件模板并重命名为 `.env`，将其放置在项目根目录下：
+Finance MCP 提供金融研究相关的工具集（搜索、爬虫、同花顺数据等），DeepFinance 需要通过该服务获取金融数据。
+
+**安装：**
+```bash
+pip install finance-mcp
+```
+
+**启动服务（SSE 模式）：**
+```bash
+finance-mcp \
+  config=default,ths,crawl \
+  disabled_flows='["tavily_search","mock_search","react_agent"]' \
+  mcp.transport=sse \
+  mcp.port=8040
+```
+
+启动后服务地址为：`http://<服务器IP>:8040/sse`（本地使用 `127.0.0.1`，远程访问需替换为服务器实际 IP）
+
+**所需 API Keys（按需配置，添加到 `.env` 文件）：**
+
+| 变量名 | 用途 |
+|--------|------|
+| `DASHSCOPE_API_KEY` | DashScope 搜索 |
+| `TUSHARE_API_TOKEN` | A股历史数据 |
+| `TAVILY_API_KEY` | Tavily 搜索（可选） |
+
+### 3. 准备环境变量
+
+复制一份`tuner/deep_finance/.env.example`配置文件模板并重命名为 `.env`，将其放置在项目根目录下：
 
 ```bash
 # ==================== .env ====================
@@ -157,11 +185,11 @@ VAL_REF_ANS_PATH="/path/to/val_reference_answer.json"
 WORLD_SIZE=1
 MASTER_ADDR="127.0.0.1"
 
-# 其它配置
-FINANCE_MCP_URL="http://127.0.0.1:8080"
+# Finance MCP 服务地址
+FINANCE_MCP_URL="http://127.0.0.1:8040/sse"
 ```
 
-### 3. 一键启动训练
+### 4. 一键启动训练
 
 无需手动修改 Python 代码或 YAML 文件。我们的启动脚本 `deepfinance_tuner.sh` 会根据环境变量和脚本内的设定，**动态生成** `config_template.yaml` 供 AgentScope Tuner 消费，并自动拉起 Ray 集群。
 

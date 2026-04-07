@@ -94,7 +94,7 @@ async def get_finance_mcp_toolkit() -> Toolkit:
             await asyncio.sleep(jitter_sleep)
 
         transport = os.getenv("FINANCE_MCP_TRANSPORT", "sse").strip() or "sse"
-        base_url = os.getenv("FINANCE_MCP_URL", "http://22.14.51.14:8040/sse")
+        base_url = os.getenv("FINANCE_MCP_URL", "http://10.56.0.109:8040/sse")
         url = base_url
 
         timeout_s = 100

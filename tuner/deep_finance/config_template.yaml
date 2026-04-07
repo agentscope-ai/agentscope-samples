@@ -56,6 +56,26 @@ explorer:
   eval_interval: {{EVAL_INTERVAL}}   # 每 N 步评估一次测试集
   runner_per_model: {{RUNNER_PER_MODEL}}
   max_timeout: {{MAX_TIMEOUT}}
+  env_vars:
+    # LLM API credentials (required for WorkflowRunner)
+    OPENAI_API_KEY: "{{OPENAI_API_KEY}}"
+    OPENAI_BASE_URL: "{{OPENAI_BASE_URL}}"
+    RM_BASE_URL: "{{RM_BASE_URL}}"
+    RM_API_KEY: "{{RM_API_KEY}}"
+    OPENJUDGE_BASE_URL: "{{OPENJUDGE_BASE_URL}}"
+    OPENJUDGE_API_KEY: "{{OPENJUDGE_API_KEY}}"
+    OPENJUDGE_LLM: "{{OPENJUDGE_LLM}}"
+    OPENJUDGE_CONCURRENCY: "{{OPENJUDGE_CONCURRENCY}}"
+    # MCP configuration
+    FINANCE_MCP_URL: "{{FINANCE_MCP_URL}}"
+    FINANCE_MCP_TRANSPORT: "{{FINANCE_MCP_TRANSPORT}}"
+    FINANCE_MCP_INIT_JITTER_MAX_S: "{{FINANCE_MCP_INIT_JITTER_MAX_S}}"
+    FINANCE_MCP_INIT_MAX_RETRIES: "{{FINANCE_MCP_INIT_MAX_RETRIES}}"
+    # Trajectory save
+    TRAJECTORY_SAVE_DIR: "{{TRAJECTORY_SAVE_DIR}}"
+    # Judge reference answers
+    TRAIN_REF_ANS_PATH: "{{TRAIN_REF_ANS_PATH}}"
+    VAL_REF_ANS_PATH: "{{VAL_REF_ANS_PATH}}"
   rollout_model:
     engine_num: {{ENGINE_NUM}}
     tensor_parallel_size: {{TENSOR_PARALLEL_SIZE}}

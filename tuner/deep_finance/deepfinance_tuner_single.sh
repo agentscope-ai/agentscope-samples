@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 #===============================================================================
-# DeepFinance Training Script (AgentScope Tuner)
+# DeepFinance Training Script (AgentScope Tuner) - 单机版
 # 基于 OpenJudge FinanceCompositionEvaluator 的训练脚本
 #===============================================================================
 
@@ -11,13 +11,11 @@ set -e
 export DEBUG_TOOL_RESULT=1
 export DEBUG_REWARD=1
 
-#===============================================================================
-# Ray 调试模式配置
-#===============================================================================
 
-SUFFIX="deepfinance"     # 实验后缀，影响日志和实验名称
-PREFIX="agentscopetuner"             # 实验前缀，影响日志文件夹
+SUFFIX="deepfinance_single"     # 实验后缀，影响日志和实验名称
+PREFIX="agentscopetuner_sing"             # 实验前缀，影响日志文件夹
 PROJECT_NAME="AgentScope-DeepFinance" # 项目名称
+
 
 # OpenJudge 模型配置
 OPENJUDGE_LLM='qwen-flash'            # OpenJudge 评分模型
@@ -30,59 +28,40 @@ PRESENTATION_QUALITY_WEIGHT=0.2       # 报告呈现质量
 GROUNDING_WEIGHT=0.1                  # 引用规范性评估
 AUDIT_WEIGHT=0.2                      # 引用逻辑审计
 
-# 集群配置（从环境变量获取）
-NODE_NUM=${WORLD_SIZE:-1}             # 节点数量，从环境变量 WORLD_SIZE 获取，默认为 1
-GPU_PER_NODE=8                        # 每节点 GPU 数量
+# 单机 GPU 配置
+GPU_PER_NODE=8                        # 本机 GPU 数量
 
 # 训练参数配置
 GROUP_SIZE=4                          # repeat_times，每个 query rollout 次数
 BATCH_SIZE=64                         # 每步样本数
-TRAIN_BATCH_SIZE=64                   # trainer batch size (需能被 trainer_gpu_num 整除, 32 % 32 = 0)
-TOTAL_EPOCHS=300                        # 总 epoch 数
+TRAIN_BATCH_SIZE=64                   # trainer batch size
+TOTAL_EPOCHS=300                      # 总 epoch 数
 MAX_ENV_STEPS=10                      # 每个样本step轮数
-MAX_MODEL_LEN=40000                   # 最大模型长度
+MAX_MODEL_LEN=40960                   # 最大模型长度（模型支持的最大值）
 MAX_RESPONSE_TOKENS=8000              # 最大响应 token 数
 
 # GPU 分配策略：一半用于推理(explorer)，一半用于训练(trainer)
-# 确保 trainer_gpu_num 能被 gpu_per_node 整除（当 trainer_gpu > gpu_per_node 时）
-TOTAL_GPU=$((NODE_NUM * GPU_PER_NODE))
+TOTAL_GPU=${GPU_PER_NODE}
 HALF_GPU=$((TOTAL_GPU / 2))
 
 # 自适应计算 tensor_parallel_size 和 engine_num
-# tensor_parallel_size 最大为 8，但不超过 half_gpu
 if [ $HALF_GPU -ge 8 ]; then
     TENSOR_PARALLEL_SIZE=8
 else
     TENSOR_PARALLEL_SIZE=$HALF_GPU
 fi
 
-# engine_num = half_gpu / tensor_parallel_size
 ENGINE_NUM=$((HALF_GPU / TENSOR_PARALLEL_SIZE))
-
-# 验证分配是否正确
 EXPLORER_GPU=$((ENGINE_NUM * TENSOR_PARALLEL_SIZE))
 TRAINER_GPU=$((TOTAL_GPU - EXPLORER_GPU))
-# 只有当 trainer_gpu > gpu_per_node 时，才需要确保能被整除
-# 因为 trainer_gpu <= gpu_per_node 时，trainer 只需要 1 个节点
-if [ $TRAINER_GPU -gt $GPU_PER_NODE ]; then
-    if [ $((TRAINER_GPU % GPU_PER_NODE)) -ne 0 ]; then
-        # 减少 engine_num 直到 trainer_gpu 能被整除
-        while [ $ENGINE_NUM -gt 0 ] && [ $((TRAINER_GPU % GPU_PER_NODE)) -ne 0 ]; do
-            ENGINE_NUM=$((ENGINE_NUM - 1))
-            EXPLORER_GPU=$((ENGINE_NUM * TENSOR_PARALLEL_SIZE))
-            TRAINER_GPU=$((TOTAL_GPU - EXPLORER_GPU))
-        done
-    fi
-fi
 
-RUNNER_PER_MODEL=8                    # 每模型并行 runner 数 (从 16 减少到 8，降低 CPU 内存压力)
+RUNNER_PER_MODEL=8                    # 每模型并行 runner 数
 MAX_TIMEOUT=1200                      # 单次 rollout 超时秒数
 GPU_MEMORY_UTILIZATION=0.8            # GPU 内存利用率
-export RAY_CGRAPH_get_timeout=900  # 15 分钟
 
 # Trainer 配置
 SAVE_INTERVAL=10                      # checkpoint 保存间隔
-SEQ_PARALLEL_SIZE=8                   # 序列并行度
+SEQ_PARALLEL_SIZE=${TRAINER_GPU}      # 序列并行度，必须 ≤ TRAINER_GPU
 
 # MCP 配置
 FINANCE_MCP_TRANSPORT="sse"
@@ -114,8 +93,6 @@ if [ -n "${CONDA_PATH}" ] && [ -f "${CONDA_PATH}" ]; then
     conda activate "${CONDA_ENV}"
     echo -e "\033[32m已激活 conda 环境: ${CONDA_ENV}\033[0m"
     
-    # 【重要】确保 Ray 子进程使用正确的 Python 解释器
-    # 将 conda 环境的 bin 目录加入 PATH 并导出
     export PATH="${CONDA_PREFIX}/bin:$PATH"
     export PYTHONPATH="${CONDA_PREFIX}/lib/python3.11/site-packages:${PYTHONPATH:-}"
     echo -e "\033[32m已设置 PATH: ${CONDA_PREFIX}/bin\033[0m"
@@ -128,7 +105,6 @@ fi
 # 日志和配置文件路径
 CURRENT_TIME=$(date "+%Y%m%d_%H%M%S")
 LOG_DIR="${SCRIPT_DIR}/logs/${PREFIX}"
-MASTER_IP_FILE="${LOG_DIR}/master_ip_${SUFFIX}.txt"
 TRAIN_LOG="${LOG_DIR}/train_${SUFFIX}_${CURRENT_TIME}.log"
 
 # 配置文件路径
@@ -152,6 +128,9 @@ if [ ! -f "${CONFIG_TEMPLATE}" ]; then
     echo -e "\033[31m错误: 配置模板不存在: ${CONFIG_TEMPLATE}\033[0m"
     exit 1
 fi
+
+# 单机模式固定 NODE_NUM=1
+NODE_NUM=1
 
 sed -e "s|{{PROJECT_NAME}}|${PROJECT_NAME}|g" \
     -e "s|{{EXPERIMENT_NAME}}|${SUFFIX}|g" \
@@ -226,8 +205,7 @@ export WANDB_NAME="${SUFFIX}"
 
 # NCCL 配置（调试模式）
 export NCCL_TIMEOUT=1800
-export NCCL_DEBUG=WARN                     # 只显示警告和错误
-# export NCCL_DEBUG_SUBSYS=ALL             # 显示所有子系统日志（已禁用）
+export NCCL_DEBUG=WARN
 export NCCL_IB_TIMEOUT=23
 export NCCL_ASYNC_ERROR_HANDLING=1
 
@@ -242,29 +220,14 @@ log() {
     echo -e "\033[0;32m[$(date '+%Y-%m-%d %H:%M:%S')]\033[0m \033[0;34m[INFO]\033[0m $1"
 }
 
-check_workers() {
-    local status_output=$(ray status 2>/dev/null)
-    if [ -z "$status_output" ]; then echo 0; return; fi
-    local node_count=$(echo "$status_output" | grep -E "^[[:space:]]*1[[:space:]]+node_" | wc -l)
-    if [ "$node_count" -gt 0 ]; then echo $node_count; return; fi
-    echo $(echo "$status_output" | grep -o "node_[0-9a-f]\+" | sort -u | wc -l)
-}
-
 #===============================================================================
-# 6. 主流程
+# 6. 主流程（单机模式）
 #===============================================================================
-log "开始训练: ${SUFFIX}"
-log "节点数: ${NODE_NUM}, 每节点GPU数: ${GPU_PER_NODE}"
+log "单机训练模式: ${SUFFIX}"
+log "GPU 数量: ${GPU_PER_NODE}"
 
-# 多机训练时检查 MASTER_ADDR
-if [ "${NODE_NUM}" -gt 1 ] && [ -z "${MASTER_ADDR}" ]; then
-    echo -e "\033[31m错误: 多机训练需要设置 MASTER_ADDR 环境变量\033[0m"
-    exit 1
-fi
-
-# 【重要】设置 Ray 运行时环境变量，确保所有 worker 使用正确的 Python
+# 【重要】设置 Ray 运行时环境变量
 export RAY_RUNTIME_ENV_CONDA="${CONDA_ENV}"
-# 显式指定 Python 解释器路径，避免 Ray worker 使用系统默认 Python
 PYTHON_PATH=$(which python)
 print_green "当前 Python 路径: ${PYTHON_PATH}"
 print_green "CONDA_PREFIX: ${CONDA_PREFIX}"
@@ -285,84 +248,21 @@ echo ""
 echo "=== GPU 分配 ==="
 echo "  总 GPU 数: ${TOTAL_GPU}"
 echo "  Explorer GPU: ${EXPLORER_GPU} (engine_num=${ENGINE_NUM}, tensor_parallel_size=${TENSOR_PARALLEL_SIZE})"
-echo "  Trainer GPU: ${TRAINER_GPU} (需能被 ${GPU_PER_NODE} 整除: $((TRAINER_GPU % GPU_PER_NODE)) == 0 ✓)"
+echo "  Trainer GPU: ${TRAINER_GPU}"
 
-#===============================================================================
-# 6.1 Master 节点启动流程
-#===============================================================================
-if [ "${NODE_NUM}" -gt 1 ]; then
-    if [[ "$HOSTNAME" == *"-master-"* ]]; then
-        print_green "==> This is MASTER node: $HOSTNAME"
+# 清理并启动 Ray
+ray stop --force 2>/dev/null || true
+sleep 3
 
-        # 清理和初始化 Ray
-        rm -f "${MASTER_IP_FILE}"
-        ray stop --force || true
-        sleep 3
+print_green "Starting Ray single-node cluster..."
+ray start --head --num-gpus ${GPU_PER_NODE}
+sleep 5
 
-        # 启动 Ray Head
-        print_green "Starting Ray head node at ${MASTER_ADDR}"
-        ray start --head --node-ip-address "${MASTER_ADDR}" --num-gpus ${GPU_PER_NODE}
-        sleep 10
-        echo "${MASTER_ADDR}" > "${MASTER_IP_FILE}"
+print_green "==================================="
+print_green "Training Configuration"
+print_green "GPU Count: ${GPU_PER_NODE}"
+print_green "Log: ${TRAIN_LOG}"
+print_green "==================================="
 
-        # 等待 Worker 节点
-        log "等待 Worker 节点加入..."
-        while true; do
-            CURRENT_NODES=$(check_workers)
-            if [ "${CURRENT_NODES}" -ge "${NODE_NUM}" ]; then
-                print_green "所有节点已加入 (${CURRENT_NODES}/${NODE_NUM})"
-                break
-            fi
-            log "当前节点数: ${CURRENT_NODES}/${NODE_NUM}"
-            sleep 10
-        done
-
-        # 启动训练
-        print_green "==================================="
-        print_green "Training Configuration"
-        print_green "Total GPUs: $((NODE_NUM * GPU_PER_NODE))"
-        print_green "Log: ${TRAIN_LOG}"
-        print_green "==================================="
-
-        cd "${SCRIPT_DIR}"
-        python main.py --config_path="${CONFIG_FILE}" 2>&1 | tee "${TRAIN_LOG}"
-
-    #===============================================================================
-    # 6.2 Worker 节点启动流程
-    #===============================================================================
-    else
-        print_green "==> This is WORKER node: $HOSTNAME"
-        print_green "[Worker] 使用 Python: $(which python)"
-        print_green "[Worker] CONDA_PREFIX: ${CONDA_PREFIX}"
-        
-        while [ ! -f "${MASTER_IP_FILE}" ]; do sleep 5; done
-        sleep 3  # 等待文件系统同步
-        # 刷新分布式文件系统缓存，避免 stale file handle
-        ls -la "$(dirname "${MASTER_IP_FILE}")" > /dev/null 2>&1 || true
-        MASTER_ADDR=$(cat "${MASTER_IP_FILE}")
-        ray stop || true
-        ray start --address "${MASTER_ADDR}:6379" --num-gpus ${GPU_PER_NODE}
-        while true; do sleep 60; done
-    fi
-
-#===============================================================================
-# 6.3 单机模式
-#===============================================================================
-else
-    log "单机训练模式"
-    ray stop --force 2>/dev/null || true
-    sleep 3
-    
-    print_green "Starting Ray single-node cluster..."
-    ray start --head --num-gpus ${GPU_PER_NODE}
-    sleep 5
-
-    print_green "==================================="
-    print_green "Training Configuration"
-    print_green "GPU Count: ${GPU_PER_NODE}"
-    print_green "Log: ${TRAIN_LOG}"
-    print_green "==================================="
-
-    cd "${SCRIPT_DIR}"
-    python main.py --config_path="${CONFIG_FILE}" 2>&1 | tee "${TRAIN_LOG}"
-fi
+cd "${SCRIPT_DIR}"
+python main.py --config_path="${CONFIG_FILE}" 2>&1 | tee "${TRAIN_LOG}"
