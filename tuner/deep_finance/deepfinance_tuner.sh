@@ -75,10 +75,10 @@ if [ $TRAINER_GPU -gt $GPU_PER_NODE ]; then
     fi
 fi
 
-RUNNER_PER_MODEL=8                    # 每模型并行 runner 数 (从 16 减少到 8，降低 CPU 内存压力)
+RUNNER_PER_MODEL=4                    # 每模型并行 runner 数 (从 16 减少到 8，降低 CPU 内存压力)
 MAX_TIMEOUT=1200                      # 单次 rollout 超时秒数
 GPU_MEMORY_UTILIZATION=0.8            # GPU 内存利用率
-export RAY_CGRAPH_get_timeout=900  # 15 分钟
+export RAY_CGRAPH_get_timeout=1800  # 30 分钟
 
 # Trainer 配置
 SAVE_INTERVAL=10                      # checkpoint 保存间隔
