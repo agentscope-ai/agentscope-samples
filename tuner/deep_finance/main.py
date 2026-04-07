@@ -341,8 +341,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--total_epochs", type=int, default=4, help="Total number of epochs to run.")
 
     # Model (aligned with config.yaml)
-    p.add_argument("--config_path", type=str, default="/mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/yaml/config30b.yaml", help="Yaml config file path.")
-    p.add_argument("--model_path", type=str, default="/mnt/data_cpfs/taoshuchang.tsc/models/Qwen3-8B", help="Base model path for tuning.")
+    p.add_argument("--config_path", type=str, default="tuner/deep_finance/config_template.yaml", help="Yaml config file path.")
+    p.add_argument("--model_path", type=str, default="/path/to/base_model", help="Base model path for tuning.")
     p.add_argument("--inference_engine_num", type=int, default=4, help="Number of vllm inference model instances.")
     # Algorithm (aligned with config.yaml)
     p.add_argument("--algorithm_type", type=str, default="multi_step_grpo", help="Algorithm type for training.")
@@ -371,12 +371,3 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-"""
-python main.py
-ray stop --force 
-ray start --head
-rm -r /mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/checkpoints
-set -a && source /mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/.env && set +a && python main.py --config_path=/mnt/data_cpfs/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/deep_finance/config.yaml
-
-
-"""

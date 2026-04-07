@@ -1,14 +1,14 @@
 # Please refer to https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/trinity_configs.html for detailed explanation of each field.
 project: AgentScope
-name: GSM8K-Qwen3-8B
+name: GSM8K-Qwen3-0.6B
 # directory to save checkpoints, default to ./checkpoints if TRINITY_CHECKPOINT_ROOT_DIR not set
-checkpoint_root_dir: /mnt/data/taoshuchang.tsc/deepresearch/astune_sample/agentscope-samples/tuner/math_agent/checkpoints/
+checkpoint_root_dir: ${oc.env:TRINITY_CHECKPOINT_ROOT_DIR,./checkpoints}
 algorithm:
   algorithm_type: multi_step_grpo  # a GRPO-based algorithm for multi-step reasoning
   repeat_times: 8  # repeat each training sample 8 times
 model:
   # path to the pre-trained model, default to Qwen/Qwen3-0.6B if TRINITY_MODEL_PATH not set
-  model_path: /mnt/data_cpfs/taoshuchang.tsc/models/Qwen3-8B
+  model_path: ${oc.env:TRINITY_MODEL_PATH,Qwen/Qwen3-0.6B}
   # maximum tokens generated in response
   max_response_tokens: 16384
   # maximum token length for both input and output
@@ -19,13 +19,13 @@ cluster:
   node_num: 1  # cluster with 1 node
   gpu_per_node: 8  # each node has 8 GPUs
 buffer:
-  total_epochs: 4  # run taskset for 1 epoch
+  total_epochs: 1  # run taskset for 1 epoch
   batch_size: 32  # each step contains 32 samples from taskset
   train_batch_size: 256  # trainer batch size is 256 (multi-step reasoning generate more training samples)
   explorer_input:
     taskset:  # define the taskset for rollout
       name: gsm8k
-      path: '/mnt/data_cpfs/taoshuchang.tsc/deepresearch/AgentJet_new/dataset_gsm8k'
+      path: 'openai/gsm8k'
       subset_name: 'main'
       split: 'train'
 explorer:
@@ -48,6 +48,6 @@ synchronizer:
 trainer:
   save_interval: 100  # save checkpoint every 100 steps
   use_dynamic_bsz: true
-  ulysses_sequence_parallel_size: 4  # use sequence parallelism to reduce memory usage
+  ulysses_sequence_parallel_size: 1  # use sequence parallelism to reduce memory usage
 monitor:
   monitor_type: tensorboard  # here we use tensorboard, you can also use wandb, mlflow or swanlab
