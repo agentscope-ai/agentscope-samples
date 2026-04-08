@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Finance Composition Evaluator - 基于 OpenJudge 的 Finance 评估器
+"""Finance Composition Evaluator - OpenJudge-based finance evaluator
 
-功能：
-- 加载参考答案
-- 根据 domain 路由到对应的 grader 集合
-- 执行 pairwise 评估（比较 training answer 和 reference answer）
-- 返回 0-1 范围的分数
+Features:
+- Load reference answers
+- Route to corresponding grader set based on domain
+- Execute pairwise evaluation (compare training answer vs reference answer)
+- Return score in [0, 1] range
 """
 
 import os
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_reference_answers_from_file(file_path: str) -> Tuple[Dict[str, str], Dict[str, str]]:
-    """加载参考答案 (FinanceCompositionEvaluator 需要)"""
+    """Load reference answers (required by FinanceCompositionEvaluator)."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Reference answers file not found: {file_path}")
     try:
@@ -49,12 +49,12 @@ def load_reference_answers_from_file(file_path: str) -> Tuple[Dict[str, str], Di
 
 class FinanceCompositionEvaluator:
     """
-    基于 OpenJudge 的 Finance 组合评估器（替代 rm_gallery.FinanceComposition）
-    
-    功能：
-    - 根据 domain 路由到对应的 grader 集合
-    - 执行 pairwise 评估（比较 training answer 和 reference answer）
-    - 返回 0-1 范围的分数
+    OpenJudge-based Finance Composition Evaluator (replaces rm_gallery.FinanceComposition)
+
+    Features:
+    - Route to corresponding grader set based on domain
+    - Execute pairwise evaluation (compare training answer vs reference answer)
+    - Return score in [0, 1] range
     """
     
     DOMAIN_GRADERS: Dict[str, List[Type[BaseGrader]]] = {

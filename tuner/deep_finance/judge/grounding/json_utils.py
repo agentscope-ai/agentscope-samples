@@ -57,15 +57,15 @@ def get_note(item: Any) -> str:
         note = ""
     note = "" if note is None else str(note)
     note = note.strip()
-    # 最多给点余量，避免reason爆长
+    # Truncate to avoid overly long reason strings
     return note[:120]
 
 
 def validate_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | None]:
     """
-    验证 grounding JSON 结构
-    
-    必需字段:
+    Validate grounding JSON structure.
+
+    Required fields:
     - total_key_facts: int
     - cited_key_facts: int
     - missing_count: int
@@ -73,13 +73,13 @@ def validate_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | No
     - good_citations: list
     - invalid_reference_nums: list
     """
-    # 必需的 int 字段
+    # Required int fields
     int_fields = ["total_key_facts", "cited_key_facts", "missing_count", "fake_count"]
     for field in int_fields:
         if field not in obj:
             return None, f"Missing field: {field}"
         val = obj[field]
-        # 尝试转换为 int
+        # Try to convert to int
         if isinstance(val, (int, float)):
             obj[field] = int(val)
         elif isinstance(val, str) and val.isdigit():
@@ -87,22 +87,22 @@ def validate_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | No
         elif not isinstance(val, int):
             return None, f"Field '{field}' must be int, got {type(val).__name__}"
     
-    # good_citations 必须是 list
+    # good_citations must be a list
     if "good_citations" not in obj:
         obj["good_citations"] = []
     elif not isinstance(obj["good_citations"], list):
         obj["good_citations"] = []
     else:
-        # 确保每个元素是字符串，最多保留 2 条
+        # Ensure each element is a string, keep at most 2
         obj["good_citations"] = [str(x) for x in obj["good_citations"][:2]]
     
-    # invalid_reference_nums 必须是 list
+    # invalid_reference_nums must be a list
     if "invalid_reference_nums" not in obj:
         obj["invalid_reference_nums"] = []
     elif not isinstance(obj["invalid_reference_nums"], list):
         obj["invalid_reference_nums"] = []
     else:
-        # 确保每个元素是 int，最多保留 5 个
+        # Ensure each element is int, keep at most 5
         nums = []
         for x in obj["invalid_reference_nums"][:5]:
             if isinstance(x, int):
@@ -120,11 +120,11 @@ def validate_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | No
 
 
 # =============================================================================
-# Trajectory 处理辅助函数
+# Trajectory Processing Helpers
 # =============================================================================
 
 def _extract_text_content(content) -> str:
-    """统一提取纯文本内容"""
+    """Extract plain text content."""
     if content is None:
         return ""
     if isinstance(content, str):
@@ -141,33 +141,33 @@ def _extract_text_content(content) -> str:
 
 
 def _strip_think(text: str) -> str:
-    """去除 <think>...</think> 标签"""
+    """Strip <think>...</think> tags."""
     return re.sub(r"<think>.*?</think>\s*", "", text, flags=re.S).strip()
 
 
 def _strip_markdown_fences(text: str) -> str:
     """
-    清理 markdown 代码块标记
-    - 移除开头的 ```markdown / ```md / ``` 等
-    - 移除结尾的 ```
+    Strip markdown code block markers.
+    - Remove leading ```markdown / ```md / ``` etc.
+    - Remove trailing ```
     """
     text = text.strip()
-    # 移除开头的 ```xxx
+    # Remove leading ```xxx
     text = re.sub(r'^```(?:markdown|md)?\s*\n?', '', text, flags=re.IGNORECASE)
-    # 移除结尾的 ```
+    # Remove trailing ```
     text = re.sub(r'\n?```\s*$', '', text)
     return text.strip()
 
 
 def _normalize_traj(trajectory):
-    """兼容 [[...]] 格式"""
+    """Compatible with [[...]] format."""
     if isinstance(trajectory, list) and trajectory and isinstance(trajectory[0], list):
         return trajectory[0]
     return trajectory
 
 
 def _extract_tool_call_json(text: str) -> str:
-    """提取工具调用 JSON"""
+    """Extract tool call JSON."""
     m = re.search(r"```json\s*(\[[\s\S]*?\])\s*```", text)
     if m:
         return m.group(1).strip()
@@ -180,7 +180,7 @@ def _extract_tool_call_json(text: str) -> str:
 
 
 def _looks_like_tool_result(text: str) -> bool:
-    """判断是否为工具返回结果"""
+    """Check if text looks like a tool result."""
     t = text.strip()
     if t.startswith("Tool:") or t.startswith("Result:"):
         return True
@@ -192,20 +192,20 @@ def _looks_like_tool_result(text: str) -> bool:
 
 
 def _is_probably_final_report(text: str) -> bool:
-    """判断是否为最终报告"""
+    """Check if text is likely the final report."""
     t = text.strip()
     return ("## References" in t) or ("[TASK_COMPLETED]" in t) or t.lstrip().startswith("# ")
 
 
 def construct_reward_prompt(trajectory: List[Dict[str, Any]], user_prompt_template: str) -> str:
     """
-    从 trajectory 构建 reward prompt
-    
+    Build reward prompt from trajectory.
+
     Args:
-        trajectory: 对话轨迹 [{"role": ..., "content": ...}, ...]
-        
+        trajectory: Conversation trajectory [{"role": ..., "content": ...}, ...]
+
     Returns:
-        构建好的 user prompt 字符串
+        Constructed user prompt string
     """
     traj = _normalize_traj(trajectory)
     if not traj:
@@ -216,7 +216,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]], user_prompt_templa
     evidence: List[str] = []
     final_report = ""
 
-    # 找到 final report（从后往前找第一个符合条件的 assistant 消息）
+    # Find final report (reverse search for first qualifying assistant message)
     for i in range(len(traj) - 1, -1, -1):
         step = traj[i]
         if step.get("role") == "assistant":
@@ -230,10 +230,10 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]], user_prompt_templa
                 final_report = _strip_think(_extract_text_content(traj[i].get("content")))
                 break
 
-    # 清理 markdown 代码块标记
+    # Clean markdown code block markers
     final_report = _strip_markdown_fences(final_report)
 
-    # 遍历提取 user_query, tool_calls, evidence
+    # Iterate to extract user_query, tool_calls, evidence
     for idx, step in enumerate(traj):
         role = step.get("role")
         raw = _extract_text_content(step.get("content"))
@@ -254,7 +254,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]], user_prompt_templa
             if _looks_like_tool_result(raw):
                 evidence.append(f"[Step {idx}] EVIDENCE_TOOL_RESULT:\n{raw}")
             else:
-                # query 之后的用户补充也保留为 evidence
+                # Additional user context after query is also kept as evidence
                 if user_query:
                     evidence.append(f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}")
 

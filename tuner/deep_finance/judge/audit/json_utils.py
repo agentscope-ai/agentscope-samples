@@ -18,14 +18,14 @@ def extract_first_json_object(text: str) -> str | None:
 
 def _repair_json(js: str) -> str:
     """
-    尝试修复常见的JSON格式错误
-    1. 修复字符串中未转义的换行符
-    2. 修复trailing comma
-    3. 修复缺少的逗号
-    4. 修复不完整的JSON（截断）
+    Attempt to repair common JSON format errors:
+    1. Unescape newlines within strings
+    2. Fix trailing commas
+    3. Fix missing commas
+    4. Fix incomplete (truncated) JSON
     """
-    # 1. 替换字符串值中的未转义换行符
-    # 这是最常见的问题：LLM在字符串中直接输出换行而非 \n
+    # 1. Escape unescaped newlines within string values
+    # Most common issue: LLM outputs raw newlines in strings instead of \n
     def escape_newlines_in_strings(s: str) -> str:
         result = []
         in_string = False
@@ -55,21 +55,21 @@ def _repair_json(js: str) -> str:
     
     js = escape_newlines_in_strings(js)
     
-    # 2. 移除trailing comma: ",}" -> "}" 和 ",]" -> "]"
+    # 2. Remove trailing commas: ",}" -> "}" and ",]" -> "]"
     js = re.sub(r',\s*}', '}', js)
     js = re.sub(r',\s*]', ']', js)
     
-    # 3. 尝试修复截断的JSON - 补全缺失的括号
-    # 统计括号数量
+    # 3. Attempt to fix truncated JSON - complete missing brackets
+    # Count bracket pairs
     open_braces = js.count('{')
     close_braces = js.count('}')
     open_brackets = js.count('[')
     close_brackets = js.count(']')
     
-    # 如果括号不匹配，尝试补全
+    # If brackets are unbalanced, try to complete them
     if open_braces > close_braces:
-        # 先关闭可能未闭合的字符串
-        # 检查最后是否在字符串中
+        # First close any unclosed strings
+        # Check if we're inside a string
         in_string = False
         escape_next = False
         for c in js:
@@ -82,7 +82,7 @@ def _repair_json(js: str) -> str:
         if in_string:
             js += '"'
         
-        # 补全缺失的括号
+        # Complete missing brackets
         js += ']' * (open_brackets - close_brackets)
         js += '}' * (open_braces - close_braces)
     
@@ -94,16 +94,16 @@ def strict_load_json(text: str) -> Tuple[Dict[str, Any] | None, str | None]:
     if js is None:
         return None, "No JSON object found"
     
-    # 第一次尝试：直接解析
+    # First attempt: parse directly
     try:
         obj = json.loads(js)
         if not isinstance(obj, dict):
             return None, f"Root is not dict: {type(obj)}"
         return obj, None
     except json.JSONDecodeError:
-        pass  # 继续尝试修复
+        pass  # Continue trying to repair
     
-    # 第二次尝试：修复后解析
+    # Second attempt: repair and parse
     try:
         repaired = _repair_json(js)
         obj = json.loads(repaired)
@@ -115,7 +115,7 @@ def strict_load_json(text: str) -> Tuple[Dict[str, Any] | None, str | None]:
 
 def validate_integrity_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | None]:
     """
-    验证 Evidence Logic Analyst 的输出结构
+    Validate the output structure of Evidence Logic Analyst.
     Schema:
     {
       "audit_trail": [
@@ -135,7 +135,7 @@ def validate_integrity_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None
     try:
         score = float(obj["integrity_score"])
         if not (0.0 <= score <= 1.0):
-             # 容错：稍微越界归一化
+             # Tolerance: clamp slightly out-of-range values
              score = max(0.0, min(1.0, score))
         obj["integrity_score"] = score
     except ValueError:
@@ -159,12 +159,12 @@ def validate_integrity_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None
         
         # Normalize verdict
         v = str(item["verdict"]).strip()
-        # 简单的大小写兼容
+        # Simple case-insensitive compatibility
         v_cap = v.capitalize()
         if v not in valid_verdicts and v_cap in valid_verdicts:
             item["verdict"] = v_cap
         elif v not in valid_verdicts:
-            # 如果模型输出了奇奇怪怪的verdict，降级为Irrelevant或报错，这里选择报错以保证严谨
+            # If model outputs an unexpected verdict, return error to maintain strictness
             return None, f"Invalid verdict '{v}' in item {idx}"
 
     return obj, None
@@ -198,17 +198,17 @@ def _strip_markdown_fences(text: str) -> str:
     return text.strip()
 
 def _extract_tool_call_json(text: str) -> str:
-    # 尝试提取 ```json ... ```
+    # Try to extract ```json ... ```
     m = re.search(r"```json\s*(\[[\s\S]*?\])\s*```", text)
     if m: return m.group(1).strip()
-    # 简单的 fallback
+    # Simple fallback
     if text.strip().startswith("[") and text.strip().endswith("]"):
         return text.strip()
     return ""
 
 def construct_reward_prompt(trajectory: List[Dict[str, Any]], template: str) -> str:
     """
-    提取 User Query, Evidence (Tool Outputs), Final Report
+    Extract User Query, Evidence (Tool Outputs), Final Report
     """
     user_query = ""
     evidence_parts = []
@@ -218,17 +218,17 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]], template: str) -> 
     def clean(c): return _strip_think(_extract_text_content(c))
 
     # 1. Identify components
-    # 倒序查找 Final Report (包含 References 或 TASK_COMPLETED 的 Assistant 消息)
+    # Reverse search for Final Report (Assistant message containing References or TASK_COMPLETED)
     for i in range(len(trajectory) - 1, -1, -1):
         msg = trajectory[i]
         if msg.get("role") == "assistant":
             txt = clean(msg.get("content"))
-            # 宽松判定：通常最后的长文本是报告
+            # Heuristic: long text is usually the report
             if "References" in txt or "[TASK_COMPLETED]" in txt or len(txt) > 600:
                 final_report = _strip_markdown_fences(txt)
                 break
     
-    # 找不到显式报告时，取最后一条 Assistant
+    # Fallback: use last assistant message if no explicit report found
     if not final_report and trajectory:
         last = trajectory[-1]
         if last.get("role") == "assistant":
@@ -241,7 +241,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]], template: str) -> 
         # User Query: First user message
         if role == "user" and not user_query:
             user_query = content_raw
-            continue # 不要把 query 当作 evidence
+            continue # Don't treat query as evidence
 
         # Evidence: Tool calls and Tool outputs
         if role == "assistant":

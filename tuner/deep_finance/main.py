@@ -282,26 +282,26 @@ async def run_deep_finance(
     response = await agent.reply(msg=Msg("user", user_query, role="user"))
     total_time = time.time() - start_time
 
-    # 提取 tool_stats 并计算 metrics
+    # Extract tool_stats and compute metrics
     tool_stats = await extract_tool_stats_from_agent(agent, total_time)
     metrics = compute_single_tool_metrics(tool_stats)
     
-    # 提取 response 内容，转换为 dict 格式（确保跨进程序列化安全）
+    # Extract response content, convert to dict for cross-process serialization safety
     response_content = response.content if hasattr(response, 'content') else str(response)
     if hasattr(response_content, 'model_dump'):
         response_content = response_content.model_dump()
     elif not isinstance(response_content, (str, list, dict, type(None))):
         response_content = str(response_content)
     
-    # ========== 保存 article 到 jsonl 文件 ==========
-    # 从 task.workflow_args 中获取 trajectory_save_dir
+    # ========== Save article to jsonl file ==========
+    # Get trajectory_save_dir from task.workflow_args
     workflow_args = task.get("workflow_args", {})
     trajectory_save_dir = workflow_args.get("trajectory_save_dir")
     
-    # 添加详细的日志和错误处理
+    # Add detailed logging and error handling
     task_id = task.get("task_id") or task.get("id") or "unknown"
     
-    # 如果 trajectory_save_dir 为 None，使用默认备份路径
+    # Fall back to default backup path if trajectory_save_dir is None
     if trajectory_save_dir is None:
         trajectory_save_dir = os.path.join(
             os.path.dirname(__file__), 
@@ -317,8 +317,8 @@ async def run_deep_finance(
     else:
         logging.info("[ArticleSaver] Saving article to: %s (task_id=%s)", trajectory_save_dir, task_id)
 
-    # 构建 response dict（供 judge 使用）
-    # 使用 dict 格式而不是 Msg 对象，确保 metadata 能够正确跨进程传递
+    # Build response dict (for judge consumption)
+    # Use dict instead of Msg object to ensure metadata transfers correctly across processes
     response_dict = {
         "content": response_content,
         "role": getattr(response, "role", "assistant"),

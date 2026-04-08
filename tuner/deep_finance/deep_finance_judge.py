@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""DeepFinance Judge - AgentScope Tuner 版本
+"""DeepFinance Judge - AgentScope Tuner version
 
-基于 agentscope tuner 框架的 DeepFinance judge 函数。
-集成: FinanceCompositionEvaluator (基于 OpenJudge), PresentationQualityGrader
+Judge function for DeepFinance based on the agentscope tuner framework.
+Integrates: FinanceCompositionEvaluator (based on OpenJudge), PresentationQualityGrader
 """
 
 import os
@@ -31,27 +31,27 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# 配置类（从环境变量读取）
+# Configuration class (reads from environment variables)
 # =============================================================================
 
 @dataclass(frozen=True)
 class DeepFinanceJudgeConfig:
-    """Judge 配置，从环境变量读取"""
+    """Judge configuration, reads from environment variables."""
     openjudge_llm: str
     openjudge_base_url: str
     openjudge_api_key: str
     concurrency: int = 6
     
-    # Finance Judge 单独的模型配置
+    # Finance Judge separate model config
     finance_judge_llm: str = ""
     
-    # 权重配置
+    # Weight configuration
     finance_rm_weight: float = 1.0
     presentation_quality_weight: float = 0.25
     grounding_weight: float = 0.0
     audit_weight: float = 0.0
     
-    # 参考答案路径
+    # Reference answer paths
     train_ref_ans_path: str = ""
     val_ref_ans_path: str = ""
 
@@ -73,11 +73,11 @@ class DeepFinanceJudgeConfig:
 
 
 # =============================================================================
-# 全局辅助函数
+# Global helper functions
 # =============================================================================
 
 def extract_text_content(content) -> str:
-    """统一提取纯文本内容"""
+    """Extract plain text content from various formats."""
     if content is None:
         return ""
     if isinstance(content, str):
@@ -94,16 +94,16 @@ def extract_text_content(content) -> str:
 
 
 # =============================================================================
-# DeepFinance Judge Engine（可复用的评估引擎）
+# DeepFinance Judge Engine (reusable evaluation engine)
 # =============================================================================
 
 class DeepFinanceJudgeEngine:
     """
-    DeepFinance 评估引擎（进程级单例）
-    
-    功能：
-    - 初始化 OpenJudge model 和 graders
-    - 执行评估并返回 (reward, metrics)
+    DeepFinance Evaluation Engine (process-level singleton)
+
+    Features:
+    - Initialize OpenJudge model and graders
+    - Execute evaluation and return (reward, metrics)
     """
     
     _instance: Optional["DeepFinanceJudgeEngine"] = None
@@ -113,10 +113,10 @@ class DeepFinanceJudgeEngine:
     def __init__(self, cfg: DeepFinanceJudgeConfig):
         self.cfg = cfg
         self._model: Optional[OpenAIChatModel] = None
-        self._finance_model: Optional[OpenAIChatModel] = None  # Finance Judge 单独的模型
+        self._finance_model: Optional[OpenAIChatModel] = None  # Separate model for Finance Judge
         self._finance_evaluator: Optional[FinanceCompositionEvaluator] = None
         
-        # 设置权重并归一化
+        # Set weights and normalize
         self.w = {
             "finance": cfg.finance_rm_weight,
             "presentation_quality": cfg.presentation_quality_weight,
@@ -131,11 +131,11 @@ class DeepFinanceJudgeEngine:
         
         self._finance_enabled = (self.w.get("finance", 0) > 0)
         
-        # 加载参考答案
+        # Load reference answers
         self._load_reference_answers()
     
     def _load_reference_answers(self):
-        """加载参考答案"""
+        """Load reference answers."""
         def _load(path, key):
             if path and key not in DeepFinanceJudgeEngine._ref_answers_cache:
                 try:
@@ -150,14 +150,14 @@ class DeepFinanceJudgeEngine:
         _load(self.cfg.val_ref_ans_path, "val")
     
     def _get_reference_data(self, task_id: str) -> Tuple[str, str]:
-        """获取参考答案和领域"""
+        """Get reference answer and domain."""
         cache_key = "val" if task_id.startswith("val_") else "train"
         ans = DeepFinanceJudgeEngine._ref_answers_cache.get(cache_key, {}).get(task_id, "")
         dom = DeepFinanceJudgeEngine._ref_domains_cache.get(cache_key, {}).get(task_id)
         return ans, dom
     
     def _init_model(self) -> OpenAIChatModel:
-        """懒加载 OpenJudge model"""
+        """Lazy-load OpenJudge model."""
         if self._model is None:
             self._model = OpenAIChatModel(
                 model=self.cfg.openjudge_llm,
@@ -167,9 +167,9 @@ class DeepFinanceJudgeEngine:
         return self._model
     
     def _init_finance_model(self) -> OpenAIChatModel:
-        """懒加载 Finance Judge 单独的模型"""
+        """Lazy-load separate Finance Judge model."""
         if self._finance_model is None:
-            # 如果配置了单独的 FINANCE_JUDGE_LLM，则使用它；否则回退到 OPENJUDGE_LLM
+            # Use separate FINANCE_JUDGE_LLM if configured; otherwise fall back to OPENJUDGE_LLM
             model_name = self.cfg.finance_judge_llm if self.cfg.finance_judge_llm else self.cfg.openjudge_llm
             self._finance_model = OpenAIChatModel(
                 model=model_name,
@@ -179,14 +179,14 @@ class DeepFinanceJudgeEngine:
         return self._finance_model
     
     def _init_finance_evaluator(self) -> Optional[FinanceCompositionEvaluator]:
-        """懒加载 FinanceCompositionEvaluator（使用独立的 Finance Judge 模型）"""
+        """Lazy-load FinanceCompositionEvaluator (using separate Finance Judge model)."""
         if self._finance_enabled and self._finance_evaluator is None:
             model = self._init_finance_model()
             self._finance_evaluator = FinanceCompositionEvaluator(model=model)
         return self._finance_evaluator
     
     def _create_grader_configs(self, model: OpenAIChatModel) -> Dict[str, GraderConfig]:
-        """创建 grader 配置"""
+        """Create grader configurations."""
         def extract_user_query(data: Dict) -> str:
             for msg in data.get("messages", []):
                 if msg.get("role") == "user":
@@ -223,29 +223,29 @@ class DeepFinanceJudgeEngine:
         response: Any
     ) -> Tuple[float, Dict[str, float]]:
         """
-        评估单个样本
-        
+        Evaluate a single sample.
+
         Args:
-            task: 任务信息
-            response: workflow 输出的 response
-        
+            task: Task info
+            response: Workflow output response
+
         Returns:
-            (reward, metrics) - reward 值和用于 monitor 的 metrics
+            (reward, metrics) - reward value and metrics for monitoring
         """
         judge_start_time = time.time()
 
-        # 提取任务信息
+        # Extract task info
         task_id = task.get("task_id", "unknown")
         query = task.get("main_query", task.get("query", ""))
         chat_date = task.get("metadata", {}).get("chat_date", datetime.now().strftime("%Y-%m-%d"))
         
-        # 构建对话历史
+        # Build conversation history
         history = self._build_history_from_response(task, response)
         
         if not history:
             return 0.0, {"rewards/final_reward": 0.0, "error": 1.0}
         
-        # 准备 Finance 评估参数
+        # Prepare Finance evaluation params
         ref_ans, domain = self._get_reference_data(task_id)
         assistants = [extract_text_content(m["content"]) for m in history if m.get("role") == "assistant"]
         
@@ -260,10 +260,10 @@ class DeepFinanceJudgeEngine:
         
 
         
-        # 转换为 OpenJudge 格式
+        # Convert to OpenJudge format
         openjudge_sample = self._convert_to_openjudge_format(history, query, task_id, chat_date)
         
-        # 运行评估
+        # Run evaluation
         grading_start_time = time.time()
         grader_results, finance_score = await self._run_evaluation(
             [openjudge_sample], 
@@ -271,13 +271,13 @@ class DeepFinanceJudgeEngine:
         )
         grading_time = time.time() - grading_start_time
         
-        # 提取分数
+        # Extract scores
         grader_scores = self._extract_grader_scores(grader_results)
         
-        # 融合分数
+        # Fuse scores
         fused_reward, contributions = self._fuse_scores(grader_scores, finance_score)
         
-        # 计算惩罚（从 response 获取 tool_stats）
+        # Compute penalty (get tool_stats from response)
         tool_stats = {}
         if isinstance(response, dict):
             metadata = response.get("metadata", {})
@@ -286,11 +286,11 @@ class DeepFinanceJudgeEngine:
             tool_stats = response.metadata.get("tool_stats", {})
         penalty = self._compute_penalty(tool_stats.get("total_calls", 0))
         
-        # 最终 reward
+        # Final reward
         final_reward = fused_reward + penalty
         judge_total_time = time.time() - judge_start_time
 
-        # 构建 metrics
+        # Build metrics
         metrics = build_judge_metrics(
             final_reward=final_reward,
             fused_reward=fused_reward,
@@ -307,8 +307,8 @@ class DeepFinanceJudgeEngine:
         return final_reward, metrics
     
     def _build_history_from_response(self, task: Dict, response: Any) -> List[Dict[str, Any]]:
-        """从 response 构建对话历史"""
-        # 优先从 response 获取 metadata（支持 dict 和对象两种格式）
+        """Build conversation history from response."""
+        # Prefer metadata from response (supports both dict and object formats)
         metadata = None
         if isinstance(response, dict):
             metadata = response.get("metadata")
@@ -320,7 +320,7 @@ class DeepFinanceJudgeEngine:
             if history:
                 return history
         
-        # 回退：从 task 构建最小历史
+        # Fallback: build minimal history from task
         init_messages = task.get("init_messages", [])
         history = []
         
@@ -331,7 +331,7 @@ class DeepFinanceJudgeEngine:
                     "content": m.get("content", "")
                 })
         
-        # 添加 response
+        # Add response
         if response:
             if isinstance(response, dict):
                 content = extract_text_content(response.get("content"))
@@ -348,7 +348,7 @@ class DeepFinanceJudgeEngine:
         task_id: str, 
         chat_date: str
     ) -> Dict[str, Any]:
-        """转换为 OpenJudge 格式"""
+        """Convert to OpenJudge format."""
         messages = []
         for msg in history:
             content = extract_text_content(msg.get("content", ""))
@@ -372,7 +372,7 @@ class DeepFinanceJudgeEngine:
         dataset: List[Dict], 
         finance_eval_params: Optional[Dict] = None
     ) -> Tuple[Dict[str, List], float]:
-        """运行 OpenJudge 评估"""
+        """Run OpenJudge evaluation."""
         grader_results = {}
         finance_score = 0.0
         
@@ -390,7 +390,7 @@ class DeepFinanceJudgeEngine:
         except Exception as e:
             logger.error(f"OpenJudge evaluation failed: {e}")
         
-        # Finance 评估
+        # Finance evaluation
         if finance_eval_params and self._finance_enabled:
             evaluator = self._init_finance_evaluator()
             if evaluator:
@@ -407,7 +407,7 @@ class DeepFinanceJudgeEngine:
         return grader_results, finance_score
     
     def _extract_grader_scores(self, grader_results: Dict[str, List]) -> Dict[str, float]:
-        """提取 grader 分数"""
+        """Extract grader scores."""
         scores = {}
         for grader_name, score_list in grader_results.items():
             if score_list and len(score_list) > 0:
@@ -422,7 +422,7 @@ class DeepFinanceJudgeEngine:
         grader_scores: Dict[str, float], 
         finance_score: float
     ) -> Tuple[float, Dict[str, float]]:
-        """融合分数"""
+        """Fuse scores."""
         contributions = {}
         contributions["rm_contribution"] = self.w.get("finance", 0.0) * finance_score
         
@@ -436,7 +436,7 @@ class DeepFinanceJudgeEngine:
         return fused_reward, contributions
     
     def _compute_penalty(self, tool_calls: int) -> float:
-        """计算工具调用惩罚"""
+        """Compute tool call penalty."""
         if tool_calls == 0:
             return -1.0
         elif tool_calls <= 2:
@@ -445,14 +445,14 @@ class DeepFinanceJudgeEngine:
 
 
 # =============================================================================
-# 全局 Judge Engine 实例（懒加载）
+# Global Judge Engine instance (lazy-loaded)
 # =============================================================================
 
 _JUDGE_ENGINE: Optional[DeepFinanceJudgeEngine] = None
 
 
 def _get_judge_engine() -> DeepFinanceJudgeEngine:
-    """获取 Judge Engine 单例"""
+    """Get Judge Engine singleton."""
     global _JUDGE_ENGINE
     if _JUDGE_ENGINE is None:
         cfg = DeepFinanceJudgeConfig.from_env()
@@ -461,7 +461,7 @@ def _get_judge_engine() -> DeepFinanceJudgeEngine:
 
 
 # =============================================================================
-# AgentScope Tuner 风格的 Judge 函数
+# AgentScope Tuner style Judge function
 # =============================================================================
 
 async def deep_finance_judge(
@@ -470,17 +470,17 @@ async def deep_finance_judge(
     auxiliary_models: Dict[str, ChatModelBase] | None = None,
 ) -> JudgeOutput:
     """
-    DeepFinance Judge 函数（AgentScope Tuner 风格）
-    
+    DeepFinance Judge function (AgentScope Tuner style)
+
     Args:
-        task: 任务信息字典
-        response: workflow 返回的 response
-        auxiliary_models: 辅助模型（可选，未使用）
-    
+        task: Task info dict
+        response: Response from workflow
+        auxiliary_models: Auxiliary models (optional, unused)
+
     Returns:
-        JudgeOutput: 包含 reward 和 metrics
+        JudgeOutput: Contains reward and metrics
     """
-    _ = auxiliary_models  # 当前未使用
+    _ = auxiliary_models  # Currently unused
     
     engine = _get_judge_engine()
     reward, metrics = await engine.evaluate_one(task=task, response=response)

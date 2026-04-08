@@ -1,4 +1,4 @@
-"""Audit Grader Prompt - 引用逻辑审计 (Logic Analyst)"""
+"""Audit Grader Prompt - Citation logic audit (Logic Analyst)"""
 
 # =============================================================================
 # System Prompt (Evidence Logic Analyst)

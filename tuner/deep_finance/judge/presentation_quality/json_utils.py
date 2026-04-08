@@ -80,7 +80,7 @@ def get_note(item: Any) -> str:
         note = ""
     note = "" if note is None else str(note)
     note = note.strip()
-    # 最多给点余量，避免reason爆长
+    # Truncate to avoid overly long reason strings
     return note[:120]
 
 

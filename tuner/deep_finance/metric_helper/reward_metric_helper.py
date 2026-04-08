@@ -24,20 +24,20 @@ def build_judge_metrics(
     judge_total_time: float,
 ) -> Dict[str, float]:
     """
-    构建 judge 输出的 metrics 字典。
-    
+    Build the metrics dict for judge output.
+
     Args:
-        final_reward: 最终奖励
-        fused_reward: 融合奖励
-        penalty: 惩罚值
-        finance_score: 金融评估原始分数
-        contributions: 各维度贡献 {grader_name: contribution, "rm_contribution": xxx}
-        grader_scores: OpenJudge 各 grader 原始分数
-        grading_time: 评分耗时
-        judge_total_time: judge 总耗时
-    
+        final_reward: Final reward value
+        fused_reward: Fused reward value
+        penalty: Penalty value
+        finance_score: Raw finance evaluation score
+        contributions: Per-dimension contributions {grader_name: contribution, "rm_contribution": xxx}
+        grader_scores: Raw scores from each OpenJudge grader
+        grading_time: Time spent on grading
+        judge_total_time: Total judge execution time
+
     Returns:
-        metrics 字典
+        Metrics dict
     """
     metrics: Dict[str, float] = {
         # Top-level rewards
@@ -50,12 +50,12 @@ def build_judge_metrics(
         "rewards/finance/finance_raw": finance_score,
         "rewards/finance/finance_contribution": contributions.get("rm_contribution", 0.0),
         
-        # 时间统计
+        # Time statistics
         "judge_time/grading_time": grading_time,
         "judge_time/total_time": judge_total_time,
     }
     
-    # OpenJudge graders 分数
+    # OpenJudge grader scores
     for grader_name, score in grader_scores.items():
         metrics[f"rewards/openjudge/{grader_name}_raw"] = score
         if grader_name in contributions:

@@ -124,7 +124,7 @@ def _strip_think(text: str) -> str:
     return re.sub(r"<think>.*?</think>\s*", "", text, flags=re.S).strip()
 
 def _normalize_traj(trajectory):
-    # 兼容 [[...]] :contentReference[oaicite:1]{index=1}
+    # Compatible with [[...]] format
     if isinstance(trajectory, list) and trajectory and isinstance(trajectory[0], list):
         return trajectory[0]
     return trajectory
@@ -197,7 +197,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
             if _looks_like_tool_result(raw):
                 evidence.append(f"[Step {idx}] EVIDENCE_TOOL_RESULT:\n{raw}")
             else:
-                # query 之后的用户补充也保留为 evidence（有些系统会把 tool_result 注入到 user）
+                # Additional user context after query is also kept as evidence (some systems inject tool_result into user)
                 if user_query:
                     evidence.append(f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}")
 
@@ -218,35 +218,35 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
 
 class RefJudgeEvaluator:
     """
-    引用规范性评估器
-    
-    使用 LLM 评估报告的引用覆盖率和引用真实性。
+    Citation Compliance Evaluator
+
+    Uses LLM to evaluate citation coverage and truthfulness of reports.
     """
     
     def __init__(self, llm_client):
         """
-        初始化评估器
-        
+        Initialize evaluator.
+
         Args:
-            llm_client: LLMJudgeClient 实例
+            llm_client: LLMJudgeClient instance
         """
         self.llm_client = llm_client
         print("✓ RefJudgeEvaluator: Initialized")
     
     def build_messages(self, conversation_history: List[Dict]) -> List[Dict[str, str]]:
         """
-        从对话历史构建 LLM 评估消息
-        
+        Build LLM evaluation messages from conversation history.
+
         Args:
-            conversation_history: 对话历史 [{"role": "...", "content": "..."}]
-            
+            conversation_history: [{"role": "...", "content": "..."}]
+
         Returns:
-            LLM 消息列表
+            LLM message list
         """
-        print(f"\n[RefJudgeEvaluator] 构建评估消息...")
-        print(f"  - 对话历史轮数: {len(conversation_history)}")
+        print(f"\n[RefJudgeEvaluator] Building evaluation messages...")
+        print(f"  - Conversation history turns: {len(conversation_history)}")
         
-        # 调用现有的 prompt 构建函数
+        # Call the existing prompt construction function
         user_prompt = construct_reward_prompt(conversation_history)
         
         messages = [
@@ -261,44 +261,44 @@ class RefJudgeEvaluator:
     
     def _compute_scores(self, raw_result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        根据 LLM 返回的原始结果计算评分
-        
+        Compute scores from LLM raw results.
+
         Args:
-            raw_result: LLM 返回的 JSON，包含 total_key_facts, cited_key_facts, fake_count 等
-            
+            raw_result: LLM returned JSON containing total_key_facts, cited_key_facts, fake_count, etc.
+
         Returns:
-            包含 citation_coverage_score, grounding_score, final_reward 的字典
+            Dict with citation_coverage_score, grounding_score, final_reward
         """
         total_key_facts = raw_result.get('total_key_facts', 0)
         cited_key_facts = raw_result.get('cited_key_facts', 0)
         fake_count = raw_result.get('fake_count', 0)
 
-        # invalid refs: 结构化/可追溯性问题（来自 prompt 的 invalid_reference_nums）
+        # invalid refs: structural/traceability issues (from prompt's invalid_reference_nums)
         invalid_reference_nums = raw_result.get('invalid_reference_nums', [])
         if not isinstance(invalid_reference_nums, list):
             invalid_reference_nums = []
         invalid_ref_count = len(invalid_reference_nums)
         
-        # 边界情况：没有关键事实，直接返回 0
+        # Edge case: no key facts, return 0 directly
         if total_key_facts == 0:
             citation_coverage_score = 0.0
             grounding_score = 0.0
         else:
-            # coverage: 引用覆盖率
+            # coverage: citation coverage rate
             citation_coverage_score = cited_key_facts / total_key_facts
             
-            # grounding: 引用真实性（已引用中非虚假的比例）
+            # grounding: citation truthfulness (ratio of non-fake among cited)
             if cited_key_facts == 0:
                 grounding_score = 0.0
             else:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
         
-        # 轻量惩罚：存在 invalid refs 会降低 reward（但不改变 cited_key_facts 的统计口径）
-        # 说明：invalid_reference_nums 在 prompt 中已定义为“正文出现过的不合规编号（去重）”。
-        # 这里采用简单、确定性的惩罚：每个 invalid 号扣 0.1，最多扣 0.5。
+        # Light penalty: invalid refs lower the reward (without changing cited_key_facts stats).
+        # Definition: invalid_reference_nums in the prompt is "non-compliant ref nums from the body text (deduplicated)".
+        # Simple deterministic penalty: each invalid ref deducts 0.1, up to 0.5 max.
         invalid_penalty = min(0.1 * invalid_ref_count, 0.5)
 
-        # final_reward: 综合分数（代码计算，权重 0.5:0.5），再叠加 invalid 惩罚
+        # final_reward: composite score (code-computed, weight 0.5:0.5), plus invalid penalty
         final_reward = 0.5 * citation_coverage_score + 0.5 * grounding_score
         final_reward = max(0.0, final_reward - invalid_penalty)
         
@@ -312,30 +312,30 @@ class RefJudgeEvaluator:
     
     async def evaluate_async(self, conversation_history: List[Dict]) -> Dict[str, Any]:
         """
-        异步评估引用规范性
-        
+        Async evaluate citation compliance.
+
         Args:
-            conversation_history: 对话历史
-            
+            conversation_history: Conversation history
+
         Returns:
-            评估结果字典，包含:
-            - citation_coverage_score: 引用覆盖率分数 (0.0-1.0)
-            - grounding_score: 引用真实性分数 (0.0-1.0)
-            - final_reward: 最终奖励分数 (0.0-1.0)
-            - total_key_facts, cited_key_facts, fake_count 等原始字段
+            Evaluation result dict containing:
+            - citation_coverage_score: Citation coverage score (0.0-1.0)
+            - grounding_score: Citation truthfulness score (0.0-1.0)
+            - final_reward: Final reward score (0.0-1.0)
+            - total_key_facts, cited_key_facts, fake_count and other raw fields
         """
-        # print(f"\n开始评估引用规范性...")
+        # print(f"\nStarting citation compliance evaluation...")
         
         messages = self.build_messages(conversation_history)
         raw_result = await self.llm_client.evaluate_async(messages)
         
-        # 计算评分
+        # Compute scores
         scores = self._compute_scores(raw_result)
         
-        # 合并原始结果和计算的评分
+        # Merge raw results and computed scores
         result = {**raw_result, **scores}
         
-        # 确保必要字段存在
+        # Ensure required fields exist
         result.setdefault('total_key_facts', 0)
         result.setdefault('cited_key_facts', 0)
         result.setdefault('missing_count', 0)
@@ -343,7 +343,7 @@ class RefJudgeEvaluator:
         result.setdefault('invalid_reference_nums', [])
         result.setdefault('good_citations', [])
         
-        print(f"  ✓ [RefJudgeEvaluator] 引用规范性评估完成:")
+        print(f"  \u2713 [RefJudgeEvaluator] Citation compliance evaluation complete:")
         print(f"    - total_key_facts: {result['total_key_facts']}")
         print(f"    - cited_key_facts: {result['cited_key_facts']}")
         print(f"    - fake_count: {result['fake_count']}")
@@ -357,7 +357,7 @@ class RefJudgeEvaluator:
     
     def evaluate_sync(self, conversation_history: List[Dict]) -> Dict[str, Any]:
         """
-        同步评估引用规范性
+        Sync evaluate citation compliance.
         """
         import asyncio
         return asyncio.run(self.evaluate_async(conversation_history))

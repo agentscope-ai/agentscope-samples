@@ -1,4 +1,4 @@
-"""Audit Grader - 引用逻辑审计 (OpenJudge logic version)"""
+"""Audit Grader - Citation logic audit (OpenJudge logic version)"""
 from __future__ import annotations
 
 import os
@@ -18,12 +18,12 @@ from .json_utils import strict_load_json, validate_integrity_shape, construct_re
 
 class AuditGrader(BaseGrader):
     """
-    引用逻辑审计 Grader
-    
-    - 输入：traj (完整对话轨迹)
-    - 输出：GraderScore(score, reason)
+    Citation Logic Audit Grader
+
+    - Input: traj (full conversation trajectory)
+    - Output: GraderScore(score, reason)
     - score: integrity_score (Supported / Total)
-    - reason: 审计摘要，包括错误分布和定性总结
+    - reason: Audit summary including error distribution and qualitative summary
     """
 
     def __init__(
@@ -75,21 +75,21 @@ class AuditGrader(BaseGrader):
         **_: Any,
     ) -> GraderScore:
         """
-        入口：必须喂 traj（完整对话轨迹）
+        Entry point: must receive traj (full conversation trajectory)
         
         Args:
-            traj: 对话轨迹，支持以下格式：
-                  - [{"role": ..., "content": ...}, ...] 直接消息列表
-                  - {"messages": [...]} 包含 messages 字段的 dict
-                  - {"traj": [[...]]} 包含 traj 字段的 dict（双重嵌套）
+            traj: Conversation trajectory, supports these formats:
+                  - [{"role": ..., "content": ...}, ...] direct message list
+                  - {"messages": [...]} dict with messages field
+                  - {"traj": [[...]]} dict with traj field (double nested)
         
         Returns:
             GraderScore(name, score, reason)
         """
-        # 1. 提取 messages（兼容多种格式）
+        # 1. Extract messages (compatible with multiple formats)
         if isinstance(traj, dict):
             if "traj" in traj:
-                # 支持 {"traj": [[...]]} 格式
+                # Support {"traj": [[...]]} format
                 traj_list = traj["traj"]
                 if traj_list and isinstance(traj_list[0], list):
                     messages_list = traj_list[0]
@@ -113,8 +113,8 @@ class AuditGrader(BaseGrader):
                 reason="BadInput: empty trajectory",
             )
 
-        # 2. 构建 Prompt
-        # 使用新的 System Prompt 和 User Template
+        # 2. Build Prompt
+        # Use the new System Prompt and User Template
         user_prompt = construct_reward_prompt(messages_list, CITATION_INTEGRITY_USER_TEMPLATE)
         
         messages = [
@@ -122,7 +122,7 @@ class AuditGrader(BaseGrader):
             {"role": "user", "content": user_prompt}
         ]
 
-        # 3. 模型推理
+        # 3. Model inference
         try:
             resp = await self.model.achat(messages)
             raw_text = getattr(resp, "content", str(resp))
@@ -133,7 +133,7 @@ class AuditGrader(BaseGrader):
                 reason=f"ModelCallError: {type(e).__name__}: {e}",
             )
 
-        # 4. JSON 解析与验证
+        # 4. JSON parsing and validation
         obj, jerr = strict_load_json(raw_text)
         if obj is None:
             snippet = str(raw_text)[:200].replace("\n", " ")
@@ -143,7 +143,7 @@ class AuditGrader(BaseGrader):
                 reason=f"ParseError: {jerr}; raw[:200]={snippet}",
             )
 
-        # 使用新的验证逻辑 validate_integrity_shape
+        # Use new validation logic: validate_integrity_shape
         obj, serr = validate_integrity_shape(obj)
         if obj is None:
             snippet = str(raw_text)[:200].replace("\n", " ")
@@ -153,19 +153,19 @@ class AuditGrader(BaseGrader):
                 reason=f"SchemaError: {serr}; raw[:200]={snippet}",
             )
 
-        # 5. 计算分数与生成理由
+        # 5. Compute score and generate reason
         score, reason = self._compute_scores(obj)
         return GraderScore(name=self.name, score=score, reason=reason)
 
     def _compute_scores(self, obj: Dict[str, Any]) -> Tuple[float, str]:
         """
-        基于 audit_trail 和 integrity_score 计算最终结果
+        Compute final result based on audit_trail and integrity_score
         """
-        # 直接获取模型计算的 integrity_score，若缺失则手动计算
+        # Use model output directly; if missing, calculate manually
         audit_trail = obj.get("audit_trail", [])
         total_citations = len(audit_trail)
         
-        # 统计各Verdict数量
+        # Count verdict distribution
         verdict_counts = {
             "Supported": 0,
             "Overstated": 0,
@@ -183,24 +183,24 @@ class AuditGrader(BaseGrader):
         
         supported_count = verdict_counts["Supported"]
         
-        # 优先使用模型输出的 score，如果有误则回退到手动计算
+        # Prefer model's output score; fall back to manual calculation if invalid
         # model_score = obj.get("integrity_score")
         # if isinstance(model_score, (float, int)) and 0.0 <= model_score <= 1.0:
         #     final_score = float(model_score)
         # else:
         final_score = supported_count / total_citations if total_citations > 0 else 0.0
 
-        # 构建 Reason
-        # 格式: Score: 0.80 | Total: 10 | Supp: 8, Over: 1, Hallu: 1 | Summary: ...
+        # Build Reason
+        # Format: Score: 0.80 | Total: 10 | Supp: 8, Over: 1, Hallu: 1 | Summary: ...
         stats_parts = []
         for k, v in verdict_counts.items():
             if v > 0:
-                stats_parts.append(f"{k[:4]}:{v}") # 缩写 Verdict
+                stats_parts.append(f"{k[:4]}:{v}") # Abbreviated verdict
         
         stats_str = ", ".join(stats_parts)
         qualitative = obj.get("qualitative_summary", "No summary provided.")
         
-        # 截取主要错误示例 (如果有)
+        # Extract primary error examples (if any)
         errors = [x for x in audit_trail if x.get("verdict") != "Supported"]
         error_msg = ""
         if errors:

@@ -1,15 +1,15 @@
 """
-工具信息Prompt构建模块
-用于生成清晰、结构化的工具使用说明
+Tool prompt builder module.
+Generates clear, structured tool usage instructions.
 """
 
 def get_tool_prompt_template() -> str:
     """
-    获取工具prompt模板(静态版本)
-    基于实际探测到的19个工具进行配置
-    
+    Get the static tool prompt template.
+    Configured based on the 19 detected tools.
+
     Returns:
-        预定义的工具说明文本
+        Pre-defined tool description text.
     """
     
     return """## 可用工具列表

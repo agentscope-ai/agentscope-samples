@@ -1,4 +1,4 @@
-"""Grounding Grader - 引用规范性评估 (OpenJudge 版本)"""
+"""Grounding Grader - Citation compliance evaluation (OpenJudge version)"""
 from __future__ import annotations
 
 import os
@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderScore
 
-# import path 兼容两种写法
+# Compatible with both import paths
 try:
     from openjudge.models import OpenAIChatModel
 except Exception:  # pragma: no cover
@@ -19,16 +19,16 @@ from .json_utils import strict_load_json, validate_shape, construct_reward_promp
 
 class GroundingGrader(BaseGrader):
     """
-    引用规范性评估 Grader
-    
-    - 输入：traj（完整对话轨迹）
-    - 输出：GraderScore(name, score, reason)
-    - score：综合分数，范围[0,1]
-      - citation_coverage_score: 引用覆盖率（0.5 权重）
-      - grounding_score: 引用真实性（0.5 权重）
-      - invalid_penalty: 无效引用惩罚（最多扣 0.5）
-    - determinism：建议用 temperature=0 + disable thinking
-    - 解析失败：score=0，并在 reason 显示报错
+    Citation Compliance Grader
+
+    - Input: traj (full conversation trajectory)
+    - Output: GraderScore(name, score, reason)
+    - score: composite score in [0,1]
+      - citation_coverage_score: citation coverage (0.5 weight)
+      - grounding_score: citation truthfulness (0.5 weight)
+      - invalid_penalty: penalty for invalid citations (up to 0.5)
+    - determinism: recommend temperature=0 + disable thinking
+    - parse failure: score=0, error shown in reason
     """
 
     def __init__(
@@ -50,8 +50,8 @@ class GroundingGrader(BaseGrader):
         seed: int = 0,
     ) -> OpenAIChatModel:
         """
-        创建默认模型
-        也可以不调用这个工厂，自己在外面 new OpenAIChatModel
+        Create a default model.
+        You may also instantiate OpenAIChatModel directly without this factory.
         """
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         base_url = base_url or os.getenv("OPENAI_BASE_URL")
@@ -86,16 +86,16 @@ class GroundingGrader(BaseGrader):
         **_: Any,
     ) -> GraderScore:
         """
-        入口：必须喂 traj（完整对话轨迹）
+        Entry point: must receive traj (full conversation trajectory)
         
         Args:
-            traj: 对话轨迹，格式为 [{"role": ..., "content": ...}, ...] 
-                  或者 {"messages": [...]} 格式
+            traj: Conversation trajectory, format: [{"role": ..., "content": ...}, ...]
+                  or {"messages": [...]} format
         
         Returns:
             GraderScore(name, score, reason)
         """
-        # 1. 提取 messages（兼容两种格式）
+        # 1. Extract messages (compatible with both formats)
         if isinstance(traj, dict):
             messages_list = traj.get("messages", [])
         elif isinstance(traj, list):
@@ -114,7 +114,7 @@ class GroundingGrader(BaseGrader):
                 reason="BadInput: empty trajectory",
             )
 
-        # 2. 构建 prompt
+        # 2. Build prompt
         user_prompt = construct_reward_prompt(messages_list, GROUNDING_USER_PROMPT_TEMPLATE)
         
         messages = [
@@ -122,7 +122,7 @@ class GroundingGrader(BaseGrader):
             {"role": "user", "content": user_prompt}
         ]
 
-        # 3. 调用模型
+        # 3. Call model
         try:
             resp = await self.model.achat(messages)
             raw_text = getattr(resp, "content", None)
@@ -135,7 +135,7 @@ class GroundingGrader(BaseGrader):
                 reason=f"ModelCallError: {type(e).__name__}: {e}",
             )
 
-        # 4. 解析 JSON
+        # 4. Parse JSON
         obj, jerr = strict_load_json(str(raw_text))
         if obj is None:
             snippet = str(raw_text)[:200].replace("\n", " ")
@@ -154,55 +154,55 @@ class GroundingGrader(BaseGrader):
                 reason=f"SchemaError: {serr}; raw[:200]={snippet}",
             )
 
-        # 5. 计算分数
+        # 5. Compute score
         score, reason = self._compute_scores(obj)
         return GraderScore(name=self.name, score=score, reason=reason)
 
     def _compute_scores(self, obj: Dict[str, Any]) -> Tuple[float, str]:
         """
-        根据 LLM 返回的结果计算评分
-        
+        Compute score from LLM results.
+
         Args:
-            obj: LLM 返回的 JSON，包含 total_key_facts, cited_key_facts, fake_count 等
-            
+            obj: LLM returned JSON containing total_key_facts, cited_key_facts, fake_count, etc.
+
         Returns:
-            (score, reason) 元组
+            (score, reason) tuple
         """
         total_key_facts = obj.get('total_key_facts', 0)
         cited_key_facts = obj.get('cited_key_facts', 0)
         fake_count = obj.get('fake_count', 0)
         missing_count = obj.get('missing_count', 0)
 
-        # invalid refs: 结构化/可追溯性问题
+        # invalid refs: structural/traceability issues
         invalid_reference_nums = obj.get('invalid_reference_nums', [])
         if not isinstance(invalid_reference_nums, list):
             invalid_reference_nums = []
         invalid_ref_count = len(invalid_reference_nums)
         
-        # 边界情况：没有关键事实，直接返回 0
+        # Edge case: no key facts, return 0 directly
         if total_key_facts == 0:
             citation_coverage_score = 0.0
             grounding_score = 0.0
         else:
-            # coverage: 引用覆盖率
+            # coverage: citation coverage rate
             citation_coverage_score = cited_key_facts / total_key_facts
             
-            # grounding: 引用真实性（已引用中非虚假的比例）
+            # grounding: citation truthfulness (ratio of non-fake among cited)
             if cited_key_facts == 0:
                 grounding_score = 0.0
             else:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
         
-        # 轻量惩罚：存在 invalid refs 会降低 reward
-        # 每个 invalid 号扣 0.1，最多扣 0.5
+        # Light penalty: invalid refs lower the reward
+        # Each invalid ref deducts 0.1, up to 0.5 max
         # invalid_penalty = min(0.1 * invalid_ref_count, 0.5)
         invalid_penalty = 0
 
-        # final_reward: 综合分数（权重 0.5:0.5），再叠加 invalid 惩罚
+        # final_reward: composite score (weight 0.5:0.5), plus invalid penalty
         final_reward = 0.5 * citation_coverage_score + 0.5 * grounding_score
         # final_reward = max(0.0, final_reward - invalid_penalty)
         
-        # 构建 reason
+        # Build reason
         good_citations = obj.get('good_citations', [])
         good_str = "; ".join(str(x)[:50] for x in good_citations[:2]) if good_citations else ""
         

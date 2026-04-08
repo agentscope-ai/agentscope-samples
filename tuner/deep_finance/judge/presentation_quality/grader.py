@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderScore
 
-# import path 兼容两种写法（文档里两种都出现过）
+# Compatible with both import paths (both appear in docs)
 try:
     from openjudge.models import OpenAIChatModel
 except Exception:  # pragma: no cover
@@ -26,11 +26,11 @@ from .json_utils import strict_load_json, validate_shape, get_score, get_note
 
 class PresentationQualityGrader(BaseGrader):
     """
-    - 输入：report_content（研究报告文本）
-    - 输出：GraderScore(name, score, reason)
-    - score：8项按1/3/5分制评分，总分归一化到[0,1]（总分/40）
-    - determinism：建议用 temperature=0 + disable thinking 等（见 create_default_model）
-    - 解析失败：score=0，并在 reason 显示报错
+    - Input: report_content (research report text)
+    - Output: GraderScore(name, score, reason)
+    - Score: 8 items rated on 1/3/5 scale, total normalized to [0,1] (total/40)
+    - Determinism: recommend temperature=0 + disable thinking (see create_default_model)
+    - Parse failure: score=0, error shown in reason
     """
 
     def __init__(
@@ -52,15 +52,15 @@ class PresentationQualityGrader(BaseGrader):
         seed: int = 0,
     ) -> OpenAIChatModel:
         """
-        你也可以不调用这个工厂，自己在外面 new OpenAIChatModel。
-        QuickStart 文档确认 OpenAIChatModel 会从 OPENAI_API_KEY/OPENAI_BASE_URL 读取。
+        You may also skip this factory and directly instantiate OpenAIChatModel.
+        QuickStart docs confirm OpenAIChatModel reads from OPENAI_API_KEY/OPENAI_BASE_URL.
         """
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         base_url = base_url or os.getenv("OPENAI_BASE_URL")
 
         extra_body: Dict[str, Any] = {}
         if deterministic:
-            # OpenAI兼容接口常见字段；DashScope/Qwen 常用 enable_thinking
+            # Common fields for OpenAI-compatible APIs; DashScope/Qwen uses enable_thinking
             extra_body.update(
                 {
                     "temperature": 0,
@@ -90,11 +90,11 @@ class PresentationQualityGrader(BaseGrader):
         **_: Any,
     ) -> GraderScore:
         """
-        入口：直接喂 report_content（研究报告文本）
-        - user_query 可选：用于填充 prompt；不提供则用 "(unknown)"
+        Entry point: directly feed report_content (research report text)
+        - user_query is optional: used to fill prompt; defaults to "(unknown)" if not provided
         """
         
-        # DEBUG: 检查传入参数
+        # DEBUG: check input arguments
         import logging
         logger = logging.getLogger("PresentationQualityGrader")
         logger.warning(f"[DEBUG] _aevaluate called")
@@ -106,7 +106,7 @@ class PresentationQualityGrader(BaseGrader):
         
         report = (report_content or "").strip()
         
-        # 清理 markdown 代码块标记
+        # Clean markdown code block markers
         report = self._strip_markdown_fences(report)
         # breakpoint()
         if not report:
@@ -130,7 +130,7 @@ class PresentationQualityGrader(BaseGrader):
             {"role": "user", "content": user_content},
         ]
 
-        # 核心：OpenJudge 的 OpenAIChatModel 支持 await model.achat([...])，并返回 .content
+        # Core: OpenJudge's OpenAIChatModel supports await model.achat([...]) and returns .content
         try:
             resp = await self.model.achat(messages)
             raw_text = getattr(resp, "content", None)
@@ -171,7 +171,7 @@ class PresentationQualityGrader(BaseGrader):
         editorial = obj["editorial"]
         top_fixes = obj.get("top_fixes", [])
 
-        # 8项按1/3/5分制计分（强确定性：完全由Python算）
+        # 8 items scored on 1/3/5 scale (deterministic: computed entirely in Python)
         score_map: Dict[str, int] = {}
         note_map: Dict[str, str] = {}
 
@@ -187,14 +187,14 @@ class PresentationQualityGrader(BaseGrader):
         for k in C_KEYS:
             take(editorial, k)
 
-        # 总分 = 各项得分之和 / 最高可能分 (8*5=40)，归一化到[0,1]
+        # Total = sum of scores / max possible (8*5=40), normalized to [0,1]
         total_score = sum(score_map.get(k, 1) for k in ALL_KEYS)
         max_score = len(ALL_KEYS) * 5  # 8 * 5 = 40
         score = total_score / float(max_score)
 
-        # reason：按分数排序，列出低分项
+        # reason: sorted by score, list low-scoring items
         low_items = [(k, score_map.get(k, 1)) for k in ALL_KEYS if score_map.get(k, 1) < 5]
-        low_items.sort(key=lambda x: x[1])  # 从低到高
+        low_items.sort(key=lambda x: x[1])  # Sort ascending
         low_str = ", ".join(f"{k}={s}({note_map.get(k,'')})" for k, s in low_items[:4])
         fixes_str = " | ".join(str(x) for x in (top_fixes or [])[:3])
 
@@ -211,13 +211,13 @@ class PresentationQualityGrader(BaseGrader):
     @staticmethod
     def _strip_markdown_fences(text: str) -> str:
         """
-        清理 markdown 代码块标记
-        - 移除开头的 ```markdown / ```md / ``` 等
-        - 移除结尾的 ```
+        Strip markdown code block markers.
+        - Remove leading ```markdown / ```md / ``` etc.
+        - Remove trailing ```
         """
         text = text.strip()
-        # 移除开头的 ```xxx
+        # Remove leading ```xxx
         text = re.sub(r'^```(?:markdown|md)?\s*\n?', '', text, flags=re.IGNORECASE)
-        # 移除结尾的 ```
+        # Remove trailing ```
         text = re.sub(r'\n?```\s*$', '', text)
         return text.strip()

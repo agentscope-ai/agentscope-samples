@@ -1,148 +1,187 @@
-# DeepFinance: 基于 AgentScope Tuner 的金融深度研究 Agent
+# Training Financial Deep Research Agent with RL using AgentScope-Tuner
 
-## 概述
+## Overview
 
-DeepFinance 是一个基于 **AgentScope Tuner** 框架构建的金融深度研究 Agent 强化学习训练方案。其核心目标是：通过 GRPO（Group Relative Policy Optimization）强化学习算法，训练大语言模型（LLM）自主调用金融工具、收集多源数据、进行交叉验证，并最终生成结构化、有据可查的专业投资研究报告。
+DeepFinance is a reinforcement learning training framework for financial deep research agents. Instead of relying on human-annotated "gold answers", it drives the model to autonomously explore optimal research strategies through a **multi-dimensional reward system** (evidence traceability × analytical sufficiency × readability).
 
-与传统 SFT 微调不同，DeepFinance 不依赖人工标注的「标准回答」来监督训练，而是设计了一套 **多维度奖励体系** 作为 RL 训练信号。借助 AgentScope Tuner 强大的分布式调度能力，模型在「写报告」的过程中自行探索最优策略，并通过 5 个正交维度的打分反馈来持续改进。
+## Task Setting
 
-**训练闭环**：
+### Agent Goal
 
-```plain
-金融问题 → Agent 调用工具收集数据 → 生成研究报告 → 多维度 Judge 评分 → 经验回传 → GRPO 策略更新 → 下一轮生成
-```
+Given a financial research question (stock analysis / industry research / event interpretation / macro analysis / stock screening), the agent must:
+- Call financial tools to collect real-world data
+- Generate a Markdown research report with academic-style citations
+- End the report with the `[TASK_COMPLETED]` marker
 
------
+### Agent Type
 
-## 核心架构 (Pipeline)
+The agent is implemented as a **ReActAgent**, following a two-phase deep research methodology (defined in `prompt/finance_analyst_prompt.md`):
 
-DeepFinance 现已全面迁移至 **AgentScope Tuner**，实现了推理采样（Rollout）、奖励计算（Judge）和模型更新（Trainer）的分布式解耦，通过 Ray 极大提升了多机多卡的吞吐效率。
+**Phase 1: Outline First, Then Investigate**
+1. Identify the query type
+2. **Output a research outline first** (section headings + key questions per section) — no tool calls at this stage
+3. Investigate section by section, summarizing after each round of tool calls
 
-整个训练流水线由以下核心模块组成：
+**Phase 2: Deep Analysis and Report Generation**
+1. Generate a Markdown-format research report based on real data
+2. If evidence gaps are found during writing, allow 1–2 additional rounds of tool calls
+3. Append `[TASK_COMPLETED]` at the end of the report
 
-```plain
-┌─────────────────────────────────────────────────────────────┐
-│                  AgentScope Tuner 训练框架                   │
-│                                                             │
-│  ┌──────────────┐    ┌──────────────────────┐               │
-│  │  Explorer    │───>│  Workflow (ReAct)    │               │
-│  │ (分布式 Rollout)│   │  调用 EnvService 交互  │               │
-│  └──────┬───────┘    └──────────────────────┘               │
-│         │                                                   │
-│         v                                                   │
-│  ┌──────────────┐    ┌──────────────────────┐               │
-│  │    Judge     │───>│ Finance + OpenJudge  │               │
-│  │ (多维度打分)   │   │ RM/呈现/事实/审计/EBTU │               │
-│  └──────┬───────┘    └──────────────────────┘               │
-│         │                                                   │
-│         v                                                   │
-│  ┌──────────────┐    ┌──────────────────────┐               │
-│  │ Experience   │───>│       Trainer        │               │
-│  │ Buffer       │    │ (GRPO 多机多卡优化)    │               │
-│  └──────────────┘    └──────────┬───────────┘               │
-│                                 │                           │
-│  ┌──────────────┐               │                           │
-│  │ Synchronizer │<──────────────┘                           │
-│  │ (动态模型同步) │                                           │
-│  └──────────────┘                                           │
-└─────────────────────────────────────────────────────────────┘
-```
+> Why "plan first, then execute"? Letting the model freely explore in a complex tool environment typically leads not to "failing to call tools", but to "failing to form a complete research process" — the model grabs one piece of data and immediately starts local analysis, resulting in a loosely structured report. Requiring an outline first helps develop a stable research workflow and reduces ineffective exploration.
 
------
+### Tool Environment
 
-## Workflow 设计
+The agent communicates with the [Finance MCP](https://github.com/flowllm-ai/finance-mcp) service via MCP (Model Context Protocol), using **19 financial tools** (defined in `prompt/tool_prompt_builder.py`):
+- **Entity & Computation**: entity extraction, A-share historical price calculation
+- **General Capabilities**: DashScope search, Python/Shell code execution
+- **THS Specialized Data**: company fundamentals, shareholders, financials, earnings forecasts, news & announcements, institutional holdings, and 13 other specialized queries
 
-### 两阶段深度研究流程
+**Tool Call Conventions:**
+- Up to **3 tools** per call, using multi-round progressive investigation
+- Summarize after each round of tool calls before deciding the next investigation direction
 
-Agent 的 System Prompt 要求遵循两阶段研究方法：
+### Reward Design
 
-**第一阶段：先大纲后调研**
-1. 理解用户问题类型（个股分析/行业研究/事件解读/宏观分析/股票检索）
-2. **先输出研究大纲**（一级/二级标题 + 每节的 Key Questions），此阶段不调用工具
-3. 按大纲逐段调研，每轮调用工具后做小结
+The reward is split into **1 core objective + 3 constraints**:
 
-**第二阶段：深度分析与报告生成**
-1. 当数据充分后，基于真实数据生成 Markdown 格式研究报告
-2. 写作中发现证据不足时允许追加 1-2 轮工具调用补充取证
-3. 报告末尾添加 `[TASK_COMPLETED]` 标记
-
-### 引用规范
-Agent 被要求使用学术论文风格的引用标注：
-* 所有关键事实句句末必须添加引用编号 `[n]`
-* 报告末尾必须包含 `## References` 小节
-* 引用必须可追溯到实际工具返回的数据，禁止伪造
-
------
-
-## 工具体系
-
-DeepFinance 集成了 **19 个金融工具**，通过 MCP（Model Context Protocol）协议与 EnvService 交互，覆盖金融研究的完整数据需求。工具类别包括：
-* **实体与计算**：提取实体、A股历史股价计算
-* **通用能力**：Dashscope 搜索、Python/Shell 代码执行
-* **同花顺专项数据**：公司基本面、股东、财务、盈利预测、新闻公告、主力持仓等 13 项专项查询
-
-**工具调用规范：**
-* 每次最多调用 **3 个工具**，采用多轮次渐进式调研
-* Agent 必须先搜索确认信息，再进行深度查询
-* 每轮工具调用后先做小结，再决定下一步调研方向
-
------
-
-## 奖励设计（Reward Design）
-
-我们在 `deep_finance_judge.py` 中设计了 **5 个正交维度** 的评分器（Grader），通过独立的 Judge 引擎并发评估，最终计算得出 `JudgeOutput`。
-
-### 5 个评分维度总览
-
-| 维度 | 名称 | 评估对象 | 核心问题 |
+| Role | Dimension | Code Module | Core Question |
 | :--- | :--- | :--- | :--- |
-| **分析充分性** | RM Gallery | 报告整体质量 | 分析是否充分？逻辑是否合理？ |
-| **呈现质量** | PresentationQuality | 报告排版与结构 | 读者体验好不好？信息是否易获取？ |
-| **引用规范性** | Grounding | 引用的覆盖与真实性 | 关键事实是否都有引用？引用是否真实？ |
-| **引用逻辑审计** | Audit | 引用的逻辑蕴含关系 | 引用是否真正支撑了对应的陈述？有没有夸大或捏造？ |
-| **可追溯性审计** | EBTU | 证据优先可追溯性 | 报告生成的内容是否能完美追溯到工具返回的底层证据？ |
+| **Core** | Analytical Sufficiency (RM) | `judge/finance/` | Is the analysis thorough? Is the logic sound? |
+| Constraint | Presentation Quality | `judge/presentation_quality/` | Is information easy to access? Good reader experience? |
+| Constraint | Citation Grounding | `judge/grounding/` | Are key facts cited? Are citations real? |
+| Constraint | Citation Audit | `judge/audit/` | Do citations truly support the claims? |
 
-**默认权重配置（可在 shell 脚本中调整）：**
+**Scoring (Extract First, Then Score)**: The LLM first extracts structured information from the report (citations, evidence relationships, etc.), then Python rules compute the scores. For example, the Audit grader only requires the LLM to classify each citation as Supported / Overstated / Contradicted / Hallucinated / Irrelevant, and the final score is computed by rule-based code.
+
+**Tool Call Penalty** (defined in `deep_finance_judge.py`):
+
+| Tool Calls | Penalty |
+| :--- | :--- |
+| 0 calls | -1.0 |
+| 1–2 calls | -0.5 |
+| ≥ 3 calls | 0.0 (no penalty) |
+
+**Default Weights** (configurable in `deepfinance_tuner.sh`):
 ```bash
-RM_WEIGHT=0.5                        # 分析充分性
-PRESENTATION_QUALITY_WEIGHT=0.25     # 呈现质量
-GROUNDING_WEIGHT=0.1                 # 引用规范性
-AUDIT_WEIGHT=0.2                     # 引用逻辑审计
-EBTU_WEIGHT=0.0                      # EBTU 证据优先可追溯性审计
+RM_WEIGHT=0.5                        # Analytical sufficiency (core objective)
+PRESENTATION_QUALITY_WEIGHT=0.2      # Presentation quality
+GROUNDING_WEIGHT=0.1                 # Citation grounding
+AUDIT_WEIGHT=0.2                     # Citation audit
 ```
-*(注：此外还包含针对零工具调用的硬性规则惩罚)*
 
------
 
-## Quick Start
+## Code Implementation
 
-### 1. 环境准备
+### High-Level Overview
 
-安装 AgentScope 及相关依赖：
+The implementation consists of three main components:
+1. **Workflow** (`run_deep_finance`): ReActAgent + Finance MCP tool interaction loop
+2. **Judge** (`deep_finance_judge`): Multi-dimensional evaluation engine, combining OpenJudge + rule-based scoring
+3. **Entry** (`main.py`): Calls `tune()` to launch training
+
+### Agent Workflow
+
+`run_deep_finance` implements the agent–tool interaction loop:
+
+```python
+async def run_deep_finance(
+    task: Dict[str, Any],
+    model: OpenAIChatModel,
+    auxiliary_models: Dict[str, OpenAIChatModel] | None = None,
+) -> WorkflowOutput:
+    # 1. Extract system prompt and user query
+    sys_prompt, user_query = _extract_sys_and_user(task)
+
+    # 2. Get Finance MCP toolkit (process-local singleton, lazily loaded)
+    toolkit = await get_finance_mcp_toolkit()
+
+    # 3. Create ReActAgent
+    agent = ReActAgent(
+        name="deep_finance_react",
+        sys_prompt=sys_prompt,
+        model=model,
+        enable_meta_tool=False,
+        formatter=OpenAIChatFormatter(),
+        toolkit=toolkit,
+    )
+
+    # 4. Execute research task
+    response = await agent.reply(msg=Msg("user", user_query, role="user"))
+
+    # 5. Extract tool call statistics
+    tool_stats = await extract_tool_stats_from_agent(agent, total_time)
+    metrics = compute_single_tool_metrics(tool_stats)
+
+    return WorkflowOutput(response=response_dict, metrics=metrics)
+```
+
+**Key Features:**
+- MCP Toolkit is lazily loaded as a singleton per worker process, with built-in jitter to prevent thundering herd
+- System prompt is dynamically generated from `prompt/finance_analyst_prompt.md` (injecting current date and tool list)
+
+### Judge Function
+
+`deep_finance_judge` uses `DeepFinanceJudgeEngine` for multi-dimensional evaluation:
+
+```python
+async def deep_finance_judge(
+    task: Dict[str, Any],
+    response: Any,
+    auxiliary_models: Dict[str, ChatModelBase] | None = None,
+) -> JudgeOutput:
+    engine = _get_judge_engine()
+    reward, metrics = await engine.evaluate_one(task=task, response=response)
+    return JudgeOutput(reward=reward, metrics=metrics)
+```
+
+Evaluation flow:
+1. Build conversation history from response, convert to OpenJudge format
+2. Run multiple graders in parallel (Presentation Quality / Citation Grounding / Citation Audit)
+3. Run Finance RM (pairwise evaluation using a dedicated stronger model)
+4. Fuse scores + tool call penalty → final reward
+
+### Launch Training with `tune()`
+
+```python
+from agentscope.tuner import tune
+
+tune(
+    workflow_func=run_deep_finance,
+    judge_func=deep_finance_judge,
+    config_path="config_template.yaml",
+)
+```
+
+For training configuration, refer to [config_template.yaml](./config_template.yaml). For full configuration details, see the [Trinity-RFT Configuration Guide](https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/trinity_configs.html).
+
+## How to Run
+
+### Dependencies
+
 ```bash
-# 建议使用 conda 或 uv 管理虚拟环境
+# Recommended: use conda or uv to manage virtual environments
 conda create -n tune_example python=3.11
 conda activate tune_example
 
-# 安装基础依赖
+# Install core dependencies
 pip install agentscope vllm ray wandb
 
-# 安装 OpenJudge
+# Install OpenJudge
 git clone https://github.com/agentscope-ai/OpenJudge.git
 cd OpenJudge
 pip install -e .
 ```
 
-### 2. 安装启动 Finance MCP 服务
+### Step 1: Install and Start Finance MCP Service
 
-Finance MCP 提供金融研究相关的工具集（搜索、爬虫、同花顺数据等），DeepFinance 需要通过该服务获取金融数据。
+Finance MCP provides the financial tool suite (search, web crawling, THS data, etc.).
 
-**安装：**
+**Install:**
 ```bash
 pip install finance-mcp
 ```
 
-**启动服务（SSE 模式）：**
+**Start the service (SSE mode):**
 ```bash
 finance-mcp \
   config=default,ths,crawl \
@@ -151,64 +190,84 @@ finance-mcp \
   mcp.port=8040
 ```
 
-启动后服务地址为：`http://<服务器IP>:8040/sse`（本地使用 `127.0.0.1`，远程访问需替换为服务器实际 IP）
+The service will be available at: `http://<server_IP>:8040/sse` (use `127.0.0.1` for local, replace with actual IP for remote access)
 
-**所需 API Keys（按需配置，添加到 `.env` 文件）：**
+**Required API Keys (configure as needed in `.env`):**
 
-| 变量名 | 用途 |
-|--------|------|
-| `DASHSCOPE_API_KEY` | DashScope 搜索 |
-| `TUSHARE_API_TOKEN` | A股历史数据 |
-| `TAVILY_API_KEY` | Tavily 搜索（可选） |
+| Variable | Purpose |
+|----------|---------|
+| `DASHSCOPE_API_KEY` | DashScope search |
+| `TUSHARE_API_TOKEN` | China A-share historical data |
+| `TAVILY_API_KEY` | Tavily search (optional) |
 
-### 3. 准备环境变量
+### Step 2: Configure Environment Variables
 
-复制一份`tuner/deep_finance/.env.example`配置文件模板并重命名为 `.env`，将其放置在项目根目录下：
+Copy `tuner/deep_finance/.env.example`, rename it to `.env`, and place it in the project root:
 
 ```bash
 # ==================== .env ====================
-# API keys (用于 Judge 评分与外部工具)
-OPENJUDGE_API_KEY="sk-xxx" 
+# API keys (for Judge scoring and external tools)
+OPENJUDGE_API_KEY="sk-xxx"
 OPENJUDGE_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-# 基础模型与环境路径
+# Base model and environment paths
 MODEL_PATH="/path/to/base_model"
 CONDA_PATH="/path/to/conda/conda.sh"
 CONDA_ENV="tune_example"
 
-# 数据与参考答案路径
+# Data and reference answer paths
 DATA_PATH="/path/to/train_data_dir"
 TRAIN_REF_ANS_PATH="/path/to/train_reference_answer.json"
 VAL_REF_ANS_PATH="/path/to/val_reference_answer.json"
 
-# 集群配置 (如果是单机，WORLD_SIZE 设为 1)
+# Cluster config (set WORLD_SIZE to 1 for single-machine)
 WORLD_SIZE=1
 MASTER_ADDR="127.0.0.1"
 
-# Finance MCP 服务地址
+# Finance MCP service URL
 FINANCE_MCP_URL="http://127.0.0.1:8040/sse"
 ```
 
-### 4. 一键启动训练
+### Step 3: Launch Training
 
-无需手动修改 Python 代码或 YAML 文件。我们的启动脚本 `deepfinance_tuner.sh` 会根据环境变量和脚本内的设定，**动态生成** `config_template.yaml` 供 AgentScope Tuner 消费，并自动拉起 Ray 集群。
+No need to manually edit Python or YAML files. The launch script `deepfinance_tuner.sh` dynamically generates `config_template.yaml` and automatically starts the Ray cluster.
 
 ```bash
-# 直接运行启动脚本
 bash deepfinance_tuner.sh
 ```
 
-**核心训练参数对照表（可在 `deepfinance_tuner.sh` 中修改）：**
+**Key training parameters (configurable in `deepfinance_tuner.sh`):**
 
-| 参数名 (Shell) | 对应 Tuner 参数 | 默认值 | 说明 |
+| Shell Parameter | Tuner Parameter | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `GROUP_SIZE` | `repeat_times` | 4 | 每个 query rollout 的并行采样次数 |
-| `MAX_ENV_STEPS` | `max_env_steps` | 10 | Agent 与环境交互的最大轮数 |
-| `BATCH_SIZE` | `batch_size` | 64 | 全局 Batch Size |
-| `OPENJUDGE_LLM` | `openjudge_llm` | qwen-flash | OpenJudge 评分使用的通用模型 |
-| `FINANCE_JUDGE_LLM` | `finance_judge_llm` | qwen-max | 专门用于评价金融分析深度的强模型 |
-| `ENGINE_NUM` | `engine_num` | Node // 2 | vLLM 异步推理引擎的实例数 |
-| `GPU_PER_NODE` | `gpu_per_node` | 8 | 单节点 GPU 数量 |
+| `GROUP_SIZE` | `repeat_times` | 4 | Parallel rollout samples per query |
+| `MAX_ENV_STEPS` | `max_env_steps` | 10 | Max agent-environment interaction rounds |
+| `BATCH_SIZE` | `batch_size` | 64 | Global batch size |
+| `OPENJUDGE_LLM` | `openjudge_llm` | qwen-flash | General model for OpenJudge scoring |
+| `FINANCE_JUDGE_LLM` | `finance_judge_llm` | qwen-max | Stronger model for financial analysis depth evaluation |
+| `ENGINE_NUM` | `engine_num` | Node // 2 | Number of vLLM async inference engines |
+| `GPU_PER_NODE` | `gpu_per_node` | 8 | GPUs per node |
 
------
+## Code Structure
 
+```
+deep_finance/
+├── main.py                          # Entry: defines workflow and judge functions
+├── deep_finance_judge.py            # Judge engine: multi-grader fusion + reward computation
+├── config_template.yaml             # Tuner config template (dynamically generated by shell script)
+├── deepfinance_tuner.sh             # Multi-node distributed launch script
+├── deepfinance_tuner_single.sh      # Single-machine launch script
+├── .env.example                     # Environment variable template
+├── judge/
+│   ├── finance/                     # RM: domain-routed pairwise evaluation
+│   ├── presentation_quality/        # Presentation: 8-dimension rule-based scoring
+│   ├── grounding/                   # Grounding: coverage + authenticity
+│   ├── audit/                       # Audit: 5-level verdict classification
+│   └── traj_adapter.py              # Trajectory format normalization
+├── metric_helper/
+│   ├── reward_metric_helper.py      # Reward metrics aggregation
+│   └── tool_metric_helper.py        # Tool call statistics
+└── prompt/
+    ├── finance_analyst_prompt.md     # Agent system prompt (two-phase research flow)
+    └── tool_prompt_builder.py        # Tool documentation generator (19 financial tools)
+```
