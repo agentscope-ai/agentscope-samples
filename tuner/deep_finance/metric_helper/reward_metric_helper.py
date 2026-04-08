@@ -31,7 +31,8 @@ def build_judge_metrics(
         fused_reward: Fused reward value
         penalty: Penalty value
         finance_score: Raw finance evaluation score
-        contributions: Per-dimension contributions {grader_name: contribution, "rm_contribution": xxx}
+        contributions: Per-dimension contributions
+            {grader_name: contribution, "rm_contribution": xxx}
         grader_scores: Raw scores from each OpenJudge grader
         grading_time: Time spent on grading
         judge_total_time: Total judge execution time

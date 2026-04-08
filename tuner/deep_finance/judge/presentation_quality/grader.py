@@ -97,12 +97,27 @@ class PresentationQualityGrader(BaseGrader):
         # DEBUG: check input arguments
         import logging
         logger = logging.getLogger("PresentationQualityGrader")
-        logger.warning(f"[DEBUG] _aevaluate called")
-        logger.warning(f"[DEBUG] report_content type: {type(report_content)}")
-        logger.warning(f"[DEBUG] report_content is None: {report_content is None}")
-        logger.warning(f"[DEBUG] report_content length: {len(report_content) if report_content else 0}")
-        logger.warning(f"[DEBUG] report_content preview (first 500 chars): {(report_content or '')[:500]}")
-        logger.warning(f"[DEBUG] user_query: {(user_query or '')[:200]}")
+        logger.warning("[DEBUG] _aevaluate called")
+        logger.warning(
+            "[DEBUG] report_content type: %s",
+            type(report_content),
+        )
+        logger.warning(
+            "[DEBUG] report_content is None: %s",
+            report_content is None,
+        )
+        logger.warning(
+            "[DEBUG] report_content length: %s",
+            len(report_content) if report_content else 0,
+        )
+        logger.warning(
+            "[DEBUG] report_content preview (first 500 chars):"
+            " %s", (report_content or '')[:500],
+        )
+        logger.warning(
+            "[DEBUG] user_query: %s",
+            (user_query or '')[:200],
+        )
         
         report = (report_content or "").strip()
         
@@ -111,7 +126,11 @@ class PresentationQualityGrader(BaseGrader):
         # breakpoint()
         if not report:
             print("Empty report_content")
-            logger.warning(f"[DEBUG] EMPTY report after strip! original was: {(report_content or '')[:200]}")
+            logger.warning(
+                "[DEBUG] EMPTY report after strip!"
+                " original was: %s",
+                (report_content or '')[:200],
+            )
             return GraderScore(
                 name=self.name,
                 score=0.0,

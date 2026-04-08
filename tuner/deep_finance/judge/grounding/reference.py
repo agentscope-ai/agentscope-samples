@@ -100,7 +100,6 @@ GROUNDING_SYSTEM_PROMPT = """你是一位“引用审计员”，负责审计金
 
 
 
-import json
 import re
 from typing import Dict, Any, List
 
@@ -197,7 +196,8 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
             if _looks_like_tool_result(raw):
                 evidence.append(f"[Step {idx}] EVIDENCE_TOOL_RESULT:\n{raw}")
             else:
-                # Additional user context after query is also kept as evidence (some systems inject tool_result into user)
+                # Additional user context after query is also
+                # kept as evidence (some inject tool_result into user)
                 if user_query:
                     evidence.append(f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}")
 
@@ -243,7 +243,7 @@ class RefJudgeEvaluator:
         Returns:
             LLM message list
         """
-        print(f"\n[RefJudgeEvaluator] Building evaluation messages...")
+        print("\n[RefJudgeEvaluator] Building evaluation messages...")
         print(f"  - Conversation history turns: {len(conversation_history)}")
         
         # Call the existing prompt construction function
@@ -264,7 +264,8 @@ class RefJudgeEvaluator:
         Compute scores from LLM raw results.
 
         Args:
-            raw_result: LLM returned JSON containing total_key_facts, cited_key_facts, fake_count, etc.
+            raw_result: LLM returned JSON containing
+                total_key_facts, cited_key_facts, fake_count, etc.
 
         Returns:
             Dict with citation_coverage_score, grounding_score, final_reward
@@ -294,7 +295,8 @@ class RefJudgeEvaluator:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
         
         # Light penalty: invalid refs lower the reward (without changing cited_key_facts stats).
-        # Definition: invalid_reference_nums in the prompt is "non-compliant ref nums from the body text (deduplicated)".
+        # Definition: invalid_reference_nums in the prompt is
+        # "non-compliant ref nums from the body text (deduplicated)".
         # Simple deterministic penalty: each invalid ref deducts 0.1, up to 0.5 max.
         invalid_penalty = min(0.1 * invalid_ref_count, 0.5)
 

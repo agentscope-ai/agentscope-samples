@@ -35,11 +35,7 @@ from typing import Dict, Any, Optional
 
 from agentscope.tuner import (
     tune,
-    DatasetConfig,
     WorkflowOutput,
-    JudgeOutput,
-    TunerModelConfig,
-    AlgorithmConfig,
 )
 from agentscope.agent import ReActAgent
 from agentscope.model import OpenAIChatModel
@@ -49,7 +45,10 @@ from agentscope.mcp import HttpStatelessClient
 from agentscope.message import Msg
 
 from deep_finance_judge import deep_finance_judge
-from metric_helper.tool_metric_helper import extract_tool_stats_from_agent, compute_single_tool_metrics
+from metric_helper.tool_metric_helper import (
+    extract_tool_stats_from_agent,
+    compute_single_tool_metrics,
+)
 from prompt.tool_prompt_builder import get_tool_prompt_template
 
 
@@ -60,7 +59,7 @@ _FINANCE_MCP_TOOLKIT: Optional[Toolkit] = None
 _FINANCE_MCP_TOOLKIT_LOCK: asyncio.Lock = asyncio.Lock()
 
 
-async def get_finance_mcp_toolkit() -> Toolkit:
+async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-statements
     """Create (once per process) and return a Toolkit backed by the finance-mcp MCP server."""
     global _FINANCE_MCP_TOOLKIT
     
@@ -75,7 +74,10 @@ async def get_finance_mcp_toolkit() -> Toolkit:
         logger.addHandler(handler)
     
     pid = os.getpid()
-    logger.debug("[PID:%d] get_finance_mcp_toolkit called, cached=%s", pid, _FINANCE_MCP_TOOLKIT is not None)
+    logger.debug(
+        "[PID:%d] get_finance_mcp_toolkit called,"
+        " cached=%s", pid, _FINANCE_MCP_TOOLKIT is not None,
+    )
     
     if _FINANCE_MCP_TOOLKIT is not None:
         logger.debug("[PID:%d] Returning cached toolkit", pid)
@@ -101,8 +103,13 @@ async def get_finance_mcp_toolkit() -> Toolkit:
         sse_read_timeout_s = 1000
         max_retries = int(os.getenv("FINANCE_MCP_INIT_MAX_RETRIES", "5"))
 
-        logger.info("[PID:%d] MCP config: transport=%s, url=%s, timeout=%d, sse_read_timeout=%d, max_retries=%d",
-                    pid, transport, url, timeout_s, sse_read_timeout_s, max_retries)
+        logger.info(
+            "[PID:%d] MCP config: transport=%s, url=%s,"
+            " timeout=%d, sse_read_timeout=%d,"
+            " max_retries=%d",
+            pid, transport, url, timeout_s,
+            sse_read_timeout_s, max_retries,
+        )
 
         headers: Dict[str, str] = {}
         auth_token = os.getenv("FINANCE_MCP_AUTH_TOKEN")
@@ -114,7 +121,10 @@ async def get_finance_mcp_toolkit() -> Toolkit:
         # Create tool group before registering MCP client (required for non-"basic" group names)
         toolkit.create_tool_group(
             group_name="finance-mcp",
-            description="Finance MCP tools for stock analysis, financial data retrieval, and market research",
+            description=(
+                "Finance MCP tools for stock analysis,"
+                " financial data retrieval, and market research"
+            ),
             active=True,  # Make it active so tools are included in JSON schema
         )
         logger.debug("[PID:%d] Created tool group 'finance-mcp'", pid)
@@ -135,16 +145,29 @@ async def get_finance_mcp_toolkit() -> Toolkit:
                 timeout=timeout_s,
                 sse_read_timeout=sse_read_timeout_s,
             )
-            logger.debug("[PID:%d] HttpStatelessClient created successfully (with timeout args)", pid)
+            logger.debug(
+                "[PID:%d] HttpStatelessClient created"
+                " successfully (with timeout args)", pid,
+            )
         except TypeError as te:
-            logger.warning("[PID:%d] HttpStatelessClient TypeError (fallback without timeout): %s", pid, te)
+            logger.warning(
+                "[PID:%d] HttpStatelessClient TypeError"
+                " (fallback without timeout): %s", pid, te,
+            )
             client = HttpStatelessClient(**client_kwargs)
-            logger.debug("[PID:%d] HttpStatelessClient created successfully (without timeout args)", pid)
+            logger.debug(
+                "[PID:%d] HttpStatelessClient created"
+                " successfully (without timeout args)", pid,
+            )
 
         last_err: Optional[Exception] = None
         for attempt in range(1, max_retries + 1):
             try:
-                logger.debug("[PID:%d] Attempt %d/%d: Calling client.list_tools()...", pid, attempt, max_retries)
+                logger.debug(
+                    "[PID:%d] Attempt %d/%d: Calling"
+                    " client.list_tools()...",
+                    pid, attempt, max_retries,
+                )
                 
                 # First test list_tools directly
                 tools_list = await client.list_tools()
@@ -152,16 +175,28 @@ async def get_finance_mcp_toolkit() -> Toolkit:
                             pid, attempt, len(tools_list), [t.name for t in tools_list])
                 
                 if len(tools_list) == 0:
-                    raise ValueError("list_tools returned empty list - MCP server may not have tools registered")
+                    raise ValueError(
+                        "list_tools returned empty list"
+                        " - MCP server may not have tools registered"
+                    )
                 
-                logger.debug("[PID:%d] Attempt %d: Calling toolkit.register_mcp_client()...", pid, attempt)
+                logger.debug(
+                    "[PID:%d] Attempt %d: Calling"
+                    " toolkit.register_mcp_client()...",
+                    pid, attempt,
+                )
                 await toolkit.register_mcp_client(client, group_name="finance-mcp")
                 
                 _FINANCE_MCP_TOOLKIT = toolkit
                 schemas = toolkit.get_json_schemas()
                 logger.info("[PID:%d] finance-mcp toolkit ready: transport=%s url=%s tools=%d",
                             pid, transport, url, len(schemas))
-                logger.debug("[PID:%d] Registered tool schemas: %s", pid, [s.get('function', {}).get('name') for s in schemas])
+                logger.debug(
+                    "[PID:%d] Registered tool schemas: %s",
+                    pid,
+                    [s.get('function', {}).get('name')
+                     for s in schemas],
+                )
                 return toolkit
                 
             except Exception as e:
@@ -169,15 +204,25 @@ async def get_finance_mcp_toolkit() -> Toolkit:
                 last_err = e
                 backoff = min(2 ** (attempt - 1), 16)
                 sleep_s = backoff + random.uniform(0, 0.5)
-                logger.warning("[PID:%d] Attempt %d/%d FAILED: %s", pid, attempt, max_retries, repr(e))
+                logger.warning(
+                    "[PID:%d] Attempt %d/%d FAILED: %s",
+                    pid, attempt, max_retries, repr(e),
+                )
                 logger.debug("[PID:%d] Full traceback:\n%s", pid, traceback.format_exc())
                 if attempt < max_retries:
                     logger.debug("[PID:%d] Retrying in %.1fs...", pid, sleep_s)
                     await asyncio.sleep(sleep_s)
 
         # If we got here, init failed after retries.
-        logger.error("[PID:%d] All %d attempts failed. Last error: %s", pid, max_retries, repr(last_err))
-        raise RuntimeError(f"Failed to initialize finance-mcp toolkit for {url}: {last_err!r}") from last_err
+        logger.error(
+            "[PID:%d] All %d attempts failed."
+            " Last error: %s",
+            pid, max_retries, repr(last_err),
+        )
+        raise RuntimeError(
+            f"Failed to initialize finance-mcp toolkit"
+            f" for {url}: {last_err!r}",
+        ) from last_err
 
 # Prompt template cache
 _PROMPT_TEMPLATE_CACHE: str | None = None
@@ -315,7 +360,11 @@ async def run_deep_finance(
             task_id, list(workflow_args.keys()), trajectory_save_dir
         )
     else:
-        logging.info("[ArticleSaver] Saving article to: %s (task_id=%s)", trajectory_save_dir, task_id)
+        logging.info(
+            "[ArticleSaver] Saving article to: %s"
+            " (task_id=%s)",
+            trajectory_save_dir, task_id,
+        )
 
     # Build response dict (for judge consumption)
     # Use dict instead of Msg object to ensure metadata transfers correctly across processes
@@ -336,25 +385,48 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="DeepFinance training entry (tuner style).")
 
     # Dataset
-    p.add_argument("--dataset_path", type=str, default="./data", help="Path to DeepFinance dataset directory. Defaults to ./data")
-    p.add_argument("--split", type=str, default="train", help="Dataset split, e.g. train/validation/test.")
+    p.add_argument(
+        "--dataset_path", type=str, default="./data",
+        help="Path to DeepFinance dataset directory.",
+    )
+    p.add_argument(
+        "--split", type=str, default="train",
+        help="Dataset split, e.g. train/validation/test.",
+    )
     p.add_argument("--total_epochs", type=int, default=4, help="Total number of epochs to run.")
 
     # Model (aligned with config.yaml)
-    p.add_argument("--config_path", type=str, default="tuner/deep_finance/config_template.yaml", help="Yaml config file path.")
-    p.add_argument("--model_path", type=str, default="/path/to/base_model", help="Base model path for tuning.")
-    p.add_argument("--inference_engine_num", type=int, default=4, help="Number of vllm inference model instances.")
+    p.add_argument(
+        "--config_path", type=str,
+        default="tuner/deep_finance/config_template.yaml",
+        help="Yaml config file path.",
+    )
+    p.add_argument(
+        "--model_path", type=str,
+        default="/path/to/base_model",
+        help="Base model path for tuning.",
+    )
+    p.add_argument(
+        "--inference_engine_num", type=int, default=4,
+        help="Number of vllm inference model instances.",
+    )
     # Algorithm (aligned with config.yaml)
-    p.add_argument("--algorithm_type", type=str, default="multi_step_grpo", help="Algorithm type for training.")
-    p.add_argument("--group_size", type=int, default=8, help="Group size for GRPO algorithm (corresponds to repeat_times in config.yaml).")
+    p.add_argument(
+        "--algorithm_type", type=str,
+        default="multi_step_grpo",
+        help="Algorithm type for training.",
+    )
+    p.add_argument(
+        "--group_size", type=int, default=8,
+        help=("Group size for GRPO algorithm"
+              " (corresponds to repeat_times in config.yaml)."),
+    )
     p.add_argument("--batch_size", type=int, default=32, help="Batch size for each step.")
 
     return p
 
 
 def main() -> None:
-    from pathlib import Path
-    
     args = _build_arg_parser().parse_args()
 
     # Default dataset path: ./data (same as learn_to_ask style)

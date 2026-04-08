@@ -8,10 +8,12 @@ Metrics directory structure:
 """
 
 from typing import Dict, Any
-import numpy as np
 
 
-async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> Dict[str, Any]:
+async def extract_tool_stats_from_agent(
+    agent: Any,
+    total_time: float = 0.0,  # noqa: W0613  # pylint: disable=unused-argument
+) -> Dict[str, Any]:
     """
     Extract tool call statistics from ReActAgent's memory.
 
@@ -23,12 +25,9 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
         tool_stats dict
     """
     import logging
-    import os
     
     # DEBUG mode: set env var DEBUG_TOOL_RESULT=1 to enable
 
-    logger = logging.getLogger("tool_metric_helper")
-    
     tool_stats = {
         'total_calls': 0,
         'success_calls': 0,
@@ -44,14 +43,24 @@ async def extract_tool_stats_from_agent(agent: Any, total_time: float = 0.0) -> 
         
         for msg in memory_msgs:
             # Extract tool_use blocks
-            tool_uses = msg.get_content_blocks("tool_use") if hasattr(msg, 'get_content_blocks') else []
-            for tool_use in tool_uses:
+            tool_uses = (
+                msg.get_content_blocks("tool_use")
+                if hasattr(msg, 'get_content_blocks') else []
+            )
+            for _tool_use in tool_uses:
                 tool_stats['total_calls'] += 1
             
             # Extract tool_result blocks to determine success/failure
-            tool_results = msg.get_content_blocks("tool_result") if hasattr(msg, 'get_content_blocks') else []
+            tool_results = (
+                msg.get_content_blocks("tool_result")
+                if hasattr(msg, 'get_content_blocks') else []
+            )
             for tool_result in tool_results:
-                is_error = tool_result.get('is_error', False) if isinstance(tool_result, dict) else getattr(tool_result, 'is_error', False)
+                is_error = (
+                    tool_result.get('is_error', False)
+                    if isinstance(tool_result, dict)
+                    else getattr(tool_result, 'is_error', False)
+                )
                 if is_error:
                     tool_stats['total_errors'] += 1
                 else:
