@@ -71,7 +71,7 @@ class GroundingGrader(BaseGrader):
                     "seed": seed,
                     "presence_penalty": 0,
                     "frequency_penalty": 0,
-                }
+                },
             )
         if enable_thinking is False:
             extra_body["enable_thinking"] = False
@@ -95,8 +95,9 @@ class GroundingGrader(BaseGrader):
         Entry point: must receive traj (full conversation trajectory)
 
         Args:
-            traj: Conversation trajectory, format: [{"role": ..., "content": ...}, ...]
-                  or {"messages": [...]} format
+            traj: Conversation trajectory, format:
+                [{'role': ..., 'content': ...}, ...]
+                  or {'messages': [...]} format
 
         Returns:
             GraderScore(name, score, reason)
@@ -122,7 +123,8 @@ class GroundingGrader(BaseGrader):
 
         # 2. Build prompt
         user_prompt = construct_reward_prompt(
-            messages_list, GROUNDING_USER_PROMPT_TEMPLATE
+            messages_list,
+            GROUNDING_USER_PROMPT_TEMPLATE,
         )
 
         messages = [
@@ -171,7 +173,9 @@ class GroundingGrader(BaseGrader):
         Compute score from LLM results.
 
         Args:
-            obj: LLM returned JSON containing total_key_facts, cited_key_facts, fake_count, etc.
+            obj: LLM returned JSON containing
+                total_key_facts, cited_key_facts,
+                fake_count, etc.
 
         Returns:
             (score, reason) tuple

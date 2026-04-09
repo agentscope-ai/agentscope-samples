@@ -99,7 +99,7 @@ def get_tool_prompt_template() -> str:
 #### ✅ crawl_ths_capital
 **功能**: 获取资本运作信息。
 **数据范围**: 募集资金来源、项目投资、收购兼并、股权投资、参股IPO、股权转让、关联交易、质押解冻。
-**参数**: 
+**参数**:
   - `code` (必填, string): 股票代码 (6位数字)
 
 #### ✅ crawl_ths_finance

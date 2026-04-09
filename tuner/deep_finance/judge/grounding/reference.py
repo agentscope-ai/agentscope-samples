@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
-GROUNDING_SYSTEM_PROMPT = """你是一位"引用审计员"，负责审计金融研究报告是否遵守引用规范，并输出用于训练的 JSON 结果（只输出 JSON）。
+import re
+from typing import Dict, Any, List
+
+GROUNDING_SYSTEM_PROMPT = """你是一位"引用审计员"，\
+负责审计金融研究报告是否遵守引用规范，\
+并输出用于训练的 JSON 结果（只输出 JSON）。
 
 ========================
 一、引用规范（以此为准）
 ========================
 1) 关键事实句必须引用：
-   - 关键事实句包括：数字（金额/比例/增速/同比环比/份额/排名等）、日期/期间、财务指标、估值倍数、明确事实结论、具体事件、具体公司/行业的可验证陈述、政策/条款等。
+   - 关键事实句包括：数字（金额/比例/增速/同比环比/\
+份额/排名等）、日期/期间、财务指标、估值倍数、\
+明确事实结论、具体事件、具体公司/行业的可验证陈述、\
+政策/条款等。
    - 不确定或推断性表述必须显式写“推测/可能/假设/预计/或有风险”等，不得用引用把推断包装成既定事实。
 
 2) 引用位置规则（严格执行）：
@@ -19,9 +27,12 @@ GROUNDING_SYSTEM_PROMPT = """你是一位"引用审计员"，负责审计金融�
 4) References 条目两种合法形式（必须满足其一）：
    A) URL 形式：`[n] 标题或简述 - https://...`
       - URL 必须为可用的 http/https 链接，不能为空，也不能是 `javascript:void(0)` 之类的伪链接。
-   B) no-url 形式：`[n] 简述，工具：<tool_name>，参数：<k=v; ...>，数据日期/报告期：<date> - (no-url)`
+   B) no-url 形式：`[n] 简述，工具：<tool_name>，\
+参数：<k=v; ...>，数据日期/报告期：<date> - (no-url)`
       - no-url 必须同时包含：工具名、参数、日期/报告期 三者（缺一即不合规）。
-   - `javascript:void(0)` 等无效链接视为无效 URL（会进入 invalid_reference_nums），若要合规应改为 no-url 记录来源。
+   - `javascript:void(0)` 等无效链接视为无效 URL\
+（会进入 invalid_reference_nums），\
+若要合规应改为 no-url 记录来源。
 
 ========================
 二、输入
@@ -100,10 +111,6 @@ GROUNDING_SYSTEM_PROMPT = """你是一位"引用审计员"，负责审计金融�
 """
 
 
-import re
-from typing import Dict, Any, List
-
-
 def _extract_text_content(content) -> str:
     if content is None:
         return ""
@@ -171,7 +178,9 @@ def _is_probably_final_report(text: str) -> bool:
     )
 
 
-def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
+def construct_reward_prompt(  # pylint: disable=too-many-branches
+    trajectory: List[Dict[str, Any]],
+) -> str:
     traj = _normalize_traj(trajectory)
 
     user_query = ""
@@ -191,7 +200,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
         for i in range(len(traj) - 1, -1, -1):
             if traj[i].get("role") == "assistant":
                 final_report = _strip_think(
-                    _extract_text_content(traj[i].get("content"))
+                    _extract_text_content(traj[i].get("content")),
                 )
                 break
 
@@ -224,7 +233,7 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
                 # kept as evidence (some inject tool_result into user)
                 if user_query:
                     evidence.append(
-                        f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}"
+                        f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}",
                     )
 
     evidence_text = "\n\n".join(tool_calls + evidence)
@@ -260,7 +269,8 @@ class RefJudgeEvaluator:
         print("✓ RefJudgeEvaluator: Initialized")
 
     def build_messages(
-        self, conversation_history: List[Dict]
+        self,
+        conversation_history: List[Dict],
     ) -> List[Dict[str, str]]:
         """
         Build LLM evaluation messages from conversation history.
@@ -283,7 +293,7 @@ class RefJudgeEvaluator:
         ]
 
         print(
-            f"  ✓ 消息构建完成，system prompt 长度: {len(GROUNDING_SYSTEM_PROMPT)}"
+            f"  ✓ 消息构建完成，system prompt 长度: {len(GROUNDING_SYSTEM_PROMPT)}",
         )
         print(f"  ✓ user prompt 长度: {len(user_prompt)}")
 
@@ -304,7 +314,8 @@ class RefJudgeEvaluator:
         cited_key_facts = raw_result.get("cited_key_facts", 0)
         fake_count = raw_result.get("fake_count", 0)
 
-        # invalid refs: structural/traceability issues (from prompt's invalid_reference_nums)
+        # invalid refs: structural/traceability issues
+        # (from prompt's invalid_reference_nums)
         invalid_reference_nums = raw_result.get("invalid_reference_nums", [])
         if not isinstance(invalid_reference_nums, list):
             invalid_reference_nums = []
@@ -324,13 +335,18 @@ class RefJudgeEvaluator:
             else:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
 
-        # Light penalty: invalid refs lower the reward (without changing cited_key_facts stats).
-        # Definition: invalid_reference_nums in the prompt is
-        # "non-compliant ref nums from the body text (deduplicated)".
-        # Simple deterministic penalty: each invalid ref deducts 0.1, up to 0.5 max.
+        # Light penalty: invalid refs lower the reward
+        # (without changing cited_key_facts stats).
+        # Definition: invalid_reference_nums in the
+        # prompt is "non-compliant ref nums from the
+        # body text (deduplicated)".
+        # Simple deterministic penalty:
+        # each invalid ref deducts 0.1, up to 0.5 max.
         invalid_penalty = min(0.1 * invalid_ref_count, 0.5)
 
-        # final_reward: composite score (code-computed, weight 0.5:0.5), plus invalid penalty
+        # final_reward: composite score
+        # (code-computed, weight 0.5:0.5),
+        # plus invalid penalty
         final_reward = 0.5 * citation_coverage_score + 0.5 * grounding_score
         final_reward = max(0.0, final_reward - invalid_penalty)
 
@@ -343,7 +359,8 @@ class RefJudgeEvaluator:
         }
 
     async def evaluate_async(
-        self, conversation_history: List[Dict]
+        self,
+        conversation_history: List[Dict],
     ) -> Dict[str, Any]:
         """
         Async evaluate citation compliance.
@@ -378,17 +395,23 @@ class RefJudgeEvaluator:
         result.setdefault("good_citations", [])
 
         print(
-            "  \u2713 [RefJudgeEvaluator] Citation compliance evaluation complete:"
+            "  \u2713 [RefJudgeEvaluator]"
+            " Citation compliance evaluation complete:",
         )
         print(f"    - total_key_facts: {result['total_key_facts']}")
         print(f"    - cited_key_facts: {result['cited_key_facts']}")
         print(f"    - fake_count: {result['fake_count']}")
-        print(f"    - invalid_ref_count: {result.get('invalid_ref_count', 0)}")
         print(
-            f"    - invalid_penalty: {result.get('invalid_penalty', 0.0):.4f}"
+            f"    - invalid_ref_count:"
+            f" {result.get('invalid_ref_count', 0)}",
         )
         print(
-            f"    - citation_coverage_score: {result['citation_coverage_score']:.4f}"
+            f"    - invalid_penalty:"
+            f" {result.get('invalid_penalty', 0.0):.4f}",
+        )
+        print(
+            f"    - citation_coverage_score:"
+            f" {result['citation_coverage_score']:.4f}",
         )
         print(f"    - grounding_score: {result['grounding_score']:.4f}")
         print(f"    - final_reward: {result['final_reward']:.4f}")
@@ -396,7 +419,8 @@ class RefJudgeEvaluator:
         return result
 
     def evaluate_sync(
-        self, conversation_history: List[Dict]
+        self,
+        conversation_history: List[Dict],
     ) -> Dict[str, Any]:
         """
         Sync evaluate citation compliance.

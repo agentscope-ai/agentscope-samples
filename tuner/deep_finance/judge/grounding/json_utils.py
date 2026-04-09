@@ -65,7 +65,7 @@ def get_note(item: Any) -> str:
     return note[:120]
 
 
-def validate_shape(
+def validate_shape(  # pylint: disable=too-many-branches
     obj: Dict[str, Any],
 ) -> Tuple[Dict[str, Any] | None, str | None]:
     """
@@ -222,14 +222,16 @@ def _is_probably_final_report(text: str) -> bool:
     )
 
 
-def construct_reward_prompt(
-    trajectory: List[Dict[str, Any]], user_prompt_template: str
+def construct_reward_prompt(  # pylint: disable=too-many-branches
+    trajectory: List[Dict[str, Any]],
+    user_prompt_template: str,
 ) -> str:
     """
     Build reward prompt from trajectory.
 
     Args:
-        trajectory: Conversation trajectory [{"role": ..., "content": ...}, ...]
+        trajectory: Conversation trajectory
+            [{'role': ..., 'content': ...}, ...]
 
     Returns:
         Constructed user prompt string
@@ -255,7 +257,7 @@ def construct_reward_prompt(
         for i in range(len(traj) - 1, -1, -1):
             if traj[i].get("role") == "assistant":
                 final_report = _strip_think(
-                    _extract_text_content(traj[i].get("content"))
+                    _extract_text_content(traj[i].get("content")),
                 )
                 break
 
@@ -290,7 +292,7 @@ def construct_reward_prompt(
                 # Additional user context after query is also kept as evidence
                 if user_query:
                     evidence.append(
-                        f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}"
+                        f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}",
                     )
 
     evidence_text = "\n\n".join(tool_calls + evidence)

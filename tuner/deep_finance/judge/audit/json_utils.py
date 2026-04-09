@@ -29,7 +29,8 @@ def _repair_json(js: str) -> str:
     """
 
     # 1. Escape unescaped newlines within string values
-    # Most common issue: LLM outputs raw newlines in strings instead of \n
+    # Most common issue: LLM outputs raw newlines
+    # in strings instead of \n
     def escape_newlines_in_strings(s: str) -> str:
         result = []
         in_string = False
@@ -118,7 +119,7 @@ def strict_load_json(text: str) -> Tuple[Dict[str, Any] | None, str | None]:
         return None, f"JSONDecodeError: {str(e)}"
 
 
-def validate_integrity_shape(
+def validate_integrity_shape(  # pylint: disable=too-many-return-statements
     obj: Dict[str, Any],
 ) -> Tuple[Dict[str, Any] | None, str | None]:
     """
@@ -177,7 +178,8 @@ def validate_integrity_shape(
         if v not in valid_verdicts and v_cap in valid_verdicts:
             item["verdict"] = v_cap
         elif v not in valid_verdicts:
-            # If model outputs an unexpected verdict, return error to maintain strictness
+            # If model outputs an unexpected verdict,
+            # return error to maintain strictness
             return None, f"Invalid verdict '{v}' in item {idx}"
 
     return obj, None
@@ -228,7 +230,8 @@ def _extract_tool_call_json(text: str) -> str:
 
 
 def construct_reward_prompt(
-    trajectory: List[Dict[str, Any]], template: str
+    trajectory: List[Dict[str, Any]],
+    template: str,
 ) -> str:
     """
     Extract User Query, Evidence (Tool Outputs), Final Report
@@ -242,7 +245,8 @@ def construct_reward_prompt(
         return _strip_think(_extract_text_content(c))
 
     # 1. Identify components
-    # Reverse search for Final Report (Assistant message containing References or TASK_COMPLETED)
+    # Reverse search for Final Report
+    # (Assistant message with References or TASK_COMPLETED)
     for i in range(len(trajectory) - 1, -1, -1):
         msg = trajectory[i]
         if msg.get("role") == "assistant":
@@ -277,12 +281,12 @@ def construct_reward_prompt(
             tool_json = _extract_tool_call_json(content_raw)
             if tool_json:
                 evidence_parts.append(
-                    f"--- Step {idx} Tool Call ---\n{tool_json}"
+                    f"--- Step {idx} Tool Call ---\n{tool_json}",
                 )
 
         elif role == "tool":
             evidence_parts.append(
-                f"--- Step {idx} Tool Result ---\n{content_raw}"
+                f"--- Step {idx} Tool Result ---\n{content_raw}",
             )
 
     evidence_text = "\n\n".join(evidence_parts)

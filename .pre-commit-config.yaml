@@ -7,7 +7,8 @@ repos:
       - id: check-yaml
         exclude: |
           (?x)^(
-              meta.yaml
+              meta.yaml|
+              tuner/deep_finance/config_template\.yaml
           )$
       - id: check-xml
       - id: check-toml
@@ -66,7 +67,7 @@ repos:
           | \.html$
           )
         args: [
-          "--init-hook=import sys; sys.path.insert(0, 'alias/src')",
+          "--init-hook=import sys; sys.path.insert(0, 'alias/src'); sys.path.insert(0, 'tuner/deep_finance')",
           --disable=W0511,
           --disable=W0718,
           --disable=W0122,

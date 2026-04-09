@@ -3,17 +3,26 @@
 DeepFinance (Tuner style) - main entry
 
 This file follows the "tuner main.py" style:
-- Define an async workflow function: workflow_func(task, model, auxiliary_models) -> WorkflowOutput
-- Define an async judge function: judge_func(task, response, auxiliary_models) -> JudgeOutput
-- Configure DatasetConfig / TunerModelConfig / AlgorithmConfig
+- Define an async workflow function:
+  workflow_func(task, model, auxiliary_models)
+  -> WorkflowOutput
+- Define an async judge function:
+  judge_func(task, response, auxiliary_models)
+  -> JudgeOutput
+- Configure DatasetConfig / TunerModelConfig /
+  AlgorithmConfig
 - Call tune(...)
 
 Notes
 -----
-- This version is Route-B oriented: workflow is a ReActAgent-based loop and will later be connected
-  to AgentScope tools/toolkits. (Per your request, tools integration is intentionally left as TODO.)
-- The current judge is a placeholder that returns 0 reward. You'll later replace it with your
-  OpenJudge-based DeepFinance judge (ported to tuner signature).
+- This version is Route-B oriented: workflow is a
+  ReActAgent-based loop and will later be connected
+  to AgentScope tools/toolkits. (Per your request,
+  tools integration is intentionally left as TODO.)
+- The current judge is a placeholder that returns 0
+  reward. You'll later replace it with your
+  OpenJudge-based DeepFinance judge
+  (ported to tuner signature).
 
 Usage
 -----
@@ -59,7 +68,8 @@ _FINANCE_MCP_TOOLKIT_LOCK: asyncio.Lock = asyncio.Lock()
 async def get_finance_mcp_toolkit() -> (
     Toolkit
 ):  # pylint: disable=too-many-statements
-    """Create (once per process) and return a Toolkit backed by the finance-mcp MCP server."""
+    """Create (once per process) and return a Toolkit
+    backed by the finance-mcp MCP server."""
     global _FINANCE_MCP_TOOLKIT
 
     # Setup debug logger
@@ -69,8 +79,9 @@ async def get_finance_mcp_toolkit() -> (
         handler = logging.StreamHandler()
         handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s [%(levelname)s] [PID:%(process)d] %(name)s: %(message)s"
-            )
+                "%(asctime)s [%(levelname)s]"
+                " [PID:%(process)d] %(name)s: %(message)s",
+            ),
         )
         logger.addHandler(handler)
 
@@ -129,7 +140,8 @@ async def get_finance_mcp_toolkit() -> (
 
         toolkit = Toolkit()
 
-        # Create tool group before registering MCP client (required for non-"basic" group names)
+        # Create tool group before registering MCP client
+        # (required for non-"basic" group names)
         toolkit.create_tool_group(
             group_name="finance-mcp",
             description=(
@@ -140,7 +152,8 @@ async def get_finance_mcp_toolkit() -> (
         )
         logger.debug("[PID:%d] Created tool group 'finance-mcp'", pid)
 
-        # Construct client with best-effort compatibility across AgentScope versions.
+        # Construct client with best-effort compatibility
+        # across AgentScope versions.
         client_kwargs: Dict[str, Any] = {
             "name": "finance-mcp",
             "transport": transport,
@@ -203,7 +216,7 @@ async def get_finance_mcp_toolkit() -> (
                 if len(tools_list) == 0:
                     raise ValueError(
                         "list_tools returned empty list"
-                        " - MCP server may not have tools registered"
+                        " - MCP server may not have tools registered",
                     )
 
                 logger.debug(
@@ -213,13 +226,15 @@ async def get_finance_mcp_toolkit() -> (
                     attempt,
                 )
                 await toolkit.register_mcp_client(
-                    client, group_name="finance-mcp"
+                    client,
+                    group_name="finance-mcp",
                 )
 
                 _FINANCE_MCP_TOOLKIT = toolkit
                 schemas = toolkit.get_json_schemas()
                 logger.info(
-                    "[PID:%d] finance-mcp toolkit ready: transport=%s url=%s tools=%d",
+                    "[PID:%d] finance-mcp toolkit ready:"
+                    " transport=%s url=%s tools=%d",
                     pid,
                     transport,
                     url,
@@ -246,7 +261,9 @@ async def get_finance_mcp_toolkit() -> (
                     repr(e),
                 )
                 logger.debug(
-                    "[PID:%d] Full traceback:\n%s", pid, traceback.format_exc()
+                    "[PID:%d] Full traceback:\n%s",
+                    pid,
+                    traceback.format_exc(),
                 )
                 if attempt < max_retries:
                     logger.debug("[PID:%d] Retrying in %.1fs...", pid, sleep_s)
@@ -276,7 +293,9 @@ def _load_prompt_templates() -> tuple[str, str]:
 
     if _PROMPT_TEMPLATE_CACHE is None:
         prompt_file = os.path.join(
-            os.path.dirname(__file__), "prompt", "finance_analyst_prompt.md"
+            os.path.dirname(__file__),
+            "prompt",
+            "finance_analyst_prompt.md",
         )
         with open(prompt_file, "r", encoding="utf-8") as f:
             _PROMPT_TEMPLATE_CACHE = f.read()
@@ -340,7 +359,8 @@ def _extract_sys_and_user(task: Dict[str, Any]) -> tuple[str, str]:
                 user_query = str(task[k])
                 break
 
-    # Use finance_analyst_prompt.md template as system prompt (like ajet version)
+    # Use finance_analyst_prompt.md template as system
+    # prompt (like ajet version)
     if not sys_prompt:
         sys_prompt = _build_system_prompt()
 
@@ -379,7 +399,8 @@ async def run_deep_finance(
     tool_stats = await extract_tool_stats_from_agent(agent, total_time)
     metrics = compute_single_tool_metrics(tool_stats)
 
-    # Extract response content, convert to dict for cross-process serialization safety
+    # Extract response content, convert to dict for
+    # cross-process serialization safety
     response_content = (
         response.content if hasattr(response, "content") else str(response)
     )
@@ -399,7 +420,9 @@ async def run_deep_finance(
     # Fall back to default backup path if trajectory_save_dir is None
     if trajectory_save_dir is None:
         trajectory_save_dir = os.path.join(
-            os.path.dirname(__file__), "trajectory", "backup"
+            os.path.dirname(__file__),
+            "trajectory",
+            "backup",
         )
         logging.warning(
             "[ArticleSaver] trajectory_save_dir is None! "
@@ -417,7 +440,8 @@ async def run_deep_finance(
         )
 
     # Build response dict (for judge consumption)
-    # Use dict instead of Msg object to ensure metadata transfers correctly across processes
+    # Use dict instead of Msg object to ensure metadata
+    # transfers correctly across processes
     response_dict = {
         "content": response_content,
         "role": getattr(response, "role", "assistant"),
@@ -433,7 +457,7 @@ async def run_deep_finance(
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="DeepFinance training entry (tuner style)."
+        description="DeepFinance training entry (tuner style).",
     )
 
     # Dataset
@@ -492,7 +516,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for each step."
+        "--batch_size",
+        type=int,
+        default=32,
+        help="Batch size for each step.",
     )
 
     return p
@@ -504,7 +531,8 @@ def main() -> None:
     # Default dataset path: ./data (same as learn_to_ask style)
     config_path = args.config_path
 
-    # Load all settings (model, dataset, algorithm, cluster, etc.) from config.yaml
+    # Load all settings from config.yaml
+    # (model, dataset, algorithm, cluster, etc.)
     tune(
         workflow_func=run_deep_finance,
         judge_func=deep_finance_judge,

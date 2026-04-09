@@ -113,7 +113,7 @@ if [ -n "${CONDA_PATH}" ] && [ -f "${CONDA_PATH}" ]; then
     source "${CONDA_PATH}"
     conda activate "${CONDA_ENV}"
     echo -e "\033[32mActivated conda environment: ${CONDA_ENV}\033[0m"
-    
+
     # [Important] Ensure Ray child processes use the correct Python interpreter
     # Add conda env bin dir to PATH and export
     export PATH="${CONDA_PREFIX}/bin:$PATH"
@@ -334,7 +334,7 @@ if [ "${NODE_NUM}" -gt 1 ]; then
         print_green "==> This is WORKER node: $HOSTNAME"
         print_green "[Worker] Using Python: $(which python)"
         print_green "[Worker] CONDA_PREFIX: ${CONDA_PREFIX}"
-        
+
         while [ ! -f "${MASTER_IP_FILE}" ]; do sleep 5; done
         sleep 3  # Wait for filesystem sync
         # Flush distributed filesystem cache to avoid stale file handle
@@ -352,7 +352,7 @@ else
     log "Single-node training mode"
     ray stop --force 2>/dev/null || true
     sleep 3
-    
+
     print_green "Starting Ray single-node cluster..."
     ray start --head --num-gpus ${GPU_PER_NODE}
     sleep 5

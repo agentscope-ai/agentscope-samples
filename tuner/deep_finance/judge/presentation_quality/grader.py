@@ -29,8 +29,10 @@ class PresentationQualityGrader(BaseGrader):
     """
     - Input: report_content (research report text)
     - Output: GraderScore(name, score, reason)
-    - Score: 8 items rated on 1/3/5 scale, total normalized to [0,1] (total/40)
-    - Determinism: recommend temperature=0 + disable thinking (see create_default_model)
+    - Score: 8 items rated on 1/3/5 scale, total
+      normalized to [0,1] (total/40)
+    - Determinism: recommend temperature=0
+      + disable thinking (see create_default_model)
     - Parse failure: score=0, error shown in reason
     """
 
@@ -53,15 +55,18 @@ class PresentationQualityGrader(BaseGrader):
         seed: int = 0,
     ) -> OpenAIChatModel:
         """
-        You may also skip this factory and directly instantiate OpenAIChatModel.
-        QuickStart docs confirm OpenAIChatModel reads from OPENAI_API_KEY/OPENAI_BASE_URL.
+        You may also skip this factory and directly
+        instantiate OpenAIChatModel.
+        QuickStart docs confirm OpenAIChatModel reads
+        from OPENAI_API_KEY/OPENAI_BASE_URL.
         """
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         base_url = base_url or os.getenv("OPENAI_BASE_URL")
 
         extra_body: Dict[str, Any] = {}
         if deterministic:
-            # Common fields for OpenAI-compatible APIs; DashScope/Qwen uses enable_thinking
+            # Common fields for OpenAI-compatible APIs;
+            # DashScope/Qwen uses enable_thinking
             extra_body.update(
                 {
                     "temperature": 0,
@@ -69,7 +74,7 @@ class PresentationQualityGrader(BaseGrader):
                     "seed": seed,
                     "presence_penalty": 0,
                     "frequency_penalty": 0,
-                }
+                },
             )
         if enable_thinking is False:
             extra_body["enable_thinking"] = False
@@ -92,7 +97,8 @@ class PresentationQualityGrader(BaseGrader):
     ) -> GraderScore:
         """
         Entry point: directly feed report_content (research report text)
-        - user_query is optional: used to fill prompt; defaults to "(unknown)" if not provided
+        - user_query is optional: used to fill prompt;
+          defaults to '(unknown)' if not provided
         """
 
         # DEBUG: check input arguments
@@ -149,7 +155,8 @@ class PresentationQualityGrader(BaseGrader):
             {"role": "user", "content": user_content},
         ]
 
-        # Core: OpenJudge's OpenAIChatModel supports await model.achat([...]) and returns .content
+        # Core: OpenJudge's OpenAIChatModel supports
+        # await model.achat([...]) and returns .content
         try:
             resp = await self.model.achat(messages)
             raw_text = getattr(resp, "content", None)
@@ -190,7 +197,8 @@ class PresentationQualityGrader(BaseGrader):
         editorial = obj["editorial"]
         top_fixes = obj.get("top_fixes", [])
 
-        # 8 items scored on 1/3/5 scale (deterministic: computed entirely in Python)
+        # 8 items scored on 1/3/5 scale
+        # (deterministic: computed entirely in Python)
         score_map: Dict[str, int] = {}
         note_map: Dict[str, str] = {}
 
@@ -219,7 +227,7 @@ class PresentationQualityGrader(BaseGrader):
         ]
         low_items.sort(key=lambda x: x[1])  # Sort ascending
         low_str = ", ".join(
-            f"{k}={s}({note_map.get(k,'')})" for k, s in low_items[:4]
+            f"{k}={s}({note_map.get(k, '')})" for k, s in low_items[:4]
         )
         fixes_str = " | ".join(str(x) for x in (top_fixes or [])[:3])
 
@@ -243,7 +251,10 @@ class PresentationQualityGrader(BaseGrader):
         text = text.strip()
         # Remove leading ```xxx
         text = re.sub(
-            r"^```(?:markdown|md)?\s*\n?", "", text, flags=re.IGNORECASE
+            r"^```(?:markdown|md)?\s*\n?",
+            "",
+            text,
+            flags=re.IGNORECASE,
         )
         # Remove trailing ```
         text = re.sub(r"\n?```\s*$", "", text)

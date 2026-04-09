@@ -91,7 +91,8 @@ def validate_shape(
     obj: Dict[str, Any],
 ) -> Tuple[Dict[str, Any] | None, str | None]:
     """
-    Ensure required sections exist and are dicts; ensure top_fixes is list or str.
+    Ensure required sections exist and are dicts;
+    ensure top_fixes is list or str.
     If missing required field => error.
     """
     for sec in ("scan", "structuring", "editorial"):

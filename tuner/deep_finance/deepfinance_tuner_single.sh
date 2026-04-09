@@ -92,7 +92,7 @@ if [ -n "${CONDA_PATH}" ] && [ -f "${CONDA_PATH}" ]; then
     source "${CONDA_PATH}"
     conda activate "${CONDA_ENV}"
     echo -e "\033[32mActivated conda environment: ${CONDA_ENV}\033[0m"
-    
+
     export PATH="${CONDA_PREFIX}/bin:$PATH"
     export PYTHONPATH="${CONDA_PREFIX}/lib/python3.11/site-packages:${PYTHONPATH:-}"
     echo -e "\033[32mPATH set: ${CONDA_PREFIX}/bin\033[0m"

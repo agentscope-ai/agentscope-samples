@@ -50,7 +50,8 @@ def build_judge_metrics(
         # Finance Evaluator
         "rewards/finance/finance_raw": finance_score,
         "rewards/finance/finance_contribution": contributions.get(
-            "rm_contribution", 0.0
+            "rm_contribution",
+            0.0,
         ),
         # Time statistics
         "judge_time/grading_time": grading_time,
@@ -61,8 +62,8 @@ def build_judge_metrics(
     for grader_name, score in grader_scores.items():
         metrics[f"rewards/openjudge/{grader_name}_raw"] = score
         if grader_name in contributions:
-            metrics[f"rewards/openjudge/{grader_name}_contribution"] = (
-                contributions[grader_name]
-            )
+            metrics[
+                f"rewards/openjudge/{grader_name}_contribution"
+            ] = contributions[grader_name]
 
     return metrics

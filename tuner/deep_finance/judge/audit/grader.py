@@ -32,7 +32,8 @@ class AuditGrader(BaseGrader):
     - Input: traj (full conversation trajectory)
     - Output: GraderScore(score, reason)
     - score: integrity_score (Supported / Total)
-    - reason: Audit summary including error distribution and qualitative summary
+    - reason: Audit summary including error
+      distribution and qualitative summary
     """
 
     def __init__(
@@ -63,7 +64,7 @@ class AuditGrader(BaseGrader):
                     "temperature": 0.0,
                     "top_p": 1.0,
                     "seed": seed,
-                }
+                },
             )
         if enable_thinking is False:
             extra_body["enable_thinking"] = False
@@ -112,7 +113,8 @@ class AuditGrader(BaseGrader):
             return GraderScore(
                 name=self.name,
                 score=0.0,
-                reason="BadInput: traj must be list or dict with 'messages'/'traj'",
+                reason="BadInput: traj must be list"
+                " or dict with 'messages'/'traj'",
             )
 
         if not messages_list:
@@ -125,7 +127,8 @@ class AuditGrader(BaseGrader):
         # 2. Build Prompt
         # Use the new System Prompt and User Template
         user_prompt = construct_reward_prompt(
-            messages_list, CITATION_INTEGRITY_USER_TEMPLATE
+            messages_list,
+            CITATION_INTEGRITY_USER_TEMPLATE,
         )
 
         messages = [
@@ -194,9 +197,12 @@ class AuditGrader(BaseGrader):
 
         supported_count = verdict_counts["Supported"]
 
-        # Prefer model's output score; fall back to manual calculation if invalid
+        # Prefer model's output score;
+        # fall back to manual calculation if invalid
         # model_score = obj.get("integrity_score")
-        # if isinstance(model_score, (float, int)) and 0.0 <= model_score <= 1.0:
+        # if isinstance(
+        #     model_score, (float, int),
+        # ) and 0.0 <= model_score <= 1.0:
         #     final_score = float(model_score)
         # else:
         final_score = (
@@ -204,7 +210,8 @@ class AuditGrader(BaseGrader):
         )
 
         # Build Reason
-        # Format: Score: 0.80 | Total: 10 | Supp: 8, Over: 1, Hallu: 1 | Summary: ...
+        # Format: Score: 0.80 | Total: 10
+        # | Supp: 8, Over: 1, Hallu: 1 | Summary: ...
         stats_parts = []
         for k, v in verdict_counts.items():
             if v > 0:
@@ -226,7 +233,9 @@ class AuditGrader(BaseGrader):
             )
 
         reason = (
-            f"Score: {final_score:.2f} | Total: {total_citations} | {stats_str} | "
+            f"Score: {final_score:.2f}"
+            f" | Total: {total_citations}"
+            f" | {stats_str} | "
             f"Summary: {qualitative}{error_msg}"
         )
 

@@ -6,7 +6,10 @@
 # =============================================================================
 
 CITATION_INTEGRITY_PROMPT_COT = """
-你是一位 **"证据逻辑分析师" (Evidence Logic Analyst)**。你的任务是审计 AI 研究报告中的引用是否严格符合"逻辑蕴含 (Logical Entailment)"原则。
+你是一位 **"证据逻辑分析师" \
+(Evidence Logic Analyst)**。\
+你的任务是审计 AI 研究报告中的引用是否严格符合\
+"逻辑蒴含 (Logical Entailment)"原则。
 
 ## 核心任务
 不要预设结论。你必须像法官判案一样，先罗列证据，再进行逻辑推导，最后下达判决。
@@ -39,7 +42,8 @@ CITATION_INTEGRITY_PROMPT_COT = """
       "claim_excerpt": "报告中声称的片段...",
       "evidence_quote": "从Evidence中摘录的原话...",
       "logic_analysis": "分析：证据说的是X，报告写的是Y。二者是否一致？有没有夸大？(简短分析)",
-      "verdict": "Supported" | "Overstated" | "Contradicted" | "Hallucinated" | "Irrelevant",
+      "verdict": "Supported" | "Overstated" \
+| "Contradicted" | "Hallucinated" | "Irrelevant",
       "correction": "如果非Supported，基于证据的正确表述应该是..."
     },
     ...

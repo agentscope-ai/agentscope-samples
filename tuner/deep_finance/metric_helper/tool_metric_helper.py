@@ -76,7 +76,8 @@ async def extract_tool_stats_from_agent(
 
 
 def compute_single_tool_metrics(
-    tool_stats: Dict[str, Any], prefix: str = ""
+    tool_stats: Dict[str, Any],
+    prefix: str = "",
 ) -> Dict[str, float]:
     """
     Compute metrics from a single tool_stats dict (for single workflow output).
@@ -116,7 +117,7 @@ def compute_single_tool_metrics(
             f"{prefix}tool_stats/tool_cache_hits": float(cache_hits),
             f"{prefix}tool_stats/tool_cache_misses": float(cache_misses),
             f"{prefix}tool_stats/tool_cache_hit_rate": float(cache_hit_rate),
-        }
+        },
     )
 
     return metrics

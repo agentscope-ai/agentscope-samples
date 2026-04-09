@@ -2,7 +2,8 @@
 """DeepFinance Judge - AgentScope Tuner version
 
 Judge function for DeepFinance based on the agentscope tuner framework.
-Integrates: FinanceCompositionEvaluator (based on OpenJudge), PresentationQualityGrader
+Integrates: FinanceCompositionEvaluator
+(based on OpenJudge), PresentationQualityGrader
 """
 
 import os
@@ -65,13 +66,13 @@ class DeepFinanceJudgeConfig:
             concurrency=int(os.environ.get("OPENJUDGE_CONCURRENCY", "6")),
             finance_judge_llm=os.environ.get("FINANCE_JUDGE_LLM", ""),
             finance_rm_weight=float(
-                os.environ.get("FINANCE_RM_WEIGHT", "1.0")
+                os.environ.get("FINANCE_RM_WEIGHT", "1.0"),
             ),
             presentation_quality_weight=float(
-                os.environ.get("JUDGE_PRESENTATION_QUALITY_WEIGHT", "0.25")
+                os.environ.get("JUDGE_PRESENTATION_QUALITY_WEIGHT", "0.25"),
             ),
             grounding_weight=float(
-                os.environ.get("JUDGE_GROUNDING_WEIGHT", "0.0")
+                os.environ.get("JUDGE_GROUNDING_WEIGHT", "0.0"),
             ),
             audit_weight=float(os.environ.get("JUDGE_AUDIT_WEIGHT", "0.0")),
             train_ref_ans_path=os.environ.get("JUDGE_TRAIN_REF_ANS_PATH", ""),
@@ -122,9 +123,9 @@ class DeepFinanceJudgeEngine:
     def __init__(self, cfg: DeepFinanceJudgeConfig):
         self.cfg = cfg
         self._model: Optional[OpenAIChatModel] = None
-        self._finance_model: Optional[OpenAIChatModel] = (
-            None  # Separate model for Finance Judge
-        )
+        self._finance_model: Optional[
+            OpenAIChatModel
+        ] = None  # Separate model for Finance Judge
         self._finance_evaluator: Optional[FinanceCompositionEvaluator] = None
 
         # Set weights and normalize
@@ -165,10 +166,15 @@ class DeepFinanceJudgeEngine:
         """Get reference answer and domain."""
         cache_key = "val" if task_id.startswith("val_") else "train"
         ans = DeepFinanceJudgeEngine._ref_answers_cache.get(cache_key, {}).get(
-            task_id, ""
+            task_id,
+            "",
         )
-        dom = DeepFinanceJudgeEngine._ref_domains_cache.get(cache_key, {}).get(
-            task_id
+        dom = DeepFinanceJudgeEngine._ref_domains_cache.get(
+            cache_key,
+            {},
+        ).get(
+            task_id,
+            "",
         )
         return ans, dom
 
@@ -185,7 +191,8 @@ class DeepFinanceJudgeEngine:
     def _init_finance_model(self) -> OpenAIChatModel:
         """Lazy-load separate Finance Judge model."""
         if self._finance_model is None:
-            # Use separate FINANCE_JUDGE_LLM if configured; otherwise fall back to OPENJUDGE_LLM
+            # Use separate FINANCE_JUDGE_LLM if configured;
+            # otherwise fall back to OPENJUDGE_LLM
             model_name = (
                 self.cfg.finance_judge_llm
                 if self.cfg.finance_judge_llm
@@ -199,14 +206,16 @@ class DeepFinanceJudgeEngine:
         return self._finance_model
 
     def _init_finance_evaluator(self) -> Optional[FinanceCompositionEvaluator]:
-        """Lazy-load FinanceCompositionEvaluator (using separate Finance Judge model)."""
+        """Lazy-load FinanceCompositionEvaluator
+        (using separate Finance Judge model)."""
         if self._finance_enabled and self._finance_evaluator is None:
             model = self._init_finance_model()
             self._finance_evaluator = FinanceCompositionEvaluator(model=model)
         return self._finance_evaluator
 
     def _create_grader_configs(
-        self, model: OpenAIChatModel
+        self,
+        model: OpenAIChatModel,
     ) -> Dict[str, GraderConfig]:
         """Create grader configurations."""
 
@@ -241,7 +250,9 @@ class DeepFinanceJudgeEngine:
         }
 
     async def evaluate_one(
-        self, task: Dict[str, Any], response: Any
+        self,
+        task: Dict[str, Any],
+        response: Any,
     ) -> Tuple[float, Dict[str, float]]:
         """
         Evaluate a single sample.
@@ -259,7 +270,8 @@ class DeepFinanceJudgeEngine:
         task_id = task.get("task_id", "unknown")
         query = task.get("main_query", task.get("query", ""))
         chat_date = task.get("metadata", {}).get(
-            "chat_date", datetime.now().strftime("%Y-%m-%d")
+            "chat_date",
+            datetime.now().strftime("%Y-%m-%d"),
         )
 
         # Build conversation history
@@ -287,13 +299,17 @@ class DeepFinanceJudgeEngine:
 
         # Convert to OpenJudge format
         openjudge_sample = self._convert_to_openjudge_format(
-            history, query, task_id, chat_date
+            history,
+            query,
+            task_id,
+            chat_date,
         )
 
         # Run evaluation
         grading_start_time = time.time()
         grader_results, finance_score = await self._run_evaluation(
-            [openjudge_sample], finance_eval_params
+            [openjudge_sample],
+            finance_eval_params,
         )
         grading_time = time.time() - grading_start_time
 
@@ -302,7 +318,8 @@ class DeepFinanceJudgeEngine:
 
         # Fuse scores
         fused_reward, contributions = self._fuse_scores(
-            grader_scores, finance_score
+            grader_scores,
+            finance_score,
         )
 
         # Compute penalty (get tool_stats from response)
@@ -315,7 +332,8 @@ class DeepFinanceJudgeEngine:
                 else {}
             )
         elif hasattr(response, "metadata") and isinstance(
-            response.metadata, dict
+            response.metadata,
+            dict,
         ):
             tool_stats = response.metadata.get("tool_stats", {})
         penalty = self._compute_penalty(tool_stats.get("total_calls", 0))
@@ -337,13 +355,17 @@ class DeepFinanceJudgeEngine:
         )
 
         logger.info(
-            f"Judge: task_id={task_id}, final={final_reward:.4f}, grading_time={grading_time:.2f}s"
+            f"Judge: task_id={task_id},"
+            f" final={final_reward:.4f},"
+            f" grading_time={grading_time:.2f}s",
         )
 
         return final_reward, metrics
 
     def _build_history_from_response(
-        self, task: Dict, response: Any
+        self,
+        task: Dict,
+        response: Any,
     ) -> List[Dict[str, Any]]:
         """Build conversation history from response."""
         # Prefer metadata from response (supports both dict and object formats)
@@ -368,7 +390,7 @@ class DeepFinanceJudgeEngine:
                     {
                         "role": m.get("role", "user"),
                         "content": m.get("content", ""),
-                    }
+                    },
                 )
 
         # Add response
@@ -377,7 +399,7 @@ class DeepFinanceJudgeEngine:
                 content = extract_text_content(response.get("content"))
             else:
                 content = extract_text_content(
-                    getattr(response, "content", None)
+                    getattr(response, "content", None),
                 )
             history.append({"role": "assistant", "content": content})
 
@@ -406,7 +428,9 @@ class DeepFinanceJudgeEngine:
         return {"messages": messages, "chat_date": chat_date, "rubrics": []}
 
     async def _run_evaluation(
-        self, dataset: List[Dict], finance_eval_params: Optional[Dict] = None
+        self,
+        dataset: List[Dict],
+        finance_eval_params: Optional[Dict] = None,
     ) -> Tuple[Dict[str, List], float]:
         """Run OpenJudge evaluation."""
         grader_results = {}
@@ -443,7 +467,8 @@ class DeepFinanceJudgeEngine:
         return grader_results, finance_score
 
     def _extract_grader_scores(
-        self, grader_results: Dict[str, List]
+        self,
+        grader_results: Dict[str, List],
     ) -> Dict[str, float]:
         """Extract grader scores."""
         scores = {}
@@ -458,7 +483,9 @@ class DeepFinanceJudgeEngine:
         return scores
 
     def _fuse_scores(
-        self, grader_scores: Dict[str, float], finance_score: float
+        self,
+        grader_scores: Dict[str, float],
+        finance_score: float,
     ) -> Tuple[float, Dict[str, float]]:
         """Fuse scores."""
         contributions = {}

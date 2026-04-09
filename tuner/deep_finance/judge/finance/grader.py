@@ -23,7 +23,7 @@ from cookbooks.finance_grader.stock_analysis.valuation_analysis import (
 from cookbooks.finance_grader.macro_analysis.macro_analysis import (
     MacroAnalysisGrader,
 )
-from cookbooks.finance_grader.industry_research.characteristics_analysis import (
+from cookbooks.finance_grader.industry_research.characteristics_analysis import (  # noqa: E501
     CharacteristicsAnalysisGrader,
 )
 from cookbooks.finance_grader.event_interpretation.event_analysis import (
@@ -42,7 +42,7 @@ def load_reference_answers_from_file(
     """Load reference answers (required by FinanceCompositionEvaluator)."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(
-            f"Reference answers file not found: {file_path}"
+            f"Reference answers file not found: {file_path}",
         )
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -63,7 +63,8 @@ def load_reference_answers_from_file(
 
 class FinanceCompositionEvaluator:
     """
-    OpenJudge-based Finance Composition Evaluator (replaces rm_gallery.FinanceComposition)
+    OpenJudge-based Finance Composition Evaluator
+    (replaces rm_gallery.FinanceComposition)
 
     Features:
     - Route to corresponding grader set based on domain
@@ -93,7 +94,11 @@ class FinanceCompositionEvaluator:
         return self._grader_cache[domain]
 
     async def aevaluate(
-        self, query: str, current: str, reference: str, domain: str
+        self,
+        query: str,
+        current: str,
+        reference: str,
+        domain: str,
     ) -> float:
         if not domain or domain not in self.DOMAIN_GRADERS:
             return 0.5
@@ -116,7 +121,7 @@ class FinanceCompositionEvaluator:
                     scores.append(0.5)
             except Exception as e:
                 logger.warning(
-                    f"FinanceCompositionEvaluator grader failed: {e}"
+                    f"FinanceCompositionEvaluator" f" grader failed: {e}",
                 )
                 scores.append(0.5)
 
