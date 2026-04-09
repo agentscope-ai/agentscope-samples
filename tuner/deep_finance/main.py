@@ -58,7 +58,9 @@ from metric_helper.tool_metric_helper import (
     extract_tool_stats_from_agent,
     compute_single_tool_metrics,
 )
-from prompt.tool_prompt_builder import get_tool_prompt_template
+from prompt.tool_prompt_builder import (  # pylint: disable=no-name-in-module
+    get_tool_prompt_template,
+)
 
 # MCP (finance-mcp) Toolkit cache (process-local)
 _FINANCE_MCP_TOOLKIT: Optional[Toolkit] = None
