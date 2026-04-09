@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -56,6 +57,3 @@ def find_final_report(trajectory: List[Dict[str, Any]]) -> str:
             if len(txt) > 120 or "#" in txt:
                 return txt
     return ""
-
-
-

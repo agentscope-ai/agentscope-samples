@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 """Grounding Grader - Citation compliance evaluation (OpenJudge version)"""
+
 from __future__ import annotations
 
 import os
@@ -14,7 +16,11 @@ except Exception:  # pragma: no cover
     from openjudge.models.openai_chat_model import OpenAIChatModel
 
 from .prompt import GROUNDING_SYSTEM_PROMPT, GROUNDING_USER_PROMPT_TEMPLATE
-from .json_utils import strict_load_json, validate_shape, construct_reward_prompt
+from .json_utils import (
+    strict_load_json,
+    validate_shape,
+    construct_reward_prompt,
+)
 
 
 class GroundingGrader(BaseGrader):
@@ -87,11 +93,11 @@ class GroundingGrader(BaseGrader):
     ) -> GraderScore:
         """
         Entry point: must receive traj (full conversation trajectory)
-        
+
         Args:
             traj: Conversation trajectory, format: [{"role": ..., "content": ...}, ...]
                   or {"messages": [...]} format
-        
+
         Returns:
             GraderScore(name, score, reason)
         """
@@ -106,7 +112,7 @@ class GroundingGrader(BaseGrader):
                 score=0.0,
                 reason="BadInput: traj must be list or dict with 'messages'",
             )
-        
+
         if not messages_list:
             return GraderScore(
                 name=self.name,
@@ -115,11 +121,13 @@ class GroundingGrader(BaseGrader):
             )
 
         # 2. Build prompt
-        user_prompt = construct_reward_prompt(messages_list, GROUNDING_USER_PROMPT_TEMPLATE)
-        
+        user_prompt = construct_reward_prompt(
+            messages_list, GROUNDING_USER_PROMPT_TEMPLATE
+        )
+
         messages = [
             {"role": "system", "content": GROUNDING_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
 
         # 3. Call model
@@ -168,17 +176,17 @@ class GroundingGrader(BaseGrader):
         Returns:
             (score, reason) tuple
         """
-        total_key_facts = obj.get('total_key_facts', 0)
-        cited_key_facts = obj.get('cited_key_facts', 0)
-        fake_count = obj.get('fake_count', 0)
-        missing_count = obj.get('missing_count', 0)
+        total_key_facts = obj.get("total_key_facts", 0)
+        cited_key_facts = obj.get("cited_key_facts", 0)
+        fake_count = obj.get("fake_count", 0)
+        missing_count = obj.get("missing_count", 0)
 
         # invalid refs: structural/traceability issues
-        invalid_reference_nums = obj.get('invalid_reference_nums', [])
+        invalid_reference_nums = obj.get("invalid_reference_nums", [])
         if not isinstance(invalid_reference_nums, list):
             invalid_reference_nums = []
         invalid_ref_count = len(invalid_reference_nums)
-        
+
         # Edge case: no key facts, return 0 directly
         if total_key_facts == 0:
             citation_coverage_score = 0.0
@@ -186,13 +194,13 @@ class GroundingGrader(BaseGrader):
         else:
             # coverage: citation coverage rate
             citation_coverage_score = cited_key_facts / total_key_facts
-            
+
             # grounding: citation truthfulness (ratio of non-fake among cited)
             if cited_key_facts == 0:
                 grounding_score = 0.0
             else:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
-        
+
         # Light penalty: invalid refs lower the reward
         # Each invalid ref deducts 0.1, up to 0.5 max
         # invalid_penalty = min(0.1 * invalid_ref_count, 0.5)
@@ -201,11 +209,15 @@ class GroundingGrader(BaseGrader):
         # final_reward: composite score (weight 0.5:0.5), plus invalid penalty
         final_reward = 0.5 * citation_coverage_score + 0.5 * grounding_score
         # final_reward = max(0.0, final_reward - invalid_penalty)
-        
+
         # Build reason
-        good_citations = obj.get('good_citations', [])
-        good_str = "; ".join(str(x)[:50] for x in good_citations[:2]) if good_citations else ""
-        
+        good_citations = obj.get("good_citations", [])
+        good_str = (
+            "; ".join(str(x)[:50] for x in good_citations[:2])
+            if good_citations
+            else ""
+        )
+
         parts: List[str] = [
             f"total={total_key_facts}",
             f"cited={cited_key_facts}",
@@ -218,6 +230,6 @@ class GroundingGrader(BaseGrader):
         ]
         if good_str:
             parts.append(f"good:[{good_str}]")
-        
+
         reason = " | ".join(parts)
         return round(final_reward, 6), reason[:800]

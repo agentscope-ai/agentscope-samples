@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Audit Grader Prompt - Citation logic audit (Logic Analyst)"""
 
 # =============================================================================

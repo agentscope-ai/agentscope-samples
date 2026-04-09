@@ -1,9 +1,9 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
 import re
 from typing import Any, Dict, Tuple
-
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
@@ -31,7 +31,10 @@ def strict_load_json(text: str) -> Tuple[Dict[str, Any] | None, str | None]:
     try:
         obj = json.loads(js)
         if not isinstance(obj, dict):
-            return None, f"Top-level JSON is not an object: {type(obj).__name__}"
+            return (
+                None,
+                f"Top-level JSON is not an object: {type(obj).__name__}",
+            )
         return obj, None
     except Exception as e:
         return None, f"{type(e).__name__}: {e}"
@@ -84,7 +87,9 @@ def get_note(item: Any) -> str:
     return note[:120]
 
 
-def validate_shape(obj: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, str | None]:
+def validate_shape(
+    obj: Dict[str, Any],
+) -> Tuple[Dict[str, Any] | None, str | None]:
     """
     Ensure required sections exist and are dicts; ensure top_fixes is list or str.
     If missing required field => error.

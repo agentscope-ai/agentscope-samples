@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import os
@@ -93,9 +94,10 @@ class PresentationQualityGrader(BaseGrader):
         Entry point: directly feed report_content (research report text)
         - user_query is optional: used to fill prompt; defaults to "(unknown)" if not provided
         """
-        
+
         # DEBUG: check input arguments
         import logging
+
         logger = logging.getLogger("PresentationQualityGrader")
         logger.warning("[DEBUG] _aevaluate called")
         logger.warning(
@@ -111,32 +113,30 @@ class PresentationQualityGrader(BaseGrader):
             len(report_content) if report_content else 0,
         )
         logger.warning(
-            "[DEBUG] report_content preview (first 500 chars):"
-            " %s", (report_content or '')[:500],
+            "[DEBUG] report_content preview (first 500 chars): %s",
+            (report_content or "")[:500],
         )
         logger.warning(
             "[DEBUG] user_query: %s",
-            (user_query or '')[:200],
+            (user_query or "")[:200],
         )
-        
+
         report = (report_content or "").strip()
-        
+
         # Clean markdown code block markers
         report = self._strip_markdown_fences(report)
         # breakpoint()
         if not report:
             print("Empty report_content")
             logger.warning(
-                "[DEBUG] EMPTY report after strip!"
-                " original was: %s",
-                (report_content or '')[:200],
+                "[DEBUG] EMPTY report after strip! original was: %s",
+                (report_content or "")[:200],
             )
             return GraderScore(
                 name=self.name,
                 score=0.0,
                 reason="BadInput: empty report_content",
             )
-
 
         uq = (user_query or "").strip() or "(unknown)"
 
@@ -181,7 +181,7 @@ class PresentationQualityGrader(BaseGrader):
             )
 
         score, reason = self._score_and_reason(obj)
-        
+
         return GraderScore(name=self.name, score=score, reason=reason)
 
     def _score_and_reason(self, obj: Dict[str, Any]) -> Tuple[float, str]:
@@ -212,9 +212,15 @@ class PresentationQualityGrader(BaseGrader):
         score = total_score / float(max_score)
 
         # reason: sorted by score, list low-scoring items
-        low_items = [(k, score_map.get(k, 1)) for k in ALL_KEYS if score_map.get(k, 1) < 5]
+        low_items = [
+            (k, score_map.get(k, 1))
+            for k in ALL_KEYS
+            if score_map.get(k, 1) < 5
+        ]
         low_items.sort(key=lambda x: x[1])  # Sort ascending
-        low_str = ", ".join(f"{k}={s}({note_map.get(k,'')})" for k, s in low_items[:4])
+        low_str = ", ".join(
+            f"{k}={s}({note_map.get(k,'')})" for k, s in low_items[:4]
+        )
         fixes_str = " | ".join(str(x) for x in (top_fixes or [])[:3])
 
         parts: List[str] = []
@@ -236,7 +242,9 @@ class PresentationQualityGrader(BaseGrader):
         """
         text = text.strip()
         # Remove leading ```xxx
-        text = re.sub(r'^```(?:markdown|md)?\s*\n?', '', text, flags=re.IGNORECASE)
+        text = re.sub(
+            r"^```(?:markdown|md)?\s*\n?", "", text, flags=re.IGNORECASE
+        )
         # Remove trailing ```
-        text = re.sub(r'\n?```\s*$', '', text)
+        text = re.sub(r"\n?```\s*$", "", text)
         return text.strip()

@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 """
 Tool prompt builder module.
 Generates clear, structured tool usage instructions.
 """
+
 
 def get_tool_prompt_template() -> str:
     """
@@ -11,7 +13,7 @@ def get_tool_prompt_template() -> str:
     Returns:
         Pre-defined tool description text.
     """
-    
+
     return """## 可用工具列表
 
 ### ⚠️ 重要说明

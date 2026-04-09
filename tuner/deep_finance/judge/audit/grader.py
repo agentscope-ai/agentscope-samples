@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 """Audit Grader - Citation logic audit (OpenJudge logic version)"""
+
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from openjudge.graders.base_grader import BaseGrader
 from openjudge.graders.schema import GraderScore
@@ -12,8 +14,15 @@ try:
 except Exception:
     from openjudge.models.openai_chat_model import OpenAIChatModel
 
-from .prompt import CITATION_INTEGRITY_PROMPT_COT, CITATION_INTEGRITY_USER_TEMPLATE
-from .json_utils import strict_load_json, validate_integrity_shape, construct_reward_prompt
+from .prompt import (
+    CITATION_INTEGRITY_PROMPT_COT,
+    CITATION_INTEGRITY_USER_TEMPLATE,
+)
+from .json_utils import (
+    strict_load_json,
+    validate_integrity_shape,
+    construct_reward_prompt,
+)
 
 
 class AuditGrader(BaseGrader):
@@ -76,13 +85,13 @@ class AuditGrader(BaseGrader):
     ) -> GraderScore:
         """
         Entry point: must receive traj (full conversation trajectory)
-        
+
         Args:
             traj: Conversation trajectory, supports these formats:
                   - [{"role": ..., "content": ...}, ...] direct message list
                   - {"messages": [...]} dict with messages field
                   - {"traj": [[...]]} dict with traj field (double nested)
-        
+
         Returns:
             GraderScore(name, score, reason)
         """
@@ -105,7 +114,7 @@ class AuditGrader(BaseGrader):
                 score=0.0,
                 reason="BadInput: traj must be list or dict with 'messages'/'traj'",
             )
-        
+
         if not messages_list:
             return GraderScore(
                 name=self.name,
@@ -115,11 +124,13 @@ class AuditGrader(BaseGrader):
 
         # 2. Build Prompt
         # Use the new System Prompt and User Template
-        user_prompt = construct_reward_prompt(messages_list, CITATION_INTEGRITY_USER_TEMPLATE)
-        
+        user_prompt = construct_reward_prompt(
+            messages_list, CITATION_INTEGRITY_USER_TEMPLATE
+        )
+
         messages = [
             {"role": "system", "content": CITATION_INTEGRITY_PROMPT_COT},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
 
         # 3. Model inference
@@ -164,48 +175,55 @@ class AuditGrader(BaseGrader):
         # Use model output directly; if missing, calculate manually
         audit_trail = obj.get("audit_trail", [])
         total_citations = len(audit_trail)
-        
+
         # Count verdict distribution
         verdict_counts = {
             "Supported": 0,
             "Overstated": 0,
             "Contradicted": 0,
             "Hallucinated": 0,
-            "Irrelevant": 0
+            "Irrelevant": 0,
         }
-        
+
         for item in audit_trail:
             v = item.get("verdict", "Irrelevant")
             if v in verdict_counts:
                 verdict_counts[v] += 1
             else:
                 verdict_counts["Irrelevant"] += 1
-        
+
         supported_count = verdict_counts["Supported"]
-        
+
         # Prefer model's output score; fall back to manual calculation if invalid
         # model_score = obj.get("integrity_score")
         # if isinstance(model_score, (float, int)) and 0.0 <= model_score <= 1.0:
         #     final_score = float(model_score)
         # else:
-        final_score = supported_count / total_citations if total_citations > 0 else 0.0
+        final_score = (
+            supported_count / total_citations if total_citations > 0 else 0.0
+        )
 
         # Build Reason
         # Format: Score: 0.80 | Total: 10 | Supp: 8, Over: 1, Hallu: 1 | Summary: ...
         stats_parts = []
         for k, v in verdict_counts.items():
             if v > 0:
-                stats_parts.append(f"{k[:4]}:{v}") # Abbreviated verdict
-        
+                stats_parts.append(f"{k[:4]}:{v}")  # Abbreviated verdict
+
         stats_str = ", ".join(stats_parts)
         qualitative = obj.get("qualitative_summary", "No summary provided.")
-        
+
         # Extract primary error examples (if any)
         errors = [x for x in audit_trail if x.get("verdict") != "Supported"]
         error_msg = ""
         if errors:
             first_err = errors[0]
-            error_msg = f" | Example Error ([{first_err.get('citation_id')}]) {first_err.get('verdict')}: {first_err.get('logic_analysis')}"
+            error_msg = (
+                f" | Example Error"
+                f" ([{first_err.get('citation_id')}])"
+                f" {first_err.get('verdict')}:"
+                f" {first_err.get('logic_analysis')}"
+            )
 
         reason = (
             f"Score: {final_score:.2f} | Total: {total_citations} | {stats_str} | "

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # 8 presentation quality checks: A(3)+B(3)+C(2)=8
 QUALITY_SYSTEM_PROMPT = """
 你是一位“深度研究报告呈现评审官”。你的任务是评估报告的 **用户体验与信息架构 (Presentation & UX)**，为强化学习提供奖励信号。
@@ -101,8 +102,16 @@ USER_PROMPT_TEMPLATE = """
 """.strip()
 
 # 8 check item keys (for Python averaging, deterministic)
-A_KEYS = ["A1_key_takeaways_top", "A2_navigable_structure", "A3_visual_hierarchy"]
-B_KEYS = ["B1_dense_info_structured", "B2_comparisons_aligned", "B3_consistency"]
+A_KEYS = [
+    "A1_key_takeaways_top",
+    "A2_navigable_structure",
+    "A3_visual_hierarchy",
+]
+B_KEYS = [
+    "B1_dense_info_structured",
+    "B2_comparisons_aligned",
+    "B3_consistency",
+]
 C_KEYS = ["C1_argument_chain_presented", "C2_risk_and_actionability_clear"]
 
 ALL_KEYS = A_KEYS + B_KEYS + C_KEYS

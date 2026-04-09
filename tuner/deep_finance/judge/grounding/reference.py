@@ -1,4 +1,5 @@
-GROUNDING_SYSTEM_PROMPT = """你是一位“引用审计员”，负责审计金融研究报告是否遵守引用规范，并输出用于训练的 JSON 结果（只输出 JSON）。
+# -*- coding: utf-8 -*-
+GROUNDING_SYSTEM_PROMPT = """你是一位"引用审计员"，负责审计金融研究报告是否遵守引用规范，并输出用于训练的 JSON 结果（只输出 JSON）。
 
 ========================
 一、引用规范（以此为准）
@@ -99,7 +100,6 @@ GROUNDING_SYSTEM_PROMPT = """你是一位“引用审计员”，负责审计金
 """
 
 
-
 import re
 from typing import Dict, Any, List
 
@@ -119,14 +119,21 @@ def _extract_text_content(content) -> str:
         return "\n".join(out)
     return str(content)
 
+
 def _strip_think(text: str) -> str:
     return re.sub(r"<think>.*?</think>\s*", "", text, flags=re.S).strip()
 
+
 def _normalize_traj(trajectory):
     # Compatible with [[...]] format
-    if isinstance(trajectory, list) and trajectory and isinstance(trajectory[0], list):
+    if (
+        isinstance(trajectory, list)
+        and trajectory
+        and isinstance(trajectory[0], list)
+    ):
         return trajectory[0]
     return trajectory
+
 
 def _extract_tool_call_json(text: str) -> str:
     m = re.search(r"```json\s*(\[[\s\S]*?\])\s*```", text)
@@ -134,24 +141,35 @@ def _extract_tool_call_json(text: str) -> str:
         return m.group(1).strip()
     l, r = text.find("["), text.rfind("]")
     if l != -1 and r != -1 and r > l:
-        cand = text[l:r+1].strip()
+        cand = text[l : r + 1].strip()
         if ("tool_name" in cand) and ("tool_args" in cand):
             return cand
     return ""
+
 
 def _looks_like_tool_result(text: str) -> bool:
     t = text.strip()
     if t.startswith("Tool:") or t.startswith("Result:"):
         return True
-    if t.startswith("{") and ("query" in t) and ("search_results" in t or "response_content" in t):
+    if (
+        t.startswith("{")
+        and ("query" in t)
+        and ("search_results" in t or "response_content" in t)
+    ):
         return True
     if ("股票代码 |" in t) or ("单位：" in t) or t.startswith("### "):
         return True
     return False
 
+
 def _is_probably_final_report(text: str) -> bool:
     t = text.strip()
-    return ("## References" in t) or ("[TASK_COMPLETED]" in t) or t.lstrip().startswith("# ")
+    return (
+        ("## References" in t)
+        or ("[TASK_COMPLETED]" in t)
+        or t.lstrip().startswith("# ")
+    )
+
 
 def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
     traj = _normalize_traj(trajectory)
@@ -172,7 +190,9 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
     if not final_report:
         for i in range(len(traj) - 1, -1, -1):
             if traj[i].get("role") == "assistant":
-                final_report = _strip_think(_extract_text_content(traj[i].get("content")))
+                final_report = _strip_think(
+                    _extract_text_content(traj[i].get("content"))
+                )
                 break
 
     # iterate
@@ -183,7 +203,11 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
         if not raw:
             continue
 
-        if role == "user" and not user_query and (not _looks_like_tool_result(raw)):
+        if (
+            role == "user"
+            and not user_query
+            and (not _looks_like_tool_result(raw))
+        ):
             user_query = txt
             continue
 
@@ -199,7 +223,9 @@ def construct_reward_prompt(trajectory: List[Dict[str, Any]]) -> str:
                 # Additional user context after query is also
                 # kept as evidence (some inject tool_result into user)
                 if user_query:
-                    evidence.append(f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}")
+                    evidence.append(
+                        f"[Step {idx}] EVIDENCE_USER_CONTEXT:\n{txt}"
+                    )
 
     evidence_text = "\n\n".join(tool_calls + evidence)
 
@@ -222,7 +248,7 @@ class RefJudgeEvaluator:
 
     Uses LLM to evaluate citation coverage and truthfulness of reports.
     """
-    
+
     def __init__(self, llm_client):
         """
         Initialize evaluator.
@@ -232,8 +258,10 @@ class RefJudgeEvaluator:
         """
         self.llm_client = llm_client
         print("✓ RefJudgeEvaluator: Initialized")
-    
-    def build_messages(self, conversation_history: List[Dict]) -> List[Dict[str, str]]:
+
+    def build_messages(
+        self, conversation_history: List[Dict]
+    ) -> List[Dict[str, str]]:
         """
         Build LLM evaluation messages from conversation history.
 
@@ -245,20 +273,22 @@ class RefJudgeEvaluator:
         """
         print("\n[RefJudgeEvaluator] Building evaluation messages...")
         print(f"  - Conversation history turns: {len(conversation_history)}")
-        
+
         # Call the existing prompt construction function
         user_prompt = construct_reward_prompt(conversation_history)
-        
+
         messages = [
             {"role": "system", "content": GROUNDING_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
-        
-        print(f"  ✓ 消息构建完成，system prompt 长度: {len(GROUNDING_SYSTEM_PROMPT)}")
+
+        print(
+            f"  ✓ 消息构建完成，system prompt 长度: {len(GROUNDING_SYSTEM_PROMPT)}"
+        )
         print(f"  ✓ user prompt 长度: {len(user_prompt)}")
-        
+
         return messages
-    
+
     def _compute_scores(self, raw_result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Compute scores from LLM raw results.
@@ -270,16 +300,16 @@ class RefJudgeEvaluator:
         Returns:
             Dict with citation_coverage_score, grounding_score, final_reward
         """
-        total_key_facts = raw_result.get('total_key_facts', 0)
-        cited_key_facts = raw_result.get('cited_key_facts', 0)
-        fake_count = raw_result.get('fake_count', 0)
+        total_key_facts = raw_result.get("total_key_facts", 0)
+        cited_key_facts = raw_result.get("cited_key_facts", 0)
+        fake_count = raw_result.get("fake_count", 0)
 
         # invalid refs: structural/traceability issues (from prompt's invalid_reference_nums)
-        invalid_reference_nums = raw_result.get('invalid_reference_nums', [])
+        invalid_reference_nums = raw_result.get("invalid_reference_nums", [])
         if not isinstance(invalid_reference_nums, list):
             invalid_reference_nums = []
         invalid_ref_count = len(invalid_reference_nums)
-        
+
         # Edge case: no key facts, return 0 directly
         if total_key_facts == 0:
             citation_coverage_score = 0.0
@@ -287,13 +317,13 @@ class RefJudgeEvaluator:
         else:
             # coverage: citation coverage rate
             citation_coverage_score = cited_key_facts / total_key_facts
-            
+
             # grounding: citation truthfulness (ratio of non-fake among cited)
             if cited_key_facts == 0:
                 grounding_score = 0.0
             else:
                 grounding_score = max(0.0, 1 - fake_count / cited_key_facts)
-        
+
         # Light penalty: invalid refs lower the reward (without changing cited_key_facts stats).
         # Definition: invalid_reference_nums in the prompt is
         # "non-compliant ref nums from the body text (deduplicated)".
@@ -303,16 +333,18 @@ class RefJudgeEvaluator:
         # final_reward: composite score (code-computed, weight 0.5:0.5), plus invalid penalty
         final_reward = 0.5 * citation_coverage_score + 0.5 * grounding_score
         final_reward = max(0.0, final_reward - invalid_penalty)
-        
+
         return {
-            'citation_coverage_score': citation_coverage_score,
-            'grounding_score': grounding_score,
-            'final_reward': final_reward,
-            'invalid_ref_count': invalid_ref_count,
-            'invalid_penalty': invalid_penalty,
+            "citation_coverage_score": citation_coverage_score,
+            "grounding_score": grounding_score,
+            "final_reward": final_reward,
+            "invalid_ref_count": invalid_ref_count,
+            "invalid_penalty": invalid_penalty,
         }
-    
-    async def evaluate_async(self, conversation_history: List[Dict]) -> Dict[str, Any]:
+
+    async def evaluate_async(
+        self, conversation_history: List[Dict]
+    ) -> Dict[str, Any]:
         """
         Async evaluate citation compliance.
 
@@ -327,39 +359,48 @@ class RefJudgeEvaluator:
             - total_key_facts, cited_key_facts, fake_count and other raw fields
         """
         # print(f"\nStarting citation compliance evaluation...")
-        
+
         messages = self.build_messages(conversation_history)
         raw_result = await self.llm_client.evaluate_async(messages)
-        
+
         # Compute scores
         scores = self._compute_scores(raw_result)
-        
+
         # Merge raw results and computed scores
         result = {**raw_result, **scores}
-        
+
         # Ensure required fields exist
-        result.setdefault('total_key_facts', 0)
-        result.setdefault('cited_key_facts', 0)
-        result.setdefault('missing_count', 0)
-        result.setdefault('fake_count', 0)
-        result.setdefault('invalid_reference_nums', [])
-        result.setdefault('good_citations', [])
-        
-        print(f"  \u2713 [RefJudgeEvaluator] Citation compliance evaluation complete:")
+        result.setdefault("total_key_facts", 0)
+        result.setdefault("cited_key_facts", 0)
+        result.setdefault("missing_count", 0)
+        result.setdefault("fake_count", 0)
+        result.setdefault("invalid_reference_nums", [])
+        result.setdefault("good_citations", [])
+
+        print(
+            "  \u2713 [RefJudgeEvaluator] Citation compliance evaluation complete:"
+        )
         print(f"    - total_key_facts: {result['total_key_facts']}")
         print(f"    - cited_key_facts: {result['cited_key_facts']}")
         print(f"    - fake_count: {result['fake_count']}")
         print(f"    - invalid_ref_count: {result.get('invalid_ref_count', 0)}")
-        print(f"    - invalid_penalty: {result.get('invalid_penalty', 0.0):.4f}")
-        print(f"    - citation_coverage_score: {result['citation_coverage_score']:.4f}")
+        print(
+            f"    - invalid_penalty: {result.get('invalid_penalty', 0.0):.4f}"
+        )
+        print(
+            f"    - citation_coverage_score: {result['citation_coverage_score']:.4f}"
+        )
         print(f"    - grounding_score: {result['grounding_score']:.4f}")
         print(f"    - final_reward: {result['final_reward']:.4f}")
-        
+
         return result
-    
-    def evaluate_sync(self, conversation_history: List[Dict]) -> Dict[str, Any]:
+
+    def evaluate_sync(
+        self, conversation_history: List[Dict]
+    ) -> Dict[str, Any]:
         """
         Sync evaluate citation compliance.
         """
         import asyncio
+
         return asyncio.run(self.evaluate_async(conversation_history))

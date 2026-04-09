@@ -51,34 +51,36 @@ from metric_helper.tool_metric_helper import (
 )
 from prompt.tool_prompt_builder import get_tool_prompt_template
 
-
-
-
 # MCP (finance-mcp) Toolkit cache (process-local)
 _FINANCE_MCP_TOOLKIT: Optional[Toolkit] = None
 _FINANCE_MCP_TOOLKIT_LOCK: asyncio.Lock = asyncio.Lock()
 
 
-async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-statements
+async def get_finance_mcp_toolkit() -> (
+    Toolkit
+):  # pylint: disable=too-many-statements
     """Create (once per process) and return a Toolkit backed by the finance-mcp MCP server."""
     global _FINANCE_MCP_TOOLKIT
-    
+
     # Setup debug logger
     logger = logging.getLogger("deep_finance.finance_mcp")
     logger.setLevel(logging.DEBUG)
     if not logger.handlers:
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s [%(levelname)s] [PID:%(process)d] %(name)s: %(message)s'
-        ))
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s] [PID:%(process)d] %(name)s: %(message)s"
+            )
+        )
         logger.addHandler(handler)
-    
+
     pid = os.getpid()
     logger.debug(
-        "[PID:%d] get_finance_mcp_toolkit called,"
-        " cached=%s", pid, _FINANCE_MCP_TOOLKIT is not None,
+        "[PID:%d] get_finance_mcp_toolkit called, cached=%s",
+        pid,
+        _FINANCE_MCP_TOOLKIT is not None,
     )
-    
+
     if _FINANCE_MCP_TOOLKIT is not None:
         logger.debug("[PID:%d] Returning cached toolkit", pid)
         return _FINANCE_MCP_TOOLKIT
@@ -91,7 +93,12 @@ async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-stat
         # Jitter to avoid thundering-herd when many workers start together.
         jitter_max = float(os.getenv("FINANCE_MCP_INIT_JITTER_MAX_S", "15"))
         jitter_sleep = random.uniform(0, jitter_max) if jitter_max > 0 else 0
-        logger.debug("[PID:%d] Jitter sleep: %.2fs (max=%.1fs)", pid, jitter_sleep, jitter_max)
+        logger.debug(
+            "[PID:%d] Jitter sleep: %.2fs (max=%.1fs)",
+            pid,
+            jitter_sleep,
+            jitter_max,
+        )
         if jitter_sleep > 0:
             await asyncio.sleep(jitter_sleep)
 
@@ -107,8 +114,12 @@ async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-stat
             "[PID:%d] MCP config: transport=%s, url=%s,"
             " timeout=%d, sse_read_timeout=%d,"
             " max_retries=%d",
-            pid, transport, url, timeout_s,
-            sse_read_timeout_s, max_retries,
+            pid,
+            transport,
+            url,
+            timeout_s,
+            sse_read_timeout_s,
+            max_retries,
         )
 
         headers: Dict[str, str] = {}
@@ -138,7 +149,11 @@ async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-stat
         if headers:
             client_kwargs["headers"] = headers
 
-        logger.debug("[PID:%d] Creating HttpStatelessClient with kwargs: %s", pid, client_kwargs)
+        logger.debug(
+            "[PID:%d] Creating HttpStatelessClient with kwargs: %s",
+            pid,
+            client_kwargs,
+        )
         try:
             client = HttpStatelessClient(
                 **client_kwargs,
@@ -147,17 +162,21 @@ async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-stat
             )
             logger.debug(
                 "[PID:%d] HttpStatelessClient created"
-                " successfully (with timeout args)", pid,
+                " successfully (with timeout args)",
+                pid,
             )
         except TypeError as te:
             logger.warning(
                 "[PID:%d] HttpStatelessClient TypeError"
-                " (fallback without timeout): %s", pid, te,
+                " (fallback without timeout): %s",
+                pid,
+                te,
             )
             client = HttpStatelessClient(**client_kwargs)
             logger.debug(
                 "[PID:%d] HttpStatelessClient created"
-                " successfully (without timeout args)", pid,
+                " successfully (without timeout args)",
+                pid,
             )
 
         last_err: Optional[Exception] = None
@@ -166,63 +185,85 @@ async def get_finance_mcp_toolkit() -> Toolkit:  # pylint: disable=too-many-stat
                 logger.debug(
                     "[PID:%d] Attempt %d/%d: Calling"
                     " client.list_tools()...",
-                    pid, attempt, max_retries,
+                    pid,
+                    attempt,
+                    max_retries,
                 )
-                
+
                 # First test list_tools directly
                 tools_list = await client.list_tools()
-                logger.info("[PID:%d] Attempt %d: list_tools returned %d tools: %s",
-                            pid, attempt, len(tools_list), [t.name for t in tools_list])
-                
+                logger.info(
+                    "[PID:%d] Attempt %d: list_tools returned %d tools: %s",
+                    pid,
+                    attempt,
+                    len(tools_list),
+                    [t.name for t in tools_list],
+                )
+
                 if len(tools_list) == 0:
                     raise ValueError(
                         "list_tools returned empty list"
                         " - MCP server may not have tools registered"
                     )
-                
+
                 logger.debug(
                     "[PID:%d] Attempt %d: Calling"
                     " toolkit.register_mcp_client()...",
-                    pid, attempt,
+                    pid,
+                    attempt,
                 )
-                await toolkit.register_mcp_client(client, group_name="finance-mcp")
-                
+                await toolkit.register_mcp_client(
+                    client, group_name="finance-mcp"
+                )
+
                 _FINANCE_MCP_TOOLKIT = toolkit
                 schemas = toolkit.get_json_schemas()
-                logger.info("[PID:%d] finance-mcp toolkit ready: transport=%s url=%s tools=%d",
-                            pid, transport, url, len(schemas))
+                logger.info(
+                    "[PID:%d] finance-mcp toolkit ready: transport=%s url=%s tools=%d",
+                    pid,
+                    transport,
+                    url,
+                    len(schemas),
+                )
                 logger.debug(
                     "[PID:%d] Registered tool schemas: %s",
                     pid,
-                    [s.get('function', {}).get('name')
-                     for s in schemas],
+                    [s.get("function", {}).get("name") for s in schemas],
                 )
                 return toolkit
-                
+
             except Exception as e:
                 import traceback
+
                 last_err = e
                 backoff = min(2 ** (attempt - 1), 16)
                 sleep_s = backoff + random.uniform(0, 0.5)
                 logger.warning(
                     "[PID:%d] Attempt %d/%d FAILED: %s",
-                    pid, attempt, max_retries, repr(e),
+                    pid,
+                    attempt,
+                    max_retries,
+                    repr(e),
                 )
-                logger.debug("[PID:%d] Full traceback:\n%s", pid, traceback.format_exc())
+                logger.debug(
+                    "[PID:%d] Full traceback:\n%s", pid, traceback.format_exc()
+                )
                 if attempt < max_retries:
                     logger.debug("[PID:%d] Retrying in %.1fs...", pid, sleep_s)
                     await asyncio.sleep(sleep_s)
 
         # If we got here, init failed after retries.
         logger.error(
-            "[PID:%d] All %d attempts failed."
-            " Last error: %s",
-            pid, max_retries, repr(last_err),
+            "[PID:%d] All %d attempts failed. Last error: %s",
+            pid,
+            max_retries,
+            repr(last_err),
         )
         raise RuntimeError(
             f"Failed to initialize finance-mcp toolkit"
             f" for {url}: {last_err!r}",
         ) from last_err
+
 
 # Prompt template cache
 _PROMPT_TEMPLATE_CACHE: str | None = None
@@ -232,27 +273,30 @@ _TOOL_PROMPT_CACHE: str | None = None
 def _load_prompt_templates() -> tuple[str, str]:
     """Load and cache prompt templates."""
     global _PROMPT_TEMPLATE_CACHE, _TOOL_PROMPT_CACHE
-    
+
     if _PROMPT_TEMPLATE_CACHE is None:
-        prompt_file = os.path.join(os.path.dirname(__file__), "prompt", "finance_analyst_prompt.md")
+        prompt_file = os.path.join(
+            os.path.dirname(__file__), "prompt", "finance_analyst_prompt.md"
+        )
         with open(prompt_file, "r", encoding="utf-8") as f:
             _PROMPT_TEMPLATE_CACHE = f.read()
-    
+
     if _TOOL_PROMPT_CACHE is None:
         _TOOL_PROMPT_CACHE = get_tool_prompt_template()
-    
+
     return _PROMPT_TEMPLATE_CACHE, _TOOL_PROMPT_CACHE
 
 
 def _build_system_prompt() -> str:
     """Build system prompt with current date and tool list."""
     from datetime import datetime
+
     prompt_template, tool_prompt = _load_prompt_templates()
-    
+
     current_date = datetime.now().strftime("%Y-%m-%d")
     system_prompt = prompt_template.replace("{current_date}", current_date)
     system_prompt = system_prompt.replace("{tool_list}", tool_prompt)
-    
+
     return system_prompt
 
 
@@ -275,7 +319,11 @@ def _extract_sys_and_user(task: Dict[str, Any]) -> tuple[str, str]:
     if isinstance(init_messages, list):
         # Find the first system prompt and the last user query
         for m in init_messages:
-            if isinstance(m, dict) and m.get("role") == "system" and not sys_prompt:
+            if (
+                isinstance(m, dict)
+                and m.get("role") == "system"
+                and not sys_prompt
+            ):
                 sys_prompt = str(m.get("content", "") or "")
         for m in reversed(init_messages):
             if isinstance(m, dict) and m.get("role") == "user":
@@ -306,7 +354,7 @@ async def run_deep_finance(
 ) -> WorkflowOutput:
     """DeepFinance workflow (Route B skeleton)."""
     import time
-    
+
     assert (
         auxiliary_models is None or len(auxiliary_models) == 0
     ), "No auxiliary models are used in this workflow (for now)."
@@ -330,40 +378,42 @@ async def run_deep_finance(
     # Extract tool_stats and compute metrics
     tool_stats = await extract_tool_stats_from_agent(agent, total_time)
     metrics = compute_single_tool_metrics(tool_stats)
-    
+
     # Extract response content, convert to dict for cross-process serialization safety
-    response_content = response.content if hasattr(response, 'content') else str(response)
-    if hasattr(response_content, 'model_dump'):
+    response_content = (
+        response.content if hasattr(response, "content") else str(response)
+    )
+    if hasattr(response_content, "model_dump"):
         response_content = response_content.model_dump()
     elif not isinstance(response_content, (str, list, dict, type(None))):
         response_content = str(response_content)
-    
+
     # ========== Save article to jsonl file ==========
     # Get trajectory_save_dir from task.workflow_args
     workflow_args = task.get("workflow_args", {})
     trajectory_save_dir = workflow_args.get("trajectory_save_dir")
-    
+
     # Add detailed logging and error handling
     task_id = task.get("task_id") or task.get("id") or "unknown"
-    
+
     # Fall back to default backup path if trajectory_save_dir is None
     if trajectory_save_dir is None:
         trajectory_save_dir = os.path.join(
-            os.path.dirname(__file__), 
-            "trajectory", 
-            "backup"
+            os.path.dirname(__file__), "trajectory", "backup"
         )
         logging.warning(
             "[ArticleSaver] trajectory_save_dir is None! "
             "task_id=%s, workflow_args keys=%s. "
             "Falling back to backup dir: %s",
-            task_id, list(workflow_args.keys()), trajectory_save_dir
+            task_id,
+            list(workflow_args.keys()),
+            trajectory_save_dir,
         )
     else:
         logging.info(
-            "[ArticleSaver] Saving article to: %s"
-            " (task_id=%s)",
-            trajectory_save_dir, task_id,
+            "[ArticleSaver] Saving article to: %s (task_id=%s)",
+            trajectory_save_dir,
+            task_id,
         )
 
     # Build response dict (for judge consumption)
@@ -375,53 +425,75 @@ async def run_deep_finance(
             "tool_stats": tool_stats,
             "task_id": task.get("task_id"),
             "query": user_query,
-        }
+        },
     }
-    
+
     return WorkflowOutput(response=response_dict, metrics=metrics)
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="DeepFinance training entry (tuner style).")
+    p = argparse.ArgumentParser(
+        description="DeepFinance training entry (tuner style)."
+    )
 
     # Dataset
     p.add_argument(
-        "--dataset_path", type=str, default="./data",
+        "--dataset_path",
+        type=str,
+        default="./data",
         help="Path to DeepFinance dataset directory.",
     )
     p.add_argument(
-        "--split", type=str, default="train",
+        "--split",
+        type=str,
+        default="train",
         help="Dataset split, e.g. train/validation/test.",
     )
-    p.add_argument("--total_epochs", type=int, default=4, help="Total number of epochs to run.")
+    p.add_argument(
+        "--total_epochs",
+        type=int,
+        default=4,
+        help="Total number of epochs to run.",
+    )
 
     # Model (aligned with config.yaml)
     p.add_argument(
-        "--config_path", type=str,
+        "--config_path",
+        type=str,
         default="tuner/deep_finance/config_template.yaml",
         help="Yaml config file path.",
     )
     p.add_argument(
-        "--model_path", type=str,
+        "--model_path",
+        type=str,
         default="/path/to/base_model",
         help="Base model path for tuning.",
     )
     p.add_argument(
-        "--inference_engine_num", type=int, default=4,
+        "--inference_engine_num",
+        type=int,
+        default=4,
         help="Number of vllm inference model instances.",
     )
     # Algorithm (aligned with config.yaml)
     p.add_argument(
-        "--algorithm_type", type=str,
+        "--algorithm_type",
+        type=str,
         default="multi_step_grpo",
         help="Algorithm type for training.",
     )
     p.add_argument(
-        "--group_size", type=int, default=8,
-        help=("Group size for GRPO algorithm"
-              " (corresponds to repeat_times in config.yaml)."),
+        "--group_size",
+        type=int,
+        default=8,
+        help=(
+            "Group size for GRPO algorithm"
+            " (corresponds to repeat_times in config.yaml)."
+        ),
     )
-    p.add_argument("--batch_size", type=int, default=32, help="Batch size for each step.")
+    p.add_argument(
+        "--batch_size", type=int, default=32, help="Batch size for each step."
+    )
 
     return p
 
@@ -442,4 +514,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

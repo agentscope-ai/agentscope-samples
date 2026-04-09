@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Grounding Grader Prompt - Citation compliance evaluation"""
 
 # Old prompt version removed (was commented out, now lives in reference.py)
