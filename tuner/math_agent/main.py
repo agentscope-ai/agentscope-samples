@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Example of training a ReAct agent on GSM8K with Trinity-RFT."""
+
 from typing import Dict
 
 from agentscope.tuner import (

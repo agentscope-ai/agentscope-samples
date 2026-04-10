@@ -1,0 +1,107 @@
+# AgentScope Tuner configuration template
+# Reference: https://agentscope-ai.github.io/Trinity-RFT/en/main/tutorial/trinity_configs.html
+project: {{PROJECT_NAME}}
+name: {{EXPERIMENT_NAME}}
+
+# Checkpoint save directory
+checkpoint_root_dir: {{CHECKPOINT_DIR}}
+
+algorithm:
+  algorithm_type: multi_step_grpo  # GRPO-based algorithm for multi-step reasoning
+  repeat_times: {{GROUP_SIZE}}     # repeat each training sample N times
+
+model:
+  model_path: {{MODEL_PATH}}
+  max_response_tokens: {{MAX_RESPONSE_TOKENS}}
+  max_model_len: {{MAX_MODEL_LEN}}
+  temperature: 1.0
+
+cluster:
+  node_num: {{NODE_NUM}}          # Number of nodes
+  gpu_per_node: {{GPU_PER_NODE}}  # GPUs per node
+
+buffer:
+  total_epochs: {{TOTAL_EPOCHS}}
+  batch_size: {{BATCH_SIZE}}
+  train_batch_size: {{TRAIN_BATCH_SIZE}}
+  explorer_input:
+    taskset:
+      name: deep_finance
+      storage_type: file
+      path: {{DATA_PATH}}
+      split: '{{DATA_SPLIT}}'
+      rollout_args:
+        temperature: 1.0
+        max_tokens: 10000
+      workflow_args:
+        max_env_steps: {{MAX_ENV_STEPS}}     # Max interaction rounds per sample
+    # Evaluation set configuration
+    eval_tasksets:
+      - name: deep_finance_eval
+        storage_type: file
+        path: {{DATA_PATH}}
+        split: 'validation'
+        rollout_args:
+          temperature: 0.0   # Use greedy decoding for evaluation
+          max_tokens: 10000
+        workflow_args:
+          max_env_steps: {{MAX_ENV_STEPS}}
+  trainer_input:
+    experience_buffer:
+      name: deep_finance
+      storage_type: queue
+      max_read_timeout: 7200
+
+explorer:
+  eval_interval: {{EVAL_INTERVAL}}   # Evaluate on test set every N steps
+  runner_per_model: {{RUNNER_PER_MODEL}}
+  max_timeout: {{MAX_TIMEOUT}}
+  env_vars:
+    # LLM API credentials (required for WorkflowRunner)
+    OPENAI_API_KEY: "{{OPENAI_API_KEY}}"
+    OPENAI_BASE_URL: "{{OPENAI_BASE_URL}}"
+    RM_BASE_URL: "{{RM_BASE_URL}}"
+    RM_API_KEY: "{{RM_API_KEY}}"
+    OPENJUDGE_BASE_URL: "{{OPENJUDGE_BASE_URL}}"
+    OPENJUDGE_API_KEY: "{{OPENJUDGE_API_KEY}}"
+    OPENJUDGE_LLM: "{{OPENJUDGE_LLM}}"
+    OPENJUDGE_CONCURRENCY: "{{OPENJUDGE_CONCURRENCY}}"
+    # MCP configuration
+    FINANCE_MCP_URL: "{{FINANCE_MCP_URL}}"
+    FINANCE_MCP_TRANSPORT: "{{FINANCE_MCP_TRANSPORT}}"
+    FINANCE_MCP_INIT_JITTER_MAX_S: "{{FINANCE_MCP_INIT_JITTER_MAX_S}}"
+    FINANCE_MCP_INIT_MAX_RETRIES: "{{FINANCE_MCP_INIT_MAX_RETRIES}}"
+    # Trajectory save
+    TRAJECTORY_SAVE_DIR: "{{TRAJECTORY_SAVE_DIR}}"
+    # Judge reference answers
+    TRAIN_REF_ANS_PATH: "{{TRAIN_REF_ANS_PATH}}"
+    VAL_REF_ANS_PATH: "{{VAL_REF_ANS_PATH}}"
+  rollout_model:
+    engine_num: {{ENGINE_NUM}}
+    tensor_parallel_size: {{TENSOR_PARALLEL_SIZE}}
+    gpu_memory_utilization: {{GPU_MEMORY_UTILIZATION}}
+    max_model_len: {{MAX_MODEL_LEN}}  # Must be configured under rollout_model to be passed to vLLM engine
+    enable_prefix_caching: false
+    enforce_eager: false
+    enable_openai_api: true
+    enable_history: true
+    enable_auto_tool_choice: true
+    enable_thinking: false  # Disable model thinking mode, output tool calls directly
+    tool_call_parser: hermes
+    dtype: bfloat16
+    seed: 42
+
+synchronizer:
+  sync_style: dynamic_by_explorer
+  sync_method: 'nccl'
+  sync_interval: 1
+  sync_timeout: 1800
+
+trainer:
+  save_interval: {{SAVE_INTERVAL}}
+  grad_clip: 1.0
+  use_dynamic_bsz: true
+  ulysses_sequence_parallel_size: {{SEQ_PARALLEL_SIZE}}
+
+monitor:
+  monitor_type: wandb
