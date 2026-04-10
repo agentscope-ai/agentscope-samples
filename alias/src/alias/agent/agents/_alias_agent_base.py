@@ -3,7 +3,7 @@ import asyncio
 import json
 import time
 import traceback
-from typing import Any, Optional, Literal
+from typing import Any, List, Optional, Literal
 
 from loguru import logger
 
@@ -24,6 +24,117 @@ from alias.agent.utils.constants import MODEL_MAX_RETRIES
 
 
 class AliasAgentBase(ReActAgent):
+    @classmethod
+    async def create(
+        cls,
+        name: str,
+        model: str = "qwen3-max",
+        system_prompt: Optional[str] = None,
+        tools: Optional[List[str]] = None,
+        worker_full_toolkit: Optional[AliasToolkit] = None,
+        use_long_term_memory_service: bool = False,
+    ) -> "AliasAgentBase":
+        """
+        Create an AliasAgentBase instance with default configuration.
+
+        This is a convenience factory method that sets up the agent with
+        appropriate defaults. Tools are registered via share_tools from
+        worker_full_toolkit when both tools and worker_full_toolkit are
+        provided.
+
+        Args:
+            name: The unique identifier name for the agent instance.
+            model: The model name (e.g., "qwen3-max", "qwen-vl-max").
+                Must be a key in MODEL_FORMATTER_MAPPING from run.py.
+            system_prompt: The system prompt. If None, uses default prompt.
+            tools: List of tool names to register in the agent's toolkit.
+                Used together with worker_full_toolkit; tools are copied
+                via share_tools.
+            worker_full_toolkit: Source toolkit containing all tools.
+            When provided together with tools, the specified tools are shared
+            into the agent's toolkit.
+            use_long_term_memory_service: Whether to enable long-term memory
+            service.
+
+        Returns:
+            A configured AliasAgentBase instance.
+        """
+        from agentscope.memory import InMemoryMemory
+        from alias.agent.mock import MockSessionService
+        from alias.agent.run import MODEL_FORMATTER_MAPPING
+        from alias.agent.tools.share_tools import share_tools
+        from datetime import datetime
+
+        time_str = datetime.now().strftime("%Y%m%d%H%M%S")
+        if model not in MODEL_FORMATTER_MAPPING:
+            raise ValueError(
+                f"Unknown model name: {model}. "
+                f"Available models: {list(MODEL_FORMATTER_MAPPING.keys())}",
+            )
+
+        model_instance, formatter = MODEL_FORMATTER_MAPPING[model]
+        session_service = MockSessionService(
+            use_long_term_memory_service=use_long_term_memory_service,
+        )
+
+        # Initialize long-term memory if enabled (same as run.py)
+        long_term_memory = None
+        if use_long_term_memory_service:
+            from alias.server.clients.memory_client import MemoryClient
+            from alias.agent.memory.longterm_memory import AliasLongTermMemory
+
+            if await MemoryClient.is_available():
+                long_term_memory = AliasLongTermMemory(
+                    session_service=session_service,
+                )
+                logger.info(
+                    "Long-term memory service is available and initialized",
+                )
+            else:
+                logger.warning(
+                    "use_long_term_memory_service is True, but memory "
+                    "service is not available. Long-term memory will not "
+                    "be used. Please check if the memory service is "
+                    "running.",
+                )
+
+        # Build toolkit: use worker_full_toolkit's sandbox if provided,
+        # then share_tools
+        if worker_full_toolkit is not None:
+            toolkit = AliasToolkit(
+                sandbox=worker_full_toolkit.sandbox,
+                add_all=False,
+            )
+            if tools:
+                # Validate that each requested tool exists
+                # in worker_full_toolkit
+                for tool_name in tools:
+                    if tool_name not in worker_full_toolkit.tools:
+                        raise ValueError(
+                            f"Tool '{tool_name}' is not available. ",
+                        )
+                share_tools(worker_full_toolkit, toolkit, tools)
+                logger.info(f"Shared tools into agent toolkit: {tools}")
+        else:
+            toolkit = AliasToolkit(sandbox=None, add_all=False)
+
+        # Create agent instance
+        agent = cls(
+            name=name,
+            model=model_instance,
+            formatter=formatter,
+            memory=InMemoryMemory(),
+            toolkit=toolkit,
+            session_service=session_service,
+            state_saving_dir=f"./agent-states/run-{time_str}",
+            sys_prompt=system_prompt,
+            max_iters=10,
+            long_term_memory=long_term_memory,
+            long_term_memory_mode="both",
+        )
+
+        return agent
+
     def __init__(
         self,
         name: str,

@@ -87,6 +87,26 @@ def check_container_running(container_name: str) -> bool:
         return False
 
 
+def collection_exists(collection_name: str) -> bool:
+    """
+    Check if a Qdrant collection exists (Qdrant must be reachable).
+    Returns False if Qdrant is not reachable or collection does not exist.
+    """
+    if not collection_name:
+        return False
+    try:
+        import urllib.request
+
+        url = (
+            f"http://{QDRANT_HOST}:{QDRANT_PORT}/collections/"
+            f"{collection_name}"
+        )
+        with urllib.request.urlopen(url, timeout=2) as response:
+            return response.status == 200
+    except Exception:
+        return False
+
+
 def start_qdrant_container() -> None:
     """Start Qdrant Docker container with specified storage location."""
     if not check_docker_available():
