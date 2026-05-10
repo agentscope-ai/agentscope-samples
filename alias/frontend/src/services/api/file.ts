@@ -6,18 +6,17 @@ import {
 } from "@/types/api";
 import axios, { AxiosRequestConfig } from "axios";
 import { request } from "./request";
+import { env } from "@/config/env";
 
 // Create a dedicated axios instance for file operations
 const fileInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: env.apiUrl,
   timeout: 60000,
 });
 
 // Add request interceptor to set token
 fileInstance.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem("access_token") ||
-    import.meta.env.VITE_API_ACCESS_TOKEN;
+  const token = localStorage.getItem("access_token") || env.apiAccessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

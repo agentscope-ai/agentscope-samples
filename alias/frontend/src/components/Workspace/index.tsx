@@ -303,9 +303,10 @@ const Workspace = () => {
     if (d?.type === MessageType.TOOL_USE) prefixName = `Using tool input of `;
     if (d?.type === MessageType.TOOL_RESULT)
       prefixName = `Tool result output of `;
+    const toolName = (d as ToolCallMessage).tool_name ?? "Unknown Tool";
     return (
       <div className={styles.renderLabel}>
-        <span> {`${prefixName}🛠️ ${d?.tool_name ?? "Unknown Tool"}`}</span>
+        <span> {`${prefixName}🛠️ ${toolName}`}</span>
         <span className={styles.labelId}>{d.id}</span>
       </div>
     );

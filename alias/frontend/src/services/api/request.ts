@@ -1,11 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { ApiResponse } from "../types/conversation";
+import { env } from "@/config/env";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const USER_PROFILING_URL =
-  import.meta.env.VITE_USER_PROFILING_API_URL || "http://localhost:6380";
-const MAX_RETRIES = Number(import.meta.env.VITE_MAX_RETRIES) || 3;
-const RETRY_DELAY = Number(import.meta.env.VITE_RETRY_DELAY) || 1000;
+const BASE_URL = env.apiUrl;
+const USER_PROFILING_URL = env.userProfilingApiUrl;
+const MAX_RETRIES = env.maxRetries;
+const RETRY_DELAY = env.retryDelay;
 
 let onDoneCallback:
   | ((conversationId: string, taskId: string, messageId: string) => void)
@@ -16,9 +16,8 @@ export const setOnDoneCallback = (
   onDoneCallback = callback;
 };
 
-const FIXED_ACCESS_TOKEN =
-  import.meta.env.VITE_API_ACCESS_TOKEN || import.meta.env.VITE_API_TOKEN;
-const FIXED_REFRESH_TOKEN = import.meta.env.VITE_API_REFRESH_TOKEN;
+const FIXED_ACCESS_TOKEN = env.apiAccessToken;
+const FIXED_REFRESH_TOKEN = env.apiRefreshToken;
 
 class Request {
   private instance: AxiosInstance;

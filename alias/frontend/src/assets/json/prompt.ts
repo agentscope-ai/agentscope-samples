@@ -122,14 +122,14 @@ export const promptJson = {
         "Perform a comprehensive analysis of the long-term impact of US-China trade tensions on the semiconductor supply chain.",
     },
   ],
-  // Data Science  The file needs to be placed in /src/assets/file
-  // files: The files to the file to be uploaded. The files format is "/src/assets/file/filename" or ["/src/assets/file/filename"].
+  // Data Science  The file needs to be placed in public/file
+  // files: The files to the file to be uploaded. The files format is "/file/filename" or ["/file/filename"].
   ds: [
     {
       title: "Analysis of Disparities in Incident Allocation by Category",
       describe:
         "Find the discrepancy and imbalance in distribution of incidents assigned across categories",
-      files: ["/src/assets/file/incident_records.csv"],
+      files: ["/file/incident_records.csv"],
     },
     {
       title: "AI Agents Courses on Coursera",

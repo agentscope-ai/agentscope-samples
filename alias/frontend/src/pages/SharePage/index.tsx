@@ -23,7 +23,7 @@ import {
   SelectionType,
   ToolIconType,
 } from "@/types/message";
-import { RoadMap } from "@/types/roadmap";
+import { RoadMapDataProps } from "@/types/roadmap";
 
 const SharePage: React.FC = () => {
   const { sessionId, userId } = useParams<{
@@ -37,9 +37,8 @@ const SharePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [isPlaying, setIsPlaying] = useState(isReplayMode);
-  const [roadmapData, setRoadmapData] = useState<RoadMap | null>(null);
+  const [roadmapData, setRoadmapData] = useState<RoadMapDataProps | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
-  const { setDisplayedContent } = useWorkspace();
   const totalSteps = messages.length;
   const [activeTab, setActiveTab] = useState<"workspace" | "roadmap">(
     "workspace",
@@ -222,27 +221,6 @@ const SharePage: React.FC = () => {
       }
 
       try {
-        // const [messagesResponse, roadmapResponse] = await Promise.all([
-        //   conversationApi.getMessages(sessionId),
-        //   conversationApi.getRoadmap(sessionId),
-        // ]);
-
-        // if (messagesResponse.status && messagesResponse.payload) {
-        //   const apiResponse = messagesResponse as unknown as ApiResponse<
-        //     ListResponsePayload<ApiMessage>
-        //   >;
-        //   const apiMessages = apiResponse.payload.items;
-        //   if (apiMessages && apiMessages.length > 0) {
-        //     const mappedMessages = apiMessages.map(
-        //       mapApiMessageToChatMessage,
-        //     ) as Message[];
-        //     setMessages(mappedMessages);
-        //   }
-        // }
-
-        // if (roadmapResponse.status && roadmapResponse.payload) {
-        //   setRoadmapData(roadmapResponse.payload as unknown as RoadMap);
-        // }
         const res = await conversationApi.getShareConversations(
           userId,
           sessionId,
@@ -260,7 +238,8 @@ const SharePage: React.FC = () => {
             ) as Message[];
             setMessages(mappedMessages);
           }
-          if (roadmapResponse) setRoadmapData(roadmapResponse as RoadMap);
+          if (roadmapResponse)
+            setRoadmapData(roadmapResponse as RoadMapDataProps);
           setConversationName(res.payload.name);
         }
       } catch (err) {
@@ -335,18 +314,10 @@ const SharePage: React.FC = () => {
           </div>
           <div className={styles.tabContent}>
             {activeTab === "workspace" ? (
-              <Workspace
-                conversationId={sessionId || ""}
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-                onNextStep={onNextStep}
-                onPrevStep={onPrevStep}
-                todoList={null}
-                hideHeader={true}
-              />
+              <Workspace />
             ) : (
               <Roadmap
-                data={roadmapData || undefined}
+                data={roadmapData}
                 editable={false}
                 conversationId={sessionId || ""}
               />

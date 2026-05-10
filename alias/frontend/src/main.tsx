@@ -2,6 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/global.scss";
+import { validateProdConfig } from "@/config/env";
+
+// Verify production environment configuration
+validateProdConfig();
 
 // Enable hot reload
 if (import.meta.hot) {

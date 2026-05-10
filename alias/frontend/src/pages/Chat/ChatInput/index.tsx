@@ -71,13 +71,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
       },
     ];
   }, [chatMode]);
-  const handleCustomRequest = async (options: {
-    file: File;
-    onSuccess: Function;
-    onError: Function;
-    onProgress: Function;
-  }) => {
+  const handleCustomRequest: GetProp<typeof Upload, "customRequest"> = async (
+    options,
+  ) => {
     const { file, onSuccess, onError, onProgress } = options;
+
+    // Type guard: ensure file is a File object
+    if (!(file instanceof File)) {
+      const error = new Error("Invalid file type");
+      onError?.(error);
+      return;
+    }
+
     try {
       // Merge file names from server file list and local preview list
       let existingFiles: string[] = [];
@@ -86,7 +91,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         const response: any = await conversationApi.getFiles(conversationId);
         if (!response.status || !response.payload) {
           message.error("Failed to get file list");
-          onError(new Error("Failed to get file list"));
+          onError?.(new Error("Failed to get file list"));
           return;
         }
         existingFiles = [
@@ -99,7 +104,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
         message.error(`File ${file.name} exceeds 10MB limit`);
-        onError(new Error(`File ${file.name} exceeds 10MB limit`));
+        onError?.(new Error(`File ${file.name} exceeds 10MB limit`));
         return;
       }
 
@@ -109,7 +114,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         message.error(
           `File ${file.name} is being uploaded, please do not upload again.`,
         );
-        onError(
+        onError?.(
           new Error(
             `File ${file.name} is being uploaded, please do not upload again`,
           ),
@@ -159,7 +164,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ),
         );
 
-        onProgress({ percent: progress });
+        onProgress?.({ percent: progress });
       };
 
       // Execute upload
@@ -196,7 +201,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ),
         );
         message.success(`File ${uniqueFileName} uploaded successfully`);
-        onSuccess(uploadResponse.payload, file);
+        onSuccess?.(uploadResponse.payload, file);
       } else {
         // Update status to error
         setAttachedFiles((prev) =>
@@ -222,13 +227,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ),
         );
         message.error(`File ${uniqueFileName} upload failed`);
-        onError(new Error("Upload failed"));
+        onError?.(new Error("Upload failed"));
       }
     } catch (error: any) {
       // Get file name (may have been renamed)
-      const fileName = file.name;
+      const fileName = file instanceof File ? file.name : "unknown";
       message.error(`File ${fileName} upload failed, please try again`);
-      onError(error);
+      onError?.(error);
     }
   };
   const handleDeleteFileChange: GetProp<
