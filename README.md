@@ -87,6 +87,7 @@ This is a repository that **brings together a variety of ready-to-run Python age
 |                         | browser_use/browser_use_agent_pro                     | ✅               | ❌            | Advanced command-line Python browser agent using AgentScope              |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
 | **Deep Research**       | deep_research/agent_deep_research                     | ✅               | ❌            | Multi-agent research pipeline                    |
+|                         | deep_research/agent_qwen_deep_research                | ✅               | ❌            | Simplified deep research agent                   |
 |                         | deep_research/qwen_langgraph_search_fullstack_runtime | ❌               | ✅            | Full-stack deep research app                     |
 | **Games**               | games/game_werewolves                                 | ✅               | ❌            | Multi-agent roleplay game                        |
 | **Conversational Apps** | conversational_agents/chatbot_fullstack_runtime       | ✅               | ✅            | Chatbot application with frontend/backend        |

@@ -89,6 +89,7 @@
 |           | browser_use/browser_use_agent_pro                     | ✅             | ❌                     | 基于 AgentScope 的高级命令行浏览器智能体 |
 |           | browser_use/browser_use_fullstack_runtime             | ✅             | ✅                     | 带 UI 和沙盒环境的全栈浏览器自动化     |
 | **深度研究**  | deep_research/agent_deep_research                     | ✅             | ❌                     | 多 Agent 研究流程            |
+|              | deep_research/agent_qwen_deep_research                | ✅             | ❌                     | 简化的深度研究代理                   |
 |           | deep_research/qwen_langgraph_search_fullstack_runtime | ❌             | ✅                     | 全栈运行时深度研究应用             |
 | **游戏**    | games/game_werewolves                                 | ✅             | ❌                     | 多 Agent 角色扮演推理游戏        |
 | **对话应用**  | conversational_agents/chatbot_fullstack_runtime       | ✅             | ✅                     | 带前端/后端的聊天机器人            |
