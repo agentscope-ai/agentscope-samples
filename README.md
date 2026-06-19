@@ -66,6 +66,9 @@ This is a repository that **brings together a variety of ready-to-run Python age
 ├── evaluation/
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
+├── functionality/
+│   └── xquik_mcp_discovery/                # Read-only Xquik MCP tool discovery
+│
 ├── data_juicer_agent/                      # Data processing multi-agent system
 ├── tuner/                                  # Tune AgentScope applications using AgentScope Tuner
 │   ├── math_agent/                         # A quick start example for tuning
@@ -94,6 +97,7 @@ This is a repository that **brings together a variety of ready-to-run Python age
 |                         | conversational_agents/multiagent_conversation         | ✅               | ❌            | Multi-agent dialogue scenario                    |
 |                         | conversational_agents/multiagent_debate               | ✅               | ❌            | Agents engaging in debates                       |
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
+| **Functionality**       | functionality/xquik_mcp_discovery                     | ✅               | ❌            | Read-only MCP discovery for X workflows          |
 | **General AI Agent**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
 | **Financial Trading**   | evotraders/                                           | ✅               | ❌            | Self-Evolving Multi-Agent Trading System         |
 
