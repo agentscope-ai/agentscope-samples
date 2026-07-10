@@ -6,22 +6,24 @@ import os
 from deep_research_agent import DeepResearchAgent
 
 from agentscope import logger
-from agentscope.formatter import DashScopeChatFormatter
-from agentscope.memory import InMemoryMemory
+from agentscope.credential import DashScopeCredential
 from agentscope.model import DashScopeChatModel
-from agentscope.message import Msg
-from agentscope.mcp import StdIOStatefulClient
+from agentscope.message import UserMsg
+from agentscope.mcp import MCPClient, StdioMCPConfig
 
 
 async def main(user_query: str) -> None:
     """The main entry point for the Deep Research agent example."""
     logger.setLevel("DEBUG")
 
-    tavily_search_client = StdIOStatefulClient(
+    tavily_search_client = MCPClient(
         name="tavily_mcp",
-        command="npx",
-        args=["-y", "tavily-mcp@latest"],
-        env={"TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", "")},
+        is_stateful=True,
+        mcp_config=StdioMCPConfig(
+            command="npx",
+            args=["-y", "tavily-mcp@latest"],
+            env={"TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", "")},
+        ),
     )
 
     default_working_dir = os.path.join(
@@ -40,21 +42,22 @@ async def main(user_query: str) -> None:
             name="Friday",
             sys_prompt="You are a helpful assistant named Friday.",
             model=DashScopeChatModel(
-                api_key=os.environ.get("DASHSCOPE_API_KEY"),
-                model_name="qwen-max",
-                enable_thinking=False,
+                credential=DashScopeCredential(
+                    api_key=os.environ.get("DASHSCOPE_API_KEY"),
+                ),
+                model="qwen-max",
+                parameters=DashScopeChatModel.Parameters(
+                    thinking_enable=False,
+                ),
                 stream=True,
             ),
-            formatter=DashScopeChatFormatter(),
-            memory=InMemoryMemory(),
             search_mcp_client=tavily_search_client,
             tmp_file_storage_dir=agent_working_dir,
         )
         user_name = "Bob"
-        msg = Msg(
+        msg = UserMsg(
             user_name,
-            content=user_query,
-            role="user",
+            content=user_query
         )
         result = await agent(msg)
         logger.info(result)
