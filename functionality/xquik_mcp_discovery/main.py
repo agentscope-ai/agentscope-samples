@@ -43,7 +43,12 @@ def _explore_code(query: str) -> str:
     return f"""
 async () => spec.endpoints
   .filter((endpoint) => {{
-    const haystack = `${{endpoint.method}} ${{endpoint.path}} ${{endpoint.category}} ${{endpoint.summary}}`.toLowerCase();
+    const haystack = [
+      endpoint.method,
+      endpoint.path,
+      endpoint.category,
+      endpoint.summary
+    ].join(" ").toLowerCase();
     return haystack.includes({query_literal});
   }})
   .slice(0, 10)
@@ -57,18 +62,21 @@ async () => spec.endpoints
 """
 
 
-async def main() -> None:
-    client = MCPClient(
+def _mcp_client(api_key: str) -> MCPClient:
+    return MCPClient(
         name="xquik",
         is_stateful=False,
         enable_tools=["explore"],
         mcp_config=HttpMCPConfig(
             type="http_mcp",
-            url=os.environ.get("XQUIK_MCP_URL", DEFAULT_MCP_URL),
-            headers={"Authorization": f"Bearer {_required_api_key()}"},
+            url=DEFAULT_MCP_URL,
+            headers={"Authorization": f"Bearer {api_key}"},
         ),
     )
 
+
+async def main() -> None:
+    client = _mcp_client(_required_api_key())
     explore = await client.get_tool("explore")
     result = await explore(code=_explore_code(_query_from_args()))
     print(_extract_text(result))

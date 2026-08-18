@@ -6,8 +6,10 @@ This sample shows how to connect AgentScope's MCP client to Xquik's remote MCP s
 
 ```
 .
+├── __init__.py               # Enables package-based test discovery
 ├── README.md                 # Documentation
 ├── main.py                   # Entry point
+├── test_main.py              # Offline configuration and query tests
 └── requirements.txt          # Dependencies
 ```
 
@@ -17,7 +19,7 @@ The sample demonstrates a minimal AgentScope MCP integration for a hosted, authe
 
 - Connects to `https://xquik.com/mcp` with an `Authorization: Bearer <token>` header.
 - Enables only the read-only `explore` MCP tool.
-- Searches the Xquik API catalog for endpoint categories or summaries that match a query.
+- Searches the Xquik API catalogue for methods, paths, categories, or summaries that match a query.
 - Prints the matching endpoint method, path, category, summary, and free/paid status.
 
 No write or publish operations are executed. The sample does not call Xquik's live `xquik` execution tool.
@@ -41,11 +43,7 @@ pip install -r requirements.txt
 export XQUIK_API_KEY="your-api-key"
 ```
 
-Optional: override the MCP URL when testing a compatible endpoint.
-
-```bash
-export XQUIK_MCP_URL="https://xquik.com/mcp"
-```
+The sample fixes the remote URL to `https://xquik.com/mcp` so the API key is never sent to a configurable origin.
 
 ### Usage
 
@@ -63,9 +61,19 @@ python main.py monitors
 
 If no query is provided, the sample searches for `radar`.
 
+### Tests
+
+Run the offline tests from the repository root:
+
+```bash
+python -m unittest -v functionality.xquik_mcp_discovery.test_main
+```
+
 ## Features
 
 - Uses AgentScope's `MCPClient` and `HttpMCPConfig`.
 - Keeps the MCP connection stateless.
 - Restricts the remote server to the read-only `explore` tool.
 - Reads configuration only from environment variables.
+
+Xquik is an independent third-party service. It is not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.
