@@ -435,7 +435,7 @@ If you wish to integrate or customize the launch logic within Python, you can us
 
 ```python
 from agentscope_runtime.engine.app import AgentApp
-from alias.server.runtime.runner.alias_runner import AliasRunner
+from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
 
 # 1. Initialize AliasRunner
 # default_chat_mode options: "general", "dr", "browser", "ds", "finance"
