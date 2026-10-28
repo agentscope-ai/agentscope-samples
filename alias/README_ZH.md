@@ -437,7 +437,7 @@ alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general
 
 ```python
 from agentscope_runtime.engine.app import AgentApp
-from alias.server.runtime.runner.alias_runner import AliasRunner
+from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
 
 # 1. 初始化 AliasRunner
 # default_chat_mode 可选: "general", "dr", "browser", "ds", "finance"
