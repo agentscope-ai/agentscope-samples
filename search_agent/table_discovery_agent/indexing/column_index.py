@@ -47,6 +47,10 @@ class ColumnIndex:
         if not self._columns:
             raise ValueError("at least one column representation is required")
 
+        self._by_column = {
+            (column.table_id, column.column_name): column
+            for column in self._columns
+        }
         self._encoder = encoder
         self._indexes = {
             "metadata": _build_index(
@@ -68,6 +72,15 @@ class ColumnIndex:
         if not np.isfinite(vectors).all():
             raise ValueError("embeddings must contain only finite values")
         return np.ascontiguousarray(vectors)
+
+    def get_column(
+        self, table_id: str, column_name: str
+    ) -> ColumnRepresentation:
+        """Return the indexed representation of a known column."""
+        column = self._by_column.get((table_id, column_name))
+        if column is None:
+            raise ValueError(f"Unknown column: {table_id}.{column_name}")
+        return column
 
     def search(
         self,

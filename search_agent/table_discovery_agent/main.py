@@ -2,15 +2,16 @@
 """Run the table discovery command-line interface."""
 
 import argparse
+import os
 from pathlib import Path
 
 from data_lake import load_data_lake
 
 
 def main() -> None:
-    """List CSV tables or search their columns."""
+    """List CSV tables, search columns, or ask the discovery agent."""
     parser = argparse.ArgumentParser(
-        description="List CSV tables and search their columns."
+        description="List CSV tables and discover their columns."
     )
     parser.add_argument(
         "--lake",
@@ -18,40 +19,61 @@ def main() -> None:
         metavar="DIRECTORY",
         help="CSV data lake directory",
     )
-    parser.add_argument("--search", metavar="QUERY", help="column search text")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--search", metavar="QUERY", help="column search text")
+    mode.add_argument(
+        "--ask", metavar="QUESTION", help="ask the discovery agent"
+    )
+    parser.add_argument(
+        "--chat-model",
+        default="deepseek-flash",
+        help="DeepSeek model for --ask (default: %(default)s)",
+    )
     parser.add_argument(
         "--channel",
         choices=("metadata", "content"),
         default="metadata",
-        help="column representation to search (default: metadata)",
+        help="column representation for --search (default: metadata)",
     )
     parser.add_argument(
         "--top-k",
         type=int,
         default=5,
-        help="maximum number of search results (default: 5)",
+        help="maximum results for --search (default: 5)",
     )
     parser.add_argument(
         "--encoder",
         choices=("bge",),
         default="bge",
-        help="text encoder to use for search (default: bge)",
+        help="text encoder for --search or --ask (default: bge)",
     )
     parser.add_argument(
         "--embedding-model",
         type=Path,
         metavar="DIRECTORY",
-        help="local model directory for the encoder (required for search)",
+        help="local model directory for --search or --ask",
     )
     args = parser.parse_args()
 
-    if args.search is not None:
+    query = args.ask if args.ask is not None else args.search
+    if query is not None:
+        option = "--ask" if args.ask is not None else "--search"
         if args.lake is None or args.embedding_model is None:
-            parser.error("--search requires --lake and --embedding-model")
-        if not args.search.strip():
-            parser.error("--search requires non-empty text")
-        if args.top_k < 1:
-            parser.error("--top-k must be at least 1")
+            parser.error(f"{option} requires --lake and --embedding-model")
+        if not query.strip():
+            parser.error(f"{option} requires non-empty text")
+    if args.search is not None and args.top_k < 1:
+        parser.error("--top-k must be at least 1")
+
+    api_key = (
+        os.environ.get("DEEPSEEK_API_KEY", "").strip()
+        if args.ask is not None
+        else ""
+    )
+    if args.ask is not None and not api_key:
+        parser.error(
+            "--ask requires the DEEPSEEK_API_KEY environment variable"
+        )
 
     if args.lake is None:
         parser.print_help()
@@ -62,7 +84,7 @@ def main() -> None:
     except (OSError, ValueError) as error:
         parser.error(str(error))
 
-    if args.search is None:
+    if query is None:
         print(f"Found {len(tables)} tables")
         print()
         for table in tables:
@@ -79,9 +101,18 @@ def main() -> None:
             format_columns(frames),
             create_encoder(args.encoder, args.embedding_model),
         )
+        if args.ask is not None:
+            from agent import run_query
+
+            print(run_query(index, args.ask, args.chat_model, api_key))
+            return
+
         results = index.search(args.search, args.channel, args.top_k)
     except (ImportError, OSError, RuntimeError, ValueError) as error:
-        parser.error(str(error))
+        message = str(error)
+        parser.error(
+            message.replace(api_key, "[redacted]") if api_key else message
+        )
 
     for result in results:
         print(

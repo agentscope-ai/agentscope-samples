@@ -1,14 +1,15 @@
 # Table Discovery Agent
 
-List tables and columns in a local directory of CSV files or search their columns by schema information or observed values.
+List tables in a local directory of CSV files, search their columns by schema information or observed values, or ask a discovery agent which columns are relevant.
 
 ## Project structure
 
 ```text
 table_discovery_agent/
 ├── README.md                # Setup and demo instructions
+├── agent.py                 # AgentScope agent with the column seeker
 ├── data_lake.py             # CSV discovery, schema reading, and pandas table loading
-├── main.py                  # Command-line schema browser and column search
+├── main.py                  # Command-line schema browser, search, and agent demo
 ├── requirements.txt         # Pinned formatting and search dependencies
 ├── indexing/
 │   ├── __init__.py          # Public formatter, index, and statistics APIs
@@ -16,6 +17,15 @@ table_discovery_agent/
 │   ├── column_index.py      # Metadata and content HNSW indexes
 │   ├── sketches.py          # Column statistics and key sketches
 │   └── embedding.py         # Text encoder interface and local BGE implementation
+├── tools/
+│   ├── __init__.py           # Toolkit factory for the discovery tools
+│   ├── seeker.py             # Column retrieval by text
+│   ├── ranker.py             # Value and relationship scoring
+│   ├── composite_seeker.py   # Join, union, and correlation search
+│   ├── combiner.py           # Candidate set operations by table ID
+│   └── termination.py        # Branch completion signal
+├── tests/
+│   └── test_agent_demo.py    # Offline agent integration test
 └── data/
     └── demo_lake/           # Four synthetic example tables
 ```
@@ -77,6 +87,32 @@ Search builds both indexes in memory for the selected lake and returns matches f
 ### Text encoder interface
 
 The CLI selects an implementation with `create_encoder(name, model_path)` in `indexing/embedding.py`. The same encoder handles metadata, content, and queries during a search run. Additional implementations must provide `encode(texts)` that accepts a sequence of strings and returns a contiguous two-dimensional NumPy array of L2-normalized `float32` vectors. Return one row per input string, in input order, with a consistent embedding dimension across calls.
+
+## Ask the discovery agent
+
+Install the pinned dependencies and set `BGE_MODEL_DIR` as shown above. Export your DeepSeek API key as `DEEPSEEK_API_KEY`. In Bash or Zsh, you can enter the key without displaying it or putting it in the command history.
+
+```bash
+read -rs DEEPSEEK_API_KEY
+export DEEPSEEK_API_KEY
+
+python main.py --lake data/demo_lake --embedding-model "$BGE_MODEL_DIR" \
+    --ask "Which table has a population column?"
+```
+
+`--ask` uses DeepSeek Flash (`deepseek-flash`) by default. Pass `--chat-model MODEL` to select another DeepSeek model with tool calling. The agent uses `seek_columns` to search the local indexes and names relevant columns in its answer, such as `region_demographics.population`. Indexing and retrieval run locally. The question and the seeker's results are sent to DeepSeek to generate the answer.
+
+Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `--ask` and `--search` in separate commands.
+
+## Run the offline test
+
+From the `table_discovery_agent` directory, run the integration test after installing the pinned dependencies.
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The test uses the demo CSVs and checks that the seeker result reaches the agent's next model turn. It runs without a DeepSeek API key or local BGE weights.
 
 ## Format columns
 
