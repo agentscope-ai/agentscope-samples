@@ -4,19 +4,19 @@
 
 The Table Discovery Agent finds relevant tables in a local CSV lake from a
 natural-language question. This AgentScope example implements the core ideas
-of [TIDE](https://github.com/lewellin727/TIDE) for multi-step table discovery.
+of TIDE for multi-step table discovery.
 Composable operators find, score, and combine candidate columns, while a
 constraint-guided discovery tree uses table relationships to guide the search.
 A reusable on-disk index lets later queries skip rebuilding the lake indexes.
 
-The bundled demo follows two joins from `store_sales` through
+The demo lake supports two-hop discovery from `store_sales` through
 `store_directory` to `region_demographics`.
 
 ## Quick Start
 
 Run these commands from the `table_discovery_agent` directory. You need Python
 3.11, a local copy of the weights and tokenizer for
-[BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), and a
+`BAAI/bge-large-en-v1.5`, and a
 DashScope API key for the default Qwen model.
 
 ```bash
@@ -35,22 +35,23 @@ python main.py --config config.toml --validate
 python main.py --config config.toml --build-index
 ```
 
-Enter your DashScope API key when prompted, then ask the agent to follow the
-two joins and find population data in the requested range.
+Enter your DashScope API key when prompted, then ask the agent to find
+population data by joining sales records through the store directory.
 
 ```bash
 read -rsp "DashScope API key: " DASHSCOPE_API_KEY
 printf '\n'
 export DASHSCOPE_API_KEY
 
-query="Find tables with population between 30,000 and 40,000 for regions where stores report sales. Start from sales records with store_id, month, and revenue. Use store_id to find the store directory, then use region_id from the directory to find population data. Apply the population range to the tables found in the last step."
-qwen_query="$query Both joins are required even if the initial candidates already include a population table."
+query="Join sales to the store directory on store_id, then to demographics on region_id. \
+Require both joins before filtering final population to 30,000–40,000."
 
-python main.py --config config.toml --ask "$qwen_query"
+python main.py --config config.toml --ask "$query"
 ```
 
-The demo connects sales records to the store directory via `store_id` and the
-directory to regional demographics via `region_id`. The expected match is
+Both providers follow `store_id` to the store directory and `region_id`
+to regional demographics, then apply the population range. The expected
+match is
 
 ```text
 region_demographics.population
@@ -136,13 +137,13 @@ from the working directory. Both accept `~`.
 ```mermaid
 flowchart LR
     subgraph Prep["Offline preparation"]
-        CSV["CSV lake"] -->|Validate and index| VDB[("Reusable VDB")]
+        CSV["CSV lake"] -->|Validate and index| VDB[("Reusable VDB<br/>Column indexes · sketches<br/>Table relationship graph")]
     end
 
     subgraph Search["Online discovery"]
-        Question["Question"] --> Tree["Discovery tree<br/>with query constraints"]
+        Question["Question"] --> Tree["Discovery tree (DiscoveryState)<br/>Candidate matches<br/>Unresolved query constraints"]
         Tree -->|Search complete| Results["Ranked table columns"]
-        Tree -->|Select a node| Cycle["Observe → Plan → Execute"]
+        Tree -->|Select a node| Cycle["Observe → Plan → Execute<br/>Path evidence guides planning<br/>(ObservationEvidence)"]
         Cycle -.->|Update the tree| Tree
     end
 
