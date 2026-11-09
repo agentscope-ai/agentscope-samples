@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 """Build compact statistics for categorical and numerical columns."""
 
+import json
+import sqlite3
+import zlib
 from bisect import bisect_left
 from collections.abc import Iterator, Mapping
+from contextlib import closing
+from functools import lru_cache
 from hashlib import shake_128
 from heapq import nsmallest
 from math import inf, isnan
+from pathlib import Path
 from struct import iter_unpack
 
 import numpy as np
@@ -207,11 +213,189 @@ def build_column_statistics(
 ) -> dict[tuple[str, str], CountMinSketch | QuantileHistogram]:
     """Build one statistic per table ID and column name."""
     return {
-        (table_id, str(name)): (
-            QuantileHistogram(column)
-            if is_integer_dtype(column) or is_float_dtype(column)
-            else CountMinSketch(column)
-        )
+        (table_id, str(name)): _column_statistic(column)
         for table_id, table in tables.items()
         for name, column in table.items()
     }
+
+
+def _column_statistic(column: pd.Series) -> CountMinSketch | QuantileHistogram:
+    if is_integer_dtype(column) or is_float_dtype(column):
+        return QuantileHistogram(column)
+    return CountMinSketch(column)
+
+
+def _encode(state: list) -> bytes:
+    return zlib.compress(json.dumps(state, separators=(",", ":")).encode())
+
+
+def _decode(payload: bytes) -> list:
+    return json.loads(zlib.decompress(payload))
+
+
+def _sketch_rows(
+    table_id: str, frame: pd.DataFrame
+) -> Iterator[tuple[str, str, str, bytes, bytes]]:
+    # pylint: disable=protected-access
+    for name, column in frame.items():
+        statistic = _column_statistic(column)
+        if isinstance(statistic, CountMinSketch):
+            kind = "count_min"
+            state = [statistic._total, statistic._counts.tolist()]
+        else:
+            kind = "quantile"
+            state = [
+                statistic._total,
+                statistic._edges,
+                statistic._below,
+                statistic._at_or_below,
+            ]
+
+        key = KeySketch(frame, name)
+        key_state = [
+            key._k,
+            [value for _, value in sorted(key._ranks)],
+            key._means.index.tolist(),
+            key._means.columns.tolist(),
+            key._means.to_numpy().tolist(),
+        ]
+        yield table_id, str(name), kind, _encode(state), _encode(key_state)
+
+
+def build_sketch_store(path: Path, frames: Mapping[str, pd.DataFrame]) -> None:
+    """Persist value statistics and key sketches in a new store."""
+    with closing(sqlite3.connect(path)) as connection:
+        with connection:
+            connection.execute(
+                """
+                CREATE TABLE sketches (
+                    table_id TEXT NOT NULL,
+                    column_name TEXT NOT NULL,
+                    statistic_kind TEXT NOT NULL,
+                    statistic BLOB NOT NULL,
+                    key_sketch BLOB NOT NULL,
+                    PRIMARY KEY (table_id, column_name)
+                )
+                """
+            )
+            for table_id in frames:
+                connection.executemany(
+                    "INSERT INTO sketches VALUES (?, ?, ?, ?, ?)",
+                    _sketch_rows(table_id, frames[table_id]),
+                )
+
+
+class _StoredStatistics(
+    Mapping[tuple[str, str], CountMinSketch | QuantileHistogram]
+):
+    def __init__(self, connection: sqlite3.Connection) -> None:
+        self._connection = connection
+        self._lookup = lru_cache(maxsize=128)(self._read)
+
+    def _read(
+        self, key: tuple[str, str]
+    ) -> CountMinSketch | QuantileHistogram:
+        # pylint: disable=protected-access
+        row = self._connection.execute(
+            """
+            SELECT statistic_kind, statistic FROM sketches
+            WHERE table_id = ? AND column_name = ?
+            """,
+            key,
+        ).fetchone()
+        if row is None:
+            raise KeyError(key)
+        kind, payload = row
+        state = _decode(payload)
+        if kind == "count_min":
+            total, counts = state
+            sketch = CountMinSketch.__new__(CountMinSketch)
+            sketch._total = total
+            sketch._counts = np.asarray(counts, dtype=np.int64)
+            return sketch
+        if kind == "quantile":
+            histogram = QuantileHistogram.__new__(QuantileHistogram)
+            (
+                histogram._total,
+                histogram._edges,
+                histogram._below,
+                histogram._at_or_below,
+            ) = state
+            return histogram
+        raise ValueError(f"Unknown column statistic kind: {kind!r}")
+
+    def __getitem__(
+        self, key: tuple[str, str]
+    ) -> CountMinSketch | QuantileHistogram:
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise KeyError(key)
+        return self._lookup(key)
+
+    def __iter__(self) -> Iterator[tuple[str, str]]:
+        yield from self._connection.execute(
+            "SELECT table_id, column_name FROM sketches ORDER BY rowid"
+        )
+
+    def __len__(self) -> int:
+        return self._connection.execute(
+            "SELECT COUNT(*) FROM sketches"
+        ).fetchone()[0]
+
+    def clear_cache(self) -> None:
+        self._lookup.cache_clear()
+
+
+class SketchStore:
+    """Open stored sketches read-only and decode entries on demand."""
+
+    def __init__(self, path: Path) -> None:
+        self._connection = sqlite3.connect(
+            f"{path.resolve().as_uri()}?mode=ro", uri=True
+        )
+        self._statistics = _StoredStatistics(self._connection)
+        self._key_lookup = lru_cache(maxsize=128)(self._read_key_sketch)
+
+    @property
+    def statistics(
+        self,
+    ) -> Mapping[tuple[str, str], CountMinSketch | QuantileHistogram]:
+        """Provide the persisted column statistics as a lazy mapping."""
+        return self._statistics
+
+    def _read_key_sketch(self, table_id: str, column_name: str) -> KeySketch:
+        # pylint: disable=protected-access
+        row = self._connection.execute(
+            "SELECT key_sketch FROM sketches "
+            "WHERE table_id = ? AND column_name = ?",
+            (table_id, column_name),
+        ).fetchone()
+        if row is None:
+            raise KeyError((table_id, column_name))
+
+        k, ranks, keys, columns, values = _decode(row[0])
+        sketch = KeySketch.__new__(KeySketch)
+        sketch._k = k
+        sketch._ranks = {
+            (shake_128(key.encode(errors="surrogatepass")).digest(16), key)
+            for key in ranks
+        }
+        sketch._means = pd.DataFrame(
+            values, index=keys, columns=columns, dtype=float
+        )
+        return sketch
+
+    def key_sketch(self, table_id: str, column_name: str) -> KeySketch:
+        """Load the sketch for the specified key column."""
+        return self._key_lookup(table_id, column_name)
+
+    def close(self) -> None:
+        """Release the database connection and decoded sketches."""
+        self._key_lookup.cache_clear()
+        self._statistics.clear_cache()
+        self._connection.close()
+
+    def __enter__(self) -> "SketchStore":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()

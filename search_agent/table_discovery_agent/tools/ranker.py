@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Score candidate columns using value and relationship sketches."""
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from functools import cache
 from math import isfinite
@@ -370,11 +370,22 @@ class _TableRanker:
         index: ColumnIndex,
         frames: TableFrames,
         statistics: ColumnStatistics,
+        *,
+        schemas: Mapping[str, Sequence[str]] | None = None,
+        key_sketch: Callable[[str, str], KeySketch] | None = None,
     ) -> None:
         self._index = index
         self._frames = frames
         self._statistics = statistics
-        self._key_sketches: dict[tuple[str, str], KeySketch] = {}
+        self._schemas = schemas
+
+        @cache
+        def build_key_sketch(table_id: str, column_name: str) -> KeySketch:
+            return KeySketch(frames[table_id], column_name)
+
+        self._key_sketch: Callable[[str, str], KeySketch] = (
+            build_key_sketch if key_sketch is None else key_sketch
+        )
 
     def rank_by_statistic(
         self,
@@ -395,12 +406,7 @@ class _TableRanker:
         return _top_matches(_normalize_scores(matches), result_cap)
 
     def key_sketch(self, column: ColumnRepresentation) -> KeySketch:
-        key = (column.table_id, column.column_name)
-        if key not in self._key_sketches:
-            self._key_sketches[key] = KeySketch(
-                self._frames[column.table_id], column.column_name
-            )
-        return self._key_sketches[key]
+        return self._key_sketch(column.table_id, column.column_name)
 
     def overlap(
         self, key: ColumnRepresentation, sources: list[KeySketch]
@@ -416,7 +422,12 @@ class _TableRanker:
         target = self.key_sketch(key)
         best = None
         best_score = _CORRELATION_THRESHOLD
-        for name in self._frames[key.table_id].columns:
+        columns = (
+            self._frames[key.table_id].columns
+            if self._schemas is None
+            else self._schemas[key.table_id]
+        )
+        for name in columns:
             if name == key.column_name:
                 continue
             column = self._index.get_column(key.table_id, name)

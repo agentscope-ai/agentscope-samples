@@ -6,15 +6,18 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import os
+import sqlite3
+import sys
 import tomllib
 from collections.abc import Callable, Mapping
+from contextlib import nullcontext
 from pathlib import Path
 from typing import TypeVar
-from data_lake import load_data_lake
+from data_lake import load_data_lake, validate_data_lake
 
 
 def main() -> None:
-    """List CSV tables, search columns, or ask the discovery agent."""
+    """Inspect CSV tables, search columns, or ask the discovery agent."""
     parser = argparse.ArgumentParser(
         description="List CSV tables and discover their columns."
     )
@@ -25,6 +28,7 @@ def main() -> None:
             args.config,
             {
                 "lake": args.lake,
+                "vdb_dir": args.vdb_dir,
                 "output": args.output,
                 "encoder": args.encoder,
                 "embedding_model": args.embedding_model,
@@ -50,66 +54,143 @@ def main() -> None:
         )
 
     if settings.lake is None:
-        if args.config is not None:
+        if args.config is not None or args.validate:
             parser.error("set data.lake_dir or pass --lake")
         parser.print_help()
         return
 
+    if query is None and not args.build_index:
+        try:
+            _inspect_lake(settings.lake, validate=args.validate)
+        except (ImportError, OSError, ValueError) as error:
+            parser.error(str(error))
+        return
+
     try:
-        output_path = settings.output if query is not None else None
+        output_path = None if args.build_index else settings.output
         if output_path is not None and (
             output_path.exists() or output_path.is_symlink()
         ):
             raise FileExistsError(f"output file already exists: {output_path}")
-        tables = load_data_lake(settings.lake)
-    except (OSError, ValueError) as error:
-        parser.error(str(error))
-
-    if query is None:
-        print(f"Found {len(tables)} tables")
-        print()
-        for table in tables:
-            print(f"{table.id}: {', '.join(table.columns)}")
-        return
-
-    try:
-        from data_lake import read_table
-        from indexing import ColumnIndex, format_columns
-        from indexing.embedding import create_encoder
-
-        frames = {table.id: read_table(table) for table in tables}
-        columns = format_columns(frames)
-        encoder = create_encoder(settings.encoder, settings.embedding_model)
-        index = ColumnIndex(columns, encoder)
-        if args.ask is not None:
-            from agent import SearchConfig, run_query
-
-            output = (
-                run_query(
-                    index,
-                    args.ask,
-                    settings.chat_model,
-                    api_key,
-                    frames=frames,
-                    encoder=encoder,
-                    search=SearchConfig(**settings.search),
-                )
-                + "\n"
-            )
+        if args.build_index:
+            _build_index(settings)
         else:
-            results = index.search(query, args.channel, args.top_k)
-            output = "".join(
-                f"{result.table_id}.{result.column_name} "
-                f"({result.column_type}) score={result.score:.4f}\n"
-                for result in results
-            )
-
-        _write_query_output(output, output_path)
-    except (ImportError, OSError, RuntimeError, ValueError) as error:
+            assert query is not None
+            output = _query_output(settings, args, query, api_key)
+            _write_query_output(output, output_path)
+    except (
+        ImportError,
+        OSError,
+        RuntimeError,
+        ValueError,
+        sqlite3.Error,
+    ) as error:
         message = str(error)
         parser.error(
             message.replace(api_key, "[redacted]") if api_key else message
         )
+
+
+def _build_index(settings: Config) -> None:
+    from indexing.embedding import create_encoder
+    from indexing.vdb import build_vdb
+
+    assert settings.lake is not None
+    assert settings.embedding_model is not None
+    assert settings.vdb_dir is not None
+    encoder = create_encoder(settings.encoder, settings.embedding_model)
+    build_vdb(
+        settings.vdb_dir,
+        settings.lake,
+        encoder,
+        encoder_name=settings.encoder,
+        model_dir=settings.embedding_model,
+    )
+    print(f"Built VDB at {settings.vdb_dir}")
+
+
+def _query_output(
+    settings: Config, args: argparse.Namespace, query: str, api_key: str
+) -> str:
+    from data_lake import LazyTableFrames, read_table
+    from indexing import ColumnIndex, format_columns
+    from indexing.embedding import create_encoder
+    from indexing.sketches import SketchStore
+    from indexing.vdb import load_graph, load_vdb
+
+    assert settings.lake is not None
+    assert settings.embedding_model is not None
+    saved = None
+    if settings.vdb_dir is None:
+        tables = load_data_lake(settings.lake)
+        frames = {table.id: read_table(table) for table in tables}
+        columns = format_columns(frames)
+        encoder = create_encoder(settings.encoder, settings.embedding_model)
+        index = ColumnIndex(columns, encoder)
+    else:
+        frames = {}
+        encoder = create_encoder(settings.encoder, settings.embedding_model)
+        saved = load_vdb(
+            settings.vdb_dir,
+            settings.lake,
+            encoder,
+            encoder_name=settings.encoder,
+            model_dir=settings.embedding_model,
+            channel=args.channel if args.ask is None else None,
+        )
+        index = saved.index
+
+    if args.ask is None:
+        return "".join(
+            f"{result.table_id}.{result.column_name} "
+            f"({result.column_type}) score={result.score:.4f}\n"
+            for result in index.search(query, args.channel, args.top_k)
+        )
+
+    from agent import SearchConfig, run_query
+
+    lazy_frames = LazyTableFrames(saved.tables) if saved is not None else None
+    graph = load_graph(saved.generation) if saved is not None else None
+    store = (
+        SketchStore(saved.generation / "sketches.sqlite3")
+        if saved is not None
+        else nullcontext()
+    )
+    with store as sketches:
+        answer = run_query(
+            index,
+            query,
+            settings.chat_model,
+            api_key,
+            frames=frames if lazy_frames is None else lazy_frames,
+            encoder=encoder,
+            search=SearchConfig(**settings.search),
+            statistics=sketches.statistics if sketches is not None else None,
+            graph=graph,
+            schemas=lazy_frames.schemas if lazy_frames is not None else None,
+            key_sketch=sketches.key_sketch if sketches is not None else None,
+        )
+    return answer + "\n"
+
+
+def _inspect_lake(directory: Path, *, validate: bool) -> None:
+    if validate:
+        passed, errors = validate_data_lake(directory)
+        print(
+            f"Checked {passed + len(errors)} CSV files: "
+            f"{passed} passed, {len(errors)} failed."
+        )
+        for error in errors:
+            print(error, file=sys.stderr)
+        if errors:
+            raise SystemExit(1)
+        return
+
+    tables = load_data_lake(directory)
+    print(f"Found {len(tables)} tables")
+    print()
+    for table in tables:
+        print(f"{table.id}: {', '.join(table.columns)}")
 
 
 def _write_query_output(output: str, path: Path | None) -> None:
@@ -135,7 +216,19 @@ def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         metavar="DIRECTORY",
         help="CSV data lake directory",
     )
+    parser.add_argument(
+        "--vdb-dir",
+        type=Path,
+        metavar="DIRECTORY",
+        help="directory for persisted lake indexes and sketches",
+    )
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--build-index", action="store_true", help="build a VDB for the lake"
+    )
+    mode.add_argument(
+        "--validate", action="store_true", help="check every CSV in the lake"
+    )
     mode.add_argument("--search", metavar="QUERY", help="column search text")
     mode.add_argument(
         "--ask", metavar="QUESTION", help="ask the discovery agent"
@@ -201,6 +294,14 @@ def _query_text(
             parser.error(f"{option} requires --lake and --embedding-model")
         if not query.strip():
             parser.error(f"{option} requires non-empty text")
+    if args.build_index and (
+        settings.lake is None
+        or settings.embedding_model is None
+        or settings.vdb_dir is None
+    ):
+        parser.error(
+            "--build-index requires --lake, --embedding-model and --vdb-dir"
+        )
     if args.search is not None and args.top_k < 1:
         parser.error("--top-k must be at least 1")
     return query
@@ -211,6 +312,7 @@ class Config:
     """Resolved settings shared by the command-line modes."""
 
     lake: Path | None = None
+    vdb_dir: Path | None = None
     output: Path | None = None
     encoder: str = "bge"
     embedding_model: Path | None = None
@@ -220,6 +322,7 @@ class Config:
 
 _TOML_FIELDS = {
     "lake": ("data", "lake_dir"),
+    "vdb_dir": ("data", "vdb_dir"),
     "output": ("output", "path"),
     "encoder": ("model", "embedding", "encoder"),
     "embedding_model": ("model", "embedding", "model_dir"),
@@ -324,6 +427,7 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
     defaults = Config()
     return Config(
         lake=get("lake", defaults.lake, _path),
+        vdb_dir=get("vdb_dir", defaults.vdb_dir, _path),
         output=get("output", defaults.output, _path),
         encoder=get("encoder", defaults.encoder, _encoder),
         embedding_model=get(

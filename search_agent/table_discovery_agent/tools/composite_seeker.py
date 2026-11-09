@@ -8,7 +8,7 @@ from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 from pandas.api.types import is_float_dtype, is_integer_dtype
 
-from indexing import ColumnIndex, ColumnRepresentation
+from indexing import ColumnIndex, ColumnRepresentation, KeySketch
 from indexing.column_matcher import ColumnNameMatcher
 from indexing.sketches import CountMinSketch, QuantileHistogram
 
@@ -240,10 +240,14 @@ class TableOperators:
         matcher: ColumnNameMatcher,
         *,
         result_cap: int = 256,
+        schemas: Mapping[str, Sequence[str]] | None = None,
+        key_sketch: Callable[[str, str], KeySketch] | None = None,
     ) -> None:
         self._result_cap = _positive_result_cap(result_cap)
-        self._seeker = _TableSeeker(index, frames, matcher)
-        self._ranker = _TableRanker(index, frames, statistics)
+        self._seeker = _TableSeeker(index, frames, matcher, schemas=schemas)
+        self._ranker = _TableRanker(
+            index, frames, statistics, schemas=schemas, key_sketch=key_sketch
+        )
 
     @property
     def result_cap(self) -> int:

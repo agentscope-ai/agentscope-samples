@@ -2,7 +2,7 @@
 """Build and search a graph of union and join relationships between tables."""
 
 from collections import defaultdict
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache
 from heapq import nlargest
@@ -57,20 +57,31 @@ def build_relationship_graph(
     index: ColumnIndex,
     frames: Mapping[str, pd.DataFrame],
     encoder: ColumnEncoder,
+    *,
+    schemas: Mapping[str, Sequence[str]] | None = None,
+    key_sketch: Callable[[str, str], KeySketch] | None = None,
 ) -> RelationshipGraph:
     """Build the weighted outgoing edges for every table in the lake."""
+    if schemas is None:
+        schemas = {
+            table_id: tuple(frame.columns)
+            for table_id, frame in frames.items()
+        }
     names = {
-        table_id: tuple(dict.fromkeys(frame.columns))
-        for table_id, frame in frames.items()
+        table_id: tuple(dict.fromkeys(columns))
+        for table_id, columns in schemas.items()
     }
     matcher = ColumnNameMatcher(
         encoder, (name for columns in names.values() for name in columns)
     )
 
     @cache
-    def key_sketch(table_id: str, name: str) -> KeySketch:
+    def build_key_sketch(table_id: str, name: str) -> KeySketch:
         return KeySketch(frames[table_id], name)
 
+    sketch_for: Callable[[str, str], KeySketch] = (
+        build_key_sketch if key_sketch is None else key_sketch
+    )
     graph: RelationshipGraph = {}
     for table_id, columns in names.items():
         union_scores: dict[str, float] = defaultdict(float)
@@ -96,8 +107,8 @@ def build_relationship_graph(
                     != "Categorical"
                 ):
                     continue
-                overlap = key_sketch(table_id, name).overlap(
-                    key_sketch(target, key)
+                overlap = sketch_for(table_id, name).overlap(
+                    sketch_for(target, key)
                 )
                 if overlap > 0:
                     overlaps[target] = overlap

@@ -2,7 +2,9 @@
 """Discover CSV tables and read their data."""
 
 import csv
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -39,8 +41,8 @@ def _read_columns(path: Path) -> tuple[str, ...]:
     return tuple(header)
 
 
-def load_data_lake(directory: Path) -> tuple[Table, ...]:
-    """Read the metadata for each CSV file directly inside the directory."""
+def list_csv_paths(directory: Path) -> list[Path]:
+    """List the CSV paths directly inside the directory by table ID."""
     if not directory.exists():
         raise ValueError(f"Lake directory does not exist: {directory}")
     if not directory.is_dir():
@@ -53,7 +55,16 @@ def load_data_lake(directory: Path) -> tuple[Table, ...]:
     if not paths:
         raise ValueError(f"No CSV tables found in lake directory: {directory}")
 
-    return tuple(Table(path.stem, path, _read_columns(path)) for path in paths)
+    return paths
+
+
+def _read_metadata(path: Path) -> Table:
+    return Table(path.stem, path, _read_columns(path))
+
+
+def load_data_lake(directory: Path) -> tuple[Table, ...]:
+    """Read the metadata for each CSV file directly inside the directory."""
+    return tuple(_read_metadata(path) for path in list_csv_paths(directory))
 
 
 def read_table(table: Table) -> "pd.DataFrame":
@@ -79,3 +90,50 @@ def read_table(table: Table) -> "pd.DataFrame":
             "a row has more fields than the header"
         )
     return frame
+
+
+class LazyTableFrames(Mapping[str, "pd.DataFrame"]):
+    """Read CSV data on first access and keep a bounded cache of frames."""
+
+    def __init__(
+        self, tables: Sequence[Table], *, cache_size: int = 4
+    ) -> None:
+        if (
+            isinstance(cache_size, bool)
+            or not isinstance(cache_size, int)
+            or cache_size < 0
+        ):
+            raise ValueError("cache_size must be a nonnegative integer")
+        self._tables = {table.id: table for table in tables}
+        self._read = lru_cache(maxsize=cache_size)(read_table)
+
+    @property
+    def schemas(self) -> dict[str, Sequence[str]]:
+        """Return table headers without reading any CSV data."""
+        return {
+            table_id: table.columns for table_id, table in self._tables.items()
+        }
+
+    def __getitem__(self, table_id: str) -> "pd.DataFrame":
+        return self._read(self._tables[table_id])
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._tables)
+
+    def __len__(self) -> int:
+        return len(self._tables)
+
+    def __contains__(self, table_id: object) -> bool:
+        return table_id in self._tables
+
+
+def validate_data_lake(directory: Path) -> tuple[int, list[str]]:
+    """Return the number of readable tables and one diagnostic per failure."""
+    paths = list_csv_paths(directory)
+    errors = []
+    for path in paths:
+        try:
+            read_table(_read_metadata(path))
+        except ValueError as error:
+            errors.append(str(error))
+    return len(paths) - len(errors), errors

@@ -1,6 +1,6 @@
 # Table Discovery Agent
 
-List tables in a local directory of CSV files, search their columns by schema information or observed values, or ask a discovery agent which columns are relevant.
+Use AgentScope to discover relevant tables in a local CSV lake. The agent follows relationships between tables and ranks candidates against the requirements in a natural-language query.
 
 ## Project structure
 
@@ -18,7 +18,8 @@ table_discovery_agent/
 │   ├── column_index.py         # Metadata and content HNSW indexes
 │   ├── column_matcher.py       # Column-name matching
 │   ├── embedding.py            # Text encoder interface and local BGE implementation
-│   └── sketches.py             # Column statistics and key sketches
+│   ├── sketches.py             # Column statistics and key sketches
+│   └── vdb.py                  # Build and load persisted lake indexes
 ├── discovery/
 │   ├── __init__.py             # Public discovery state and relationship graph APIs
 │   ├── constraints.py          # Query constraint extraction, checks, and result ranking
@@ -64,6 +65,48 @@ store_sales: store_id, month, revenue
 
 Pass the path to another local CSV directory with `--lake` to list its tables and columns.
 
+## Run on your CSVs
+
+Place comma-delimited UTF-8 `.csv` files directly inside a lake directory.
+A UTF-8 byte order mark is accepted. Each table needs a header with nonempty,
+unique column names. Rows with missing fields are read as missing values.
+
+On CPU-only Linux, you can install the CPU build of PyTorch first.
+
+```bash
+python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0+cpu'
+```
+
+Install the pinned dependencies and copy the example configuration.
+
+```bash
+python -m pip install -r requirements.txt
+cp config.example.toml config.toml
+```
+
+Set `data.lake_dir` to your CSV directory. Uncomment `data.vdb_dir` and
+set it to an index directory. Point `model.embedding.model_dir` at a local copy of the model
+weights and tokenizer. The example uses [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5).
+Use `data/demo_lake` as the lake to try the bundled example.
+Export `DEEPSEEK_API_KEY` before running `--ask`.
+
+```bash
+python main.py --config config.toml --validate
+python main.py --config config.toml --build-index
+python main.py --config config.toml --search "population" --top-k 3
+python main.py --config config.toml --output ./results/answer.txt \
+    --ask "Find tables with population data"
+```
+
+Replace the query text with a question about your CSVs.
+Each result identifies a `table.column`. The table ID is the CSV filename
+without its `.csv` extension, so `region_demographics.population` refers to
+the `population` column in `region_demographics.csv` under `data.lake_dir`.
+
+The schema browser checks headers. `--validate` reads every file using the
+same CSV reader as queries and reports each file that fails.
+It returns a nonzero exit code if any file fails.
+
 ## Search columns
 
 The available encoder is `bge`, which is the default for `--encoder`. Pass its local Hugging Face model directory with `--embedding-model`. Install the pinned dependencies and set `BGE_MODEL_DIR` to that directory.
@@ -88,7 +131,7 @@ python main.py --lake data/demo_lake --embedding-model "$BGE_MODEL_DIR" \
     --channel content --top-k 3
 ```
 
-Search builds both indexes in memory for the selected lake and returns matches from the selected channel. Each result shows the table and column, the inferred column type, and the cosine similarity score. The default channel is `metadata` and the default maximum is five results.
+Search returns matches from the selected channel. Each result shows the table and column, the inferred column type, and the cosine similarity score. The default channel is `metadata` and the default maximum is five results.
 
 ### Text encoder interface
 
@@ -130,6 +173,22 @@ Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `
 
 The `--search` CLI queries the column index directly.
 
+## Build and reuse a VDB
+
+Set `data.vdb_dir` in your configuration, or pass `--vdb-dir` on the CLI.
+Build once with `--build-index` before querying that directory.
+
+Each build saves two FAISS indexes, the table and column catalog, SQLite
+sketches, and the relationship graph. The source CSVs stay in the lake.
+Queries reuse the published build and read candidate CSVs as needed.
+Rebuild after changing the CSVs or the embedding model.
+A rebuild publishes a new generation after all its files are ready.
+Previous generations remain available to queries that already opened them.
+
+FAISS loads each selected HNSW index into memory. Direct search loads one
+channel, while the discovery agent uses both. Leave `data.vdb_dir` unset to
+build indexes in memory for a small lake.
+
 ## Configure the CLI
 
 Copy `config.example.toml` to `config.toml` and set
@@ -143,10 +202,11 @@ Both accept `~` for the home directory.
 
 | TOML key | CLI option | Requirement or default |
 | --- | --- | --- |
-| `data.lake_dir` | `--lake` | Required to browse or query tables |
+| `data.lake_dir` | `--lake` | Required to browse, build, or query tables |
+| `data.vdb_dir` | `--vdb-dir` | Required for `--build-index`. Set to reuse saved indexes |
 | `output.path` | `--output` | Optional. Query results default to the terminal |
 | `model.embedding.encoder` | `--encoder` | `bge` |
-| `model.embedding.model_dir` | `--embedding-model` | Required for `--search` and `--ask` |
+| `model.embedding.model_dir` | `--embedding-model` | Required for building and querying indexes |
 | `model.chat.name` | `--chat-model` | `deepseek-flash` |
 | `search.max_rounds` | `--max-rounds` | `6` rounds per `--ask` query |
 | `search.stagnation_limit` | `--stagnation-limit` | `3` rounds without progress |

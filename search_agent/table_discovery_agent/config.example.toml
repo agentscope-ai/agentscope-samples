@@ -1,6 +1,8 @@
 [data]
 # Required to browse tables or run a query.
 lake_dir = "./data/demo_lake"
+# Optional. Set this before running --build-index.
+# vdb_dir = "./vdb"
 
 [output]
 # Optional. Omit to print query results to the terminal.

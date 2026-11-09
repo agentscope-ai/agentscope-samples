@@ -27,7 +27,7 @@ from agentscope.model import ChatModelBase, ChatResponse, OpenAIChatModel
 from agentscope.tool import Toolkit, ToolResponse
 from openai import OpenAIError
 
-from indexing import ColumnIndex, build_column_statistics
+from indexing import ColumnIndex, KeySketch, build_column_statistics
 from indexing.column_matcher import ColumnNameMatcher
 from indexing.embedding import ColumnEncoder
 from discovery.constraints import (
@@ -55,7 +55,7 @@ from discovery.relationship_graph import (
 from discovery.state import DiscoveryState, _Node
 from tools.combiner import Match, combine_results
 from tools.composite_seeker import TableOperators
-from tools.ranker import TableFrames
+from tools.ranker import ColumnStatistics, TableFrames
 from tools.termination import end_search
 
 _LOGGER = logging.getLogger(__name__)
@@ -95,6 +95,7 @@ class DiscoveryAgent(AgentBase):
         operators: TableOperators,
         matcher: ColumnNameMatcher,
         search: SearchConfig = SearchConfig(),
+        schemas: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         super().__init__()
         self.name = "table_discovery"
@@ -106,9 +107,14 @@ class DiscoveryAgent(AgentBase):
         self._operators = operators
         self._matcher = matcher
         self._search = search
-        self._schemas = {
-            table_id: list(frame.columns) for table_id, frame in frames.items()
-        }
+        self._schemas = (
+            {
+                table_id: list(frame.columns)
+                for table_id, frame in frames.items()
+            }
+            if schemas is None
+            else schemas
+        )
 
     async def observe(self, msg: Msg | list[Msg] | None) -> None:
         """Store external messages in conversational memory."""
@@ -221,6 +227,7 @@ class DiscoveryAgent(AgentBase):
             self._frames,
             self._matcher,
             candidate_limit=self._search.candidate_limit,
+            schemas=self._schemas,
         )
         return await summarize_observation(
             query, context, self.model, self.formatter
@@ -256,6 +263,10 @@ def run_query(
     frames: TableFrames,
     encoder: ColumnEncoder,
     search: SearchConfig = SearchConfig(),
+    statistics: ColumnStatistics | None = None,
+    graph: RelationshipGraph | None = None,
+    schemas: Mapping[str, Sequence[str]] | None = None,
+    key_sketch: Callable[[str, str], KeySketch] | None = None,
 ) -> str:
     """Ask the discovery agent a single question using DeepSeek."""
     try:
@@ -268,13 +279,28 @@ def run_query(
                 "extra_body": {"thinking": {"type": "disabled"}},
             },
         )
+        if schemas is None:
+            schemas = {
+                table_id: list(frame.columns)
+                for table_id, frame in frames.items()
+            }
         matcher = ColumnNameMatcher(
-            encoder,
-            (name for frame in frames.values() for name in frame.columns),
+            encoder, (name for columns in schemas.values() for name in columns)
         )
-        statistics = build_column_statistics(frames)
-        graph = build_relationship_graph(index, frames, encoder)
-        operators = TableOperators(index, frames, statistics, matcher)
+        if statistics is None:
+            statistics = build_column_statistics(frames)
+        if graph is None:
+            graph = build_relationship_graph(
+                index, frames, encoder, schemas=schemas, key_sketch=key_sketch
+            )
+        operators = TableOperators(
+            index,
+            frames,
+            statistics,
+            matcher,
+            schemas=schemas,
+            key_sketch=key_sketch,
+        )
         agent = DiscoveryAgent(
             model=model,
             formatter=DeepSeekChatFormatter(),
@@ -283,6 +309,7 @@ def run_query(
             operators=operators,
             matcher=matcher,
             search=search,
+            schemas=schemas,
         )
         agent.set_console_output_enabled(False)
         response = asyncio.run(
@@ -483,6 +510,7 @@ def build_observation_context(
     matcher: ColumnNameMatcher,
     *,
     candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT,
+    schemas: Mapping[str, Sequence[str]] | None = None,
 ) -> dict[str, Any]:
     """Collect candidate schemas and diverse paths for observation."""
     node = state.get_node(node_id)
@@ -494,13 +522,14 @@ def build_observation_context(
     initial = state.get_initial_constraints() or constraints
 
     seeds = []
-    for match in candidates:
-        table_id = match["table_id"]
-        frame = frames.get(table_id)
-        if frame is not None and any(
-            satisfies(constraint, frame, matcher) for constraint in initial
-        ):
-            seeds.append(table_id)
+    if initial:
+        for match in candidates:
+            table_id = match["table_id"]
+            frame = frames.get(table_id)
+            if frame is not None and any(
+                satisfies(constraint, frame, matcher) for constraint in initial
+            ):
+                seeds.append(table_id)
     if not seeds:
         seeds = list(targets)[:candidate_limit]
 
@@ -514,7 +543,7 @@ def build_observation_context(
         node_id,
         seeds,
         list(targets),
-        schema_for,
+        schema_for if schemas is None else schemas,
         candidate_table_ids=[match["table_id"] for match in candidates],
     )
     paths = []

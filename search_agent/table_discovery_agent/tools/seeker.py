@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Retrieve indexed columns and aggregate table matches."""
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict
 from operator import attrgetter
 from typing import Literal
@@ -147,18 +147,25 @@ class _TableSeeker:
         index: ColumnIndex,
         frames: TableFrames,
         matcher: ColumnNameMatcher,
+        *,
+        schemas: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         self._index = index
         self._frames = frames
         self._matcher = matcher
+        self._schemas = schemas
 
     def find_column(
         self, table_id: str, name: str
     ) -> ColumnRepresentation | None:
-        frame = self._frames.get(table_id)
-        if frame is None:
+        if self._schemas is None:
+            frame = self._frames.get(table_id)
+            columns = None if frame is None else frame.columns
+        else:
+            columns = self._schemas.get(table_id)
+        if columns is None:
             return None
-        column_name = self._matcher.find_match(name, frame.columns)
+        column_name = self._matcher.find_match(name, columns)
         if column_name is None:
             return None
         return self._index.get_column(table_id, column_name)

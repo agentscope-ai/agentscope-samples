@@ -4,7 +4,7 @@
 import math
 import re
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from heapq import nsmallest
 from numbers import Integral
@@ -36,10 +36,15 @@ def _normalize_name(name: str) -> str:
     return " ".join(name.replace("_", " ").replace("-", " ").lower().split())
 
 
-def _value_counts(column: pd.Series) -> Counter[str]:
-    counts = Counter(" ".join(str(value).split()) for value in column.dropna())
-    counts.pop("", None)
-    return counts
+def _normalized_values(column: pd.Series) -> Iterator[str]:
+    for value in column.dropna():
+        normalized = " ".join(str(value).split())
+        if normalized:
+            yield normalized
+
+
+def _is_numerical(column: pd.Series) -> bool:
+    return is_integer_dtype(column) or is_float_dtype(column)
 
 
 def _categorical_content(
@@ -110,48 +115,53 @@ def _numerical_content(column: pd.Series) -> str:
     return f"{counts}, {stats_text}"
 
 
+def _categorical_document_frequency(
+    tables: Mapping[str, pd.DataFrame],
+) -> tuple[Counter[str], int]:
+    document_frequency: Counter[str] = Counter()
+    document_count = 0
+    for table in tables.values():
+        for _, column in table.items():
+            if _is_numerical(column):
+                continue
+            values = set(_normalized_values(column))
+            if values:
+                document_count += 1
+                document_frequency.update(values)
+    return document_frequency, document_count
+
+
 def format_columns(
     tables: Mapping[str, pd.DataFrame],
 ) -> tuple[ColumnRepresentation, ...]:
     """Format columns in source order using lake-wide categorical IDF."""
-    columns = [
-        (table_id, str(name), column)
-        for table_id, table in tables.items()
-        for name, column in table.items()
-    ]
-    category_counts = {
-        position: _value_counts(column)
-        for position, (_, _, column) in enumerate(columns)
-        if not (is_integer_dtype(column) or is_float_dtype(column))
-    }
-    document_frequency: Counter[str] = Counter()
-    document_count = 0
-    for counts in category_counts.values():
-        if counts:
-            document_count += 1
-            document_frequency.update(counts.keys())
+    document_frequency, document_count = _categorical_document_frequency(
+        tables
+    )
 
     representations = []
-    for position, (table_id, name, column) in enumerate(columns):
-        if position in category_counts:
-            column_type = "Categorical"
-            summary = _categorical_content(
-                category_counts[position],
-                document_frequency,
-                document_count,
-            )
-        else:
-            column_type = "Numerical"
-            summary = _numerical_content(column)
+    for table_id, table in tables.items():
+        for label, column in table.items():
+            name = str(label)
+            if _is_numerical(column):
+                column_type = "Numerical"
+                summary = _numerical_content(column)
+            else:
+                column_type = "Categorical"
+                summary = _categorical_content(
+                    Counter(_normalized_values(column)),
+                    document_frequency,
+                    document_count,
+                )
 
-        prefix = f"Column: {_normalize_name(name)} | Type: {column_type}"
-        representations.append(
-            ColumnRepresentation(
-                table_id=table_id,
-                column_name=name,
-                column_type=column_type,
-                metadata=f"{prefix} | Description: None",
-                content=f"{prefix} | Content: {summary}",
-            ),
-        )
+            prefix = f"Column: {_normalize_name(name)} | Type: {column_type}"
+            representations.append(
+                ColumnRepresentation(
+                    table_id=table_id,
+                    column_name=name,
+                    column_type=column_type,
+                    metadata=f"{prefix} | Description: None",
+                    content=f"{prefix} | Content: {summary}",
+                ),
+            )
     return tuple(representations)
