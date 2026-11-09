@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """Run the table discovery command-line interface."""
 
-import argparse
-import os
-from pathlib import Path
+from __future__ import annotations
 
+import argparse
+import dataclasses
+import os
+import tomllib
+from collections.abc import Callable, Mapping
+from pathlib import Path
+from typing import TypeVar
 from data_lake import load_data_lake
 
 
@@ -13,57 +18,26 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="List CSV tables and discover their columns."
     )
-    parser.add_argument(
-        "--lake",
-        type=Path,
-        metavar="DIRECTORY",
-        help="CSV data lake directory",
-    )
-    mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--search", metavar="QUERY", help="column search text")
-    mode.add_argument(
-        "--ask", metavar="QUESTION", help="ask the discovery agent"
-    )
-    parser.add_argument(
-        "--chat-model",
-        default="deepseek-flash",
-        help="DeepSeek model for --ask (default: %(default)s)",
-    )
-    parser.add_argument(
-        "--channel",
-        choices=("metadata", "content"),
-        default="metadata",
-        help="column representation for --search (default: metadata)",
-    )
-    parser.add_argument(
-        "--top-k",
-        type=int,
-        default=5,
-        help="maximum results for --search (default: 5)",
-    )
-    parser.add_argument(
-        "--encoder",
-        choices=("bge",),
-        default="bge",
-        help="text encoder for --search or --ask (default: bge)",
-    )
-    parser.add_argument(
-        "--embedding-model",
-        type=Path,
-        metavar="DIRECTORY",
-        help="local model directory for --search or --ask",
-    )
-    args = parser.parse_args()
+    args = _parse_args(parser)
 
-    query = args.ask if args.ask is not None else args.search
-    if query is not None:
-        option = "--ask" if args.ask is not None else "--search"
-        if args.lake is None or args.embedding_model is None:
-            parser.error(f"{option} requires --lake and --embedding-model")
-        if not query.strip():
-            parser.error(f"{option} requires non-empty text")
-    if args.search is not None and args.top_k < 1:
-        parser.error("--top-k must be at least 1")
+    try:
+        settings = load_config(
+            args.config,
+            {
+                "lake": args.lake,
+                "output": args.output,
+                "encoder": args.encoder,
+                "embedding_model": args.embedding_model,
+                "chat_model": args.chat_model,
+                "max_rounds": args.max_rounds,
+                "stagnation_limit": args.stagnation_limit,
+                "candidate_limit": args.candidate_limit,
+            },
+        )
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+
+    query = _query_text(parser, args, settings)
 
     api_key = (
         os.environ.get("DEEPSEEK_API_KEY", "").strip()
@@ -75,12 +49,19 @@ def main() -> None:
             "--ask requires the DEEPSEEK_API_KEY environment variable"
         )
 
-    if args.lake is None:
+    if settings.lake is None:
+        if args.config is not None:
+            parser.error("set data.lake_dir or pass --lake")
         parser.print_help()
         return
 
     try:
-        tables = load_data_lake(args.lake)
+        output_path = settings.output if query is not None else None
+        if output_path is not None and (
+            output_path.exists() or output_path.is_symlink()
+        ):
+            raise FileExistsError(f"output file already exists: {output_path}")
+        tables = load_data_lake(settings.lake)
     except (OSError, ValueError) as error:
         parser.error(str(error))
 
@@ -98,35 +79,259 @@ def main() -> None:
 
         frames = {table.id: read_table(table) for table in tables}
         columns = format_columns(frames)
-        encoder = create_encoder(args.encoder, args.embedding_model)
+        encoder = create_encoder(settings.encoder, settings.embedding_model)
         index = ColumnIndex(columns, encoder)
         if args.ask is not None:
-            from agent import run_query
+            from agent import SearchConfig, run_query
 
-            print(
+            output = (
                 run_query(
                     index,
                     args.ask,
-                    args.chat_model,
+                    settings.chat_model,
                     api_key,
                     frames=frames,
                     encoder=encoder,
+                    search=SearchConfig(**settings.search),
                 )
+                + "\n"
             )
-            return
+        else:
+            results = index.search(query, args.channel, args.top_k)
+            output = "".join(
+                f"{result.table_id}.{result.column_name} "
+                f"({result.column_type}) score={result.score:.4f}\n"
+                for result in results
+            )
 
-        results = index.search(args.search, args.channel, args.top_k)
+        _write_query_output(output, output_path)
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         message = str(error)
         parser.error(
             message.replace(api_key, "[redacted]") if api_key else message
         )
 
-    for result in results:
-        print(
-            f"{result.table_id}.{result.column_name} "
-            f"({result.column_type}) score={result.score:.4f}"
-        )
+
+def _write_query_output(output: str, path: Path | None) -> None:
+    if path is None:
+        print(output, end="")
+        return
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8") as stream:
+        stream.write(output)
+
+
+def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
+    parser.add_argument(
+        "--config",
+        type=Path,
+        metavar="FILE",
+        help="TOML configuration file",
+    )
+    parser.add_argument(
+        "--lake",
+        type=Path,
+        metavar="DIRECTORY",
+        help="CSV data lake directory",
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--search", metavar="QUERY", help="column search text")
+    mode.add_argument(
+        "--ask", metavar="QUESTION", help="ask the discovery agent"
+    )
+    parser.add_argument(
+        "--chat-model",
+        help="DeepSeek model for --ask (default: deepseek-flash)",
+    )
+    parser.add_argument(
+        "--channel",
+        choices=("metadata", "content"),
+        default="metadata",
+        help="column representation for --search (default: metadata)",
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=5,
+        help="maximum results for --search (default: 5)",
+    )
+    parser.add_argument(
+        "--encoder",
+        choices=("bge",),
+        help="text encoder for --search or --ask (default: bge)",
+    )
+    parser.add_argument(
+        "--embedding-model",
+        type=Path,
+        metavar="DIRECTORY",
+        help="local model directory for --search or --ask",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        metavar="FILE",
+        help="write query results to a new UTF-8 text file",
+    )
+    parser.add_argument(
+        "--max-rounds",
+        type=int,
+        help="maximum discovery rounds for --ask",
+    )
+    parser.add_argument(
+        "--stagnation-limit",
+        type=int,
+        help="maximum rounds without progress for --ask",
+    )
+    parser.add_argument(
+        "--candidate-limit",
+        type=int,
+        help="maximum candidate tables shown per --ask round",
+    )
+    return parser.parse_args()
+
+
+def _query_text(
+    parser: argparse.ArgumentParser, args: argparse.Namespace, settings: Config
+) -> str | None:
+    query = args.ask if args.ask is not None else args.search
+    if query is not None:
+        option = "--ask" if args.ask is not None else "--search"
+        if settings.lake is None or settings.embedding_model is None:
+            parser.error(f"{option} requires --lake and --embedding-model")
+        if not query.strip():
+            parser.error(f"{option} requires non-empty text")
+    if args.search is not None and args.top_k < 1:
+        parser.error("--top-k must be at least 1")
+    return query
+
+
+@dataclasses.dataclass(frozen=True)
+class Config:
+    """Resolved settings shared by the command-line modes."""
+
+    lake: Path | None = None
+    output: Path | None = None
+    encoder: str = "bge"
+    embedding_model: Path | None = None
+    chat_model: str = "deepseek-flash"
+    search: dict[str, int] = dataclasses.field(default_factory=dict)
+
+
+_TOML_FIELDS = {
+    "lake": ("data", "lake_dir"),
+    "output": ("output", "path"),
+    "encoder": ("model", "embedding", "encoder"),
+    "embedding_model": ("model", "embedding", "model_dir"),
+    "chat_model": ("model", "chat", "name"),
+    "max_rounds": ("search", "max_rounds"),
+    "stagnation_limit": ("search", "stagnation_limit"),
+    "candidate_limit": ("search", "candidate_limit"),
+}
+_TOML_KEYS = frozenset(_TOML_FIELDS.values())
+_TOML_TABLES = {
+    field[:depth] for field in _TOML_KEYS for depth in range(1, len(field))
+}
+_T = TypeVar("_T")
+
+
+def _toml_fields(
+    table: Mapping[str, object], prefix: tuple[str, ...] = ()
+) -> dict[tuple[str, ...], object]:
+    fields = {}
+    for key, value in table.items():
+        field = (*prefix, key)
+        name = ".".join(field)
+        if field in _TOML_TABLES:
+            if not isinstance(value, dict):
+                raise ValueError(f"{name} must be a table")
+            fields.update(_toml_fields(value, field))
+        elif field in _TOML_KEYS:
+            fields[field] = value
+        else:
+            raise ValueError(f"unknown field {name}")
+    return fields
+
+
+def _text(value: object, field: str, _base: Path) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be a non-empty string")
+    return value
+
+
+def _encoder(value: object, field: str, base: Path) -> str:
+    name = _text(value, field, base)
+    if name != "bge":
+        raise ValueError(f"{field} must be 'bge'")
+    return name
+
+
+def _path(value: object, field: str, base: Path) -> Path:
+    if isinstance(value, Path):
+        path = value
+    else:
+        path = Path(_text(value, field, base))
+    try:
+        return base / path.expanduser()
+    except RuntimeError as error:
+        raise ValueError(f"{field}: {error}") from error
+
+
+def _positive_int(value: object, field: str, _base: Path) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"{field} must be a positive integer")
+    return value
+
+
+def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
+    """Read TOML settings and apply any non-None command-line values."""
+    cwd = Path.cwd()
+    config_dir = cwd
+    fields = {}
+    if path is not None:
+        try:
+            path = cwd / path.expanduser()
+            with path.open("rb") as stream:
+                fields = _toml_fields(tomllib.load(stream))
+        except (OSError, RuntimeError, ValueError) as error:
+            raise ValueError(f"config file {path}: {error}") from error
+        config_dir = path.parent
+
+    def get(
+        key: str,
+        default: _T,
+        parse: Callable[[object, str, Path], _T],
+    ) -> _T:
+        field = _TOML_FIELDS[key]
+        value = default
+        if field in fields:
+            value = parse(
+                fields[field],
+                f"config file {path}: {'.'.join(field)}",
+                config_dir,
+            )
+        override = overrides.get(key)
+        if override is not None:
+            return parse(override, "--" + key.replace("_", "-"), cwd)
+        return value
+
+    search = {}
+    for key in ("max_rounds", "stagnation_limit", "candidate_limit"):
+        value = get(key, None, _positive_int)
+        if value is not None:
+            search[key] = value
+
+    defaults = Config()
+    return Config(
+        lake=get("lake", defaults.lake, _path),
+        output=get("output", defaults.output, _path),
+        encoder=get("encoder", defaults.encoder, _encoder),
+        embedding_model=get(
+            "embedding_model", defaults.embedding_model, _path
+        ),
+        chat_model=get("chat_model", defaults.chat_model, _text),
+        search=search,
+    )
 
 
 if __name__ == "__main__":

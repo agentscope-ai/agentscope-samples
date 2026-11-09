@@ -1,0 +1,21 @@
+[data]
+# Required to browse tables or run a query.
+lake_dir = "./data/demo_lake"
+
+[output]
+# Optional. Omit to print query results to the terminal.
+# path = "./results/query.txt"
+
+[model.embedding]
+encoder = "bge"
+# Required for --search and --ask. Use a local BGE model directory.
+model_dir = "/path/to/local/bge-model"
+
+[model.chat]
+name = "deepseek-flash"
+
+[search]
+# Limits for --ask.
+max_rounds = 6
+stagnation_limit = 3
+candidate_limit = 10

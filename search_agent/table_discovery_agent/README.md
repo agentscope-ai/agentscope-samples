@@ -8,8 +8,9 @@ List tables in a local directory of CSV files, search their columns by schema in
 table_discovery_agent/
 ├── README.md                   # Setup and demo instructions
 ├── agent.py                    # Discovery orchestration and planner toolkit
+├── config.example.toml         # Example configuration and default values
 ├── data_lake.py                # CSV discovery, schema reading, and pandas table loading
-├── main.py                     # Schema browser, direct search, and discovery CLI
+├── main.py                     # CLI and configuration loading
 ├── requirements.txt            # Pinned dependencies
 ├── indexing/
 │   ├── __init__.py             # Public formatter, index, and statistics APIs
@@ -31,7 +32,6 @@ table_discovery_agent/
 │   ├── ranker.py               # Value and relationship scoring
 │   ├── seeker.py               # Text search and metadata filtering
 │   └── termination.py          # Branch completion signal
-├── tests/                      # Offline discovery and operator tests
 └── data/
     └── demo_lake/              # Four synthetic example tables
 ```
@@ -130,15 +130,39 @@ Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `
 
 The `--search` CLI queries the column index directly.
 
-## Run the offline tests
+## Configure the CLI
 
-From the `table_discovery_agent` directory, run the tests after installing the pinned dependencies.
+Copy `config.example.toml` to `config.toml` and set
+`model.embedding.model_dir` to your local BGE model directory.
+Set `data.lake_dir` to the directory with your CSVs.
+
+CLI options override TOML values, which override built-in defaults.
+Relative paths in TOML are resolved from the configuration file's directory.
+Relative CLI paths are resolved from the working directory.
+Both accept `~` for the home directory.
+
+| TOML key | CLI option | Requirement or default |
+| --- | --- | --- |
+| `data.lake_dir` | `--lake` | Required to browse or query tables |
+| `output.path` | `--output` | Optional. Query results default to the terminal |
+| `model.embedding.encoder` | `--encoder` | `bge` |
+| `model.embedding.model_dir` | `--embedding-model` | Required for `--search` and `--ask` |
+| `model.chat.name` | `--chat-model` | `deepseek-flash` |
+| `search.max_rounds` | `--max-rounds` | `6` rounds per `--ask` query |
+| `search.stagnation_limit` | `--stagnation-limit` | `3` rounds without progress |
+| `search.candidate_limit` | `--candidate-limit` | `10` candidate tables per round |
 
 ```bash
-python -m unittest discover -s tests -v
+python main.py --config ./config.toml
+python main.py --config ./config.toml --ask "Find population data"
+python main.py --config ./config.toml --max-rounds 8 \
+    --output ./results/answer.txt --ask "Find population data"
 ```
 
-The CLI tests use the demo CSVs and scripted models. They cover metadata retrieval, two joins through the store directory, population range scoring, and `end_search`. The tests run without a DeepSeek API key or local BGE weights.
+Supply `DEEPSEEK_API_KEY` in the environment for `--ask`.
+Use `--channel` and `--top-k` to tune `--search`.
+An output file uses the same UTF-8 text as the terminal.
+Choose a new file path for each saved result.
 
 ## Format columns
 

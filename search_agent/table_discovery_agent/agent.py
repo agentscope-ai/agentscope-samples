@@ -60,9 +60,17 @@ from tools.termination import end_search
 
 _LOGGER = logging.getLogger(__name__)
 
-_MAX_ROUNDS = 6
-_STAGNATION_LIMIT = 3
-_CANDIDATE_LIMIT = 10
+
+@dataclass(frozen=True)
+class SearchConfig:
+    """Limits for the discovery agent."""
+
+    max_rounds: int = 6
+    stagnation_limit: int = 3
+    candidate_limit: int = 10
+
+
+_DEFAULT_CANDIDATE_LIMIT = SearchConfig().candidate_limit
 _EXISTENCE_POOL = 10
 _VALUE_POOL = 300
 _VALUE_RANK_LIMIT = 50
@@ -86,6 +94,7 @@ class DiscoveryAgent(AgentBase):
         graph: RelationshipGraph,
         operators: TableOperators,
         matcher: ColumnNameMatcher,
+        search: SearchConfig = SearchConfig(),
     ) -> None:
         super().__init__()
         self.name = "table_discovery"
@@ -96,6 +105,7 @@ class DiscoveryAgent(AgentBase):
         self._graph = graph
         self._operators = operators
         self._matcher = matcher
+        self._search = search
         self._schemas = {
             table_id: list(frame.columns) for table_id, frame in frames.items()
         }
@@ -146,7 +156,7 @@ class DiscoveryAgent(AgentBase):
         query: str,
         seed_matches: Sequence[Match] | None = None,
     ) -> list[Match]:
-        """Run up to six rounds, optionally starting from indexed matches."""
+        """Run bounded discovery, optionally starting from indexed matches."""
         if not query.strip():
             raise ValueError("The discovery query must contain text.")
 
@@ -171,7 +181,7 @@ class DiscoveryAgent(AgentBase):
 
         best_pending = None
         stagnant = 0
-        for _ in range(_MAX_ROUNDS):
+        for _ in range(self._search.max_rounds):
             node_id = _select_leaf(state, len(constraints))
             if node_id is None:
                 break
@@ -190,7 +200,7 @@ class DiscoveryAgent(AgentBase):
                 stagnant = 0
             else:
                 stagnant += 1
-                if stagnant >= _STAGNATION_LIMIT:
+                if stagnant >= self._search.stagnation_limit:
                     break
 
         return rank_results(
@@ -210,6 +220,7 @@ class DiscoveryAgent(AgentBase):
             self._operators,
             self._frames,
             self._matcher,
+            candidate_limit=self._search.candidate_limit,
         )
         return await summarize_observation(
             query, context, self.model, self.formatter
@@ -232,6 +243,7 @@ class DiscoveryAgent(AgentBase):
             self.model,
             self.formatter,
             schemas=self._schemas,
+            candidate_limit=self._search.candidate_limit,
         )
 
 
@@ -243,6 +255,7 @@ def run_query(
     *,
     frames: TableFrames,
     encoder: ColumnEncoder,
+    search: SearchConfig = SearchConfig(),
 ) -> str:
     """Ask the discovery agent a single question using DeepSeek."""
     try:
@@ -269,6 +282,7 @@ def run_query(
             graph=graph,
             operators=operators,
             matcher=matcher,
+            search=search,
         )
         agent.set_console_output_enabled(False)
         response = asyncio.run(
@@ -389,8 +403,10 @@ def observe(
     return ObservationEvidence(tuple(selected), evidence_schemas, reachable)
 
 
-def current_candidates(matches: list[Match]) -> list[Match]:
-    """Return up to ten distinct tables by their best match score."""
+def current_candidates(
+    matches: list[Match], *, candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT
+) -> list[Match]:
+    """Return distinct tables by their best match score, up to the limit."""
     by_table: dict[str, Match] = {}
     for match in matches:
         table_id = match["table_id"]
@@ -398,7 +414,7 @@ def current_candidates(matches: list[Match]) -> list[Match]:
         if previous is None or match["score"] > previous["score"]:
             by_table[table_id] = match
     return sorted(by_table.values(), key=itemgetter("score"), reverse=True)[
-        :_CANDIDATE_LIMIT
+        :candidate_limit
     ]
 
 
@@ -465,10 +481,14 @@ def build_observation_context(
     operators: TableOperators,
     frames: TableFrames,
     matcher: ColumnNameMatcher,
+    *,
+    candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT,
 ) -> dict[str, Any]:
     """Collect candidate schemas and diverse paths for observation."""
     node = state.get_node(node_id)
-    candidates = current_candidates(node["matches"])
+    candidates = current_candidates(
+        node["matches"], candidate_limit=candidate_limit
+    )
     constraints = node["constraints"]
     targets = _find_targets(operators, constraints)
     initial = state.get_initial_constraints() or constraints
@@ -482,7 +502,7 @@ def build_observation_context(
         ):
             seeds.append(table_id)
     if not seeds:
-        seeds = list(targets)[:_CANDIDATE_LIMIT]
+        seeds = list(targets)[:candidate_limit]
 
     def schema_for(table_id: str) -> Sequence[str] | None:
         frame = frames.get(table_id)
@@ -973,9 +993,12 @@ async def plan_actions(
     formatter: FormatterBase,
     *,
     schemas: Mapping[str, Sequence[str]] | None = None,
+    candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT,
 ) -> list[ToolUseBlock]:
     """Ask the planner for tool calls without executing them."""
-    candidates = current_candidates(state.get_matches(node_id))
+    candidates = current_candidates(
+        state.get_matches(node_id), candidate_limit=candidate_limit
+    )
     user_content = build_planning_content(
         query, state, node_id, evidence, schemas or {}, candidates
     )
