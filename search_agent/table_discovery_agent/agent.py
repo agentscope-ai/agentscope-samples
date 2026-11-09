@@ -20,11 +20,21 @@ from operator import itemgetter
 from typing import Any, Literal, cast
 
 from agentscope.agent import AgentBase
-from agentscope.formatter import DeepSeekChatFormatter, FormatterBase
+from agentscope.formatter import (
+    DashScopeChatFormatter,
+    DeepSeekChatFormatter,
+    FormatterBase,
+)
 from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg, TextBlock, ToolUseBlock
-from agentscope.model import ChatModelBase, ChatResponse, OpenAIChatModel
+from agentscope.model import (
+    ChatModelBase,
+    ChatResponse,
+    DashScopeChatModel,
+    OpenAIChatModel,
+)
 from agentscope.tool import Toolkit, ToolResponse
+from dashscope.common.error import DashScopeException
 from openai import OpenAIError
 
 from indexing import ColumnIndex, KeySketch, build_column_statistics
@@ -254,12 +264,42 @@ class DiscoveryAgent(AgentBase):
         )
 
 
+def _create_chat_backend(
+    provider: Literal["qwen", "deepseek"], model_name: str, api_key: str
+) -> tuple[ChatModelBase, FormatterBase]:
+    if provider == "qwen":
+        return (
+            DashScopeChatModel(
+                model_name=model_name,
+                api_key=api_key,
+                stream=False,
+                enable_thinking=False,
+            ),
+            DashScopeChatFormatter(),
+        )
+    if provider == "deepseek":
+        return (
+            OpenAIChatModel(
+                model_name=model_name,
+                api_key=api_key,
+                stream=False,
+                client_kwargs={"base_url": "https://api.deepseek.com"},
+                generate_kwargs={
+                    "extra_body": {"thinking": {"type": "disabled"}},
+                },
+            ),
+            DeepSeekChatFormatter(),
+        )
+    raise ValueError("The chat provider must be qwen or deepseek.")
+
+
 def run_query(
     index: ColumnIndex,
     question: str,
     model_name: str,
     api_key: str,
     *,
+    provider: Literal["qwen", "deepseek"] = "qwen",
     frames: TableFrames,
     encoder: ColumnEncoder,
     search: SearchConfig = SearchConfig(),
@@ -268,17 +308,9 @@ def run_query(
     schemas: Mapping[str, Sequence[str]] | None = None,
     key_sketch: Callable[[str, str], KeySketch] | None = None,
 ) -> str:
-    """Ask the discovery agent a single question using DeepSeek."""
+    """Run one discovery query with the selected chat provider."""
     try:
-        model = OpenAIChatModel(
-            model_name=model_name,
-            api_key=api_key,
-            stream=False,
-            client_kwargs={"base_url": "https://api.deepseek.com"},
-            generate_kwargs={
-                "extra_body": {"thinking": {"type": "disabled"}},
-            },
-        )
+        model, formatter = _create_chat_backend(provider, model_name, api_key)
         if schemas is None:
             schemas = {
                 table_id: list(frame.columns)
@@ -303,7 +335,7 @@ def run_query(
         )
         agent = DiscoveryAgent(
             model=model,
-            formatter=DeepSeekChatFormatter(),
+            formatter=formatter,
             frames=frames,
             graph=graph,
             operators=operators,
@@ -315,8 +347,11 @@ def run_query(
         response = asyncio.run(
             agent(Msg(name="user", content=question, role="user"))
         )
-    except OpenAIError as error:
-        raise RuntimeError(str(error).replace(api_key, "[redacted]")) from None
+    except (DashScopeException, OpenAIError, RuntimeError) as error:
+        message = str(error)
+        if api_key:
+            message = message.replace(api_key, "[redacted]")
+        raise RuntimeError(message) from None
     answer = response.get_text_content()
     if not answer:
         raise RuntimeError("the discovery agent returned an empty response")

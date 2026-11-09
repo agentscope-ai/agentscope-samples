@@ -14,7 +14,10 @@ encoder = "bge"
 model_dir = "/path/to/local/bge-model"
 
 [model.chat]
-name = "deepseek-flash"
+# Supported providers are "qwen" (DashScope) and "deepseek".
+provider = "qwen"
+# Optional. Defaults to "qwen-plus" for Qwen or "deepseek-flash" for DeepSeek.
+# name = "qwen-plus"
 
 [search]
 # Limits for --ask.

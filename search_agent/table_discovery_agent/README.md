@@ -1,170 +1,178 @@
 # Table Discovery Agent
 
-Use AgentScope to discover relevant tables in a local CSV lake. The agent follows relationships between tables and ranks candidates against the requirements in a natural-language query.
+## Overview
 
-## Project structure
+The Table Discovery Agent finds relevant tables in a local CSV lake from a
+natural-language question. This AgentScope example implements the core ideas
+of [TIDE](https://github.com/lewellin727/TIDE) for multi-step table discovery.
+Composable operators find, score, and combine candidate columns, while a
+constraint-guided discovery tree uses table relationships to guide the search.
+A reusable on-disk index lets later queries skip rebuilding the lake indexes.
 
-```text
-table_discovery_agent/
-├── README.md                   # Setup and demo instructions
-├── agent.py                    # Discovery orchestration and planner toolkit
-├── config.example.toml         # Example configuration and default values
-├── data_lake.py                # CSV discovery, schema reading, and pandas table loading
-├── main.py                     # CLI and configuration loading
-├── requirements.txt            # Pinned dependencies
-├── indexing/
-│   ├── __init__.py             # Public formatter, index, and statistics APIs
-│   ├── column_formatter.py     # Column metadata and content formatting
-│   ├── column_index.py         # Metadata and content HNSW indexes
-│   ├── column_matcher.py       # Column-name matching
-│   ├── embedding.py            # Text encoder interface and local BGE implementation
-│   ├── sketches.py             # Column statistics and key sketches
-│   └── vdb.py                  # Build and load persisted lake indexes
-├── discovery/
-│   ├── __init__.py             # Public discovery state and relationship graph APIs
-│   ├── constraints.py          # Query constraint extraction, checks, and result ranking
-│   ├── prompts.py              # Prompt templates and retry instructions
-│   ├── relationship_graph.py   # Join and union graph construction and path search
-│   └── state.py                # Discovery tree and branch state
-├── tools/
-│   ├── __init__.py             # Toolkit factory for standalone operators
-│   ├── combiner.py             # Candidate set operations by table ID
-│   ├── composite_seeker.py     # TableOperators and relationship search
-│   ├── ranker.py               # Value and relationship scoring
-│   ├── seeker.py               # Text search and metadata filtering
-│   └── termination.py          # Branch completion signal
-└── data/
-    └── demo_lake/              # Four synthetic example tables
-```
+The bundled demo follows two joins from `store_sales` through
+`store_directory` to `region_demographics`.
 
-## Run the demo
+## Quick Start
 
-Use Python 3.11. From the `table_discovery_agent` directory, create a virtual environment and activate it.
+Run these commands from the `table_discovery_agent` directory. You need Python
+3.11, a local copy of the weights and tokenizer for
+[BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), and a
+DashScope API key for the default Qwen model.
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-```
-
-The schema browser uses only the Python standard library.
-
-```bash
-python main.py --lake data/demo_lake
-```
-
-Expected output
-
-```text
-Found 4 tables
-
-product_catalog: product_id, product_name, category
-region_demographics: region_id, population, median_income
-store_directory: store_id, store_name, region_id
-store_sales: store_id, month, revenue
-```
-
-Pass the path to another local CSV directory with `--lake` to list its tables and columns.
-
-## Run on your CSVs
-
-Place comma-delimited UTF-8 `.csv` files directly inside a lake directory.
-A UTF-8 byte order mark is accepted. Each table needs a header with nonempty,
-unique column names. Rows with missing fields are read as missing values.
-
-On CPU-only Linux, you can install the CPU build of PyTorch first.
-
-```bash
-python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0+cpu'
-```
-
-Install the pinned dependencies and copy the example configuration.
-
-```bash
 python -m pip install -r requirements.txt
 cp config.example.toml config.toml
 ```
 
-Set `data.lake_dir` to your CSV directory. Uncomment `data.vdb_dir` and
-set it to an index directory. Point `model.embedding.model_dir` at a local copy of the model
-weights and tokenizer. The example uses [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5).
-Use `data/demo_lake` as the lake to try the bundled example.
-Export `DEEPSEEK_API_KEY` before running `--ask`.
+In `config.toml`, set `model.embedding.model_dir` to your local model directory
+and uncomment `vdb_dir = "./vdb"` under `[data]`. The example already points
+`data.lake_dir` to the four synthetic CSVs in `data/demo_lake`.
 
 ```bash
 python main.py --config config.toml --validate
 python main.py --config config.toml --build-index
-python main.py --config config.toml --search "population" --top-k 3
-python main.py --config config.toml --output ./results/answer.txt \
-    --ask "Find tables with population data"
 ```
 
-Replace the query text with a question about your CSVs.
-Each result identifies a `table.column`. The table ID is the CSV filename
-without its `.csv` extension, so `region_demographics.population` refers to
-the `population` column in `region_demographics.csv` under `data.lake_dir`.
-
-The schema browser checks headers. `--validate` reads every file using the
-same CSV reader as queries and reports each file that fails.
-It returns a nonzero exit code if any file fails.
-
-## Search columns
-
-The available encoder is `bge`, which is the default for `--encoder`. Pass its local Hugging Face model directory with `--embedding-model`. Install the pinned dependencies and set `BGE_MODEL_DIR` to that directory.
+Enter your DashScope API key when prompted, then ask the agent to follow the
+two joins and find population data in the requested range.
 
 ```bash
-python -m pip install -r requirements.txt
-BGE_MODEL_DIR="/path/to/local/bge-model"
-```
-
-Use the metadata channel to search by column name or type.
-
-```bash
-python main.py --lake data/demo_lake --encoder bge \
-    --embedding-model "$BGE_MODEL_DIR" --search "population" --channel metadata --top-k 3
-```
-
-Use the content channel to search using a column representation with example values.
-
-```bash
-python main.py --lake data/demo_lake --embedding-model "$BGE_MODEL_DIR" \
-    --search "Column: store id | Type: Categorical | Content: S01, S02" \
-    --channel content --top-k 3
-```
-
-Search returns matches from the selected channel. Each result shows the table and column, the inferred column type, and the cosine similarity score. The default channel is `metadata` and the default maximum is five results.
-
-### Text encoder interface
-
-The CLI selects an implementation with `create_encoder(name, model_path)` in `indexing/embedding.py`. The same encoder handles metadata, content, and queries during a search run. Additional implementations must provide `encode(texts)` that accepts a sequence of strings and returns a contiguous two-dimensional NumPy array of L2-normalized `float32` vectors. Return one row per input string, in input order, with a consistent embedding dimension across calls.
-
-## Ask the discovery agent
-
-Install the pinned dependencies and set `BGE_MODEL_DIR` as shown above. Export your DeepSeek API key as `DEEPSEEK_API_KEY`. In Bash or Zsh, you can enter the key without displaying it or putting it in the command history.
-
-```bash
-read -rs DEEPSEEK_API_KEY
-export DEEPSEEK_API_KEY
+read -rsp "DashScope API key: " DASHSCOPE_API_KEY
+printf '\n'
+export DASHSCOPE_API_KEY
 
 query="Find tables with population between 30,000 and 40,000 for regions where stores report sales. Start from sales records with store_id, month, and revenue. Use store_id to find the store directory, then use region_id from the directory to find population data. Apply the population range to the tables found in the last step."
+qwen_query="$query Both joins are required even if the initial candidates already include a population table."
 
-python main.py --lake data/demo_lake --embedding-model "$BGE_MODEL_DIR" \
-    --ask "$query"
+python main.py --config config.toml --ask "$qwen_query"
 ```
 
-In a DeepSeek Flash run, the first join found `store_directory` through
-`store_id`. The next join used `region_id` to find `region_demographics`.
-The agent then ranked the candidates by the population range and ended the
-search. The CLI returned
+The demo connects sales records to the store directory via `store_id` and the
+directory to regional demographics via `region_id`. The expected match is
 
 ```text
 region_demographics.population
 ```
 
-`--ask` uses DeepSeek Flash (`deepseek-flash`) by default. Pass `--chat-model MODEL` to select another DeepSeek model with tool calling. The agent extracts column constraints from the question, then observes candidate tables and their relationships, plans tool calls, and executes them against the local lake. A search can retrieve columns by metadata, explore join or union paths, rank candidates by values, and preserve results with `end_search`. The CLI prints each match on its own line as `table.column`, such as `region_demographics.population`.
+To try the same discovery task with DeepSeek Flash, enter a DeepSeek API key
+and switch providers. This reuses the index built above.
 
-Indexing and tool execution run locally. DeepSeek receives the query and discovery context, which can include candidate table names and schemas, relationship evidence, and prior tool actions.
+```bash
+read -rsp "DeepSeek API key: " DEEPSEEK_API_KEY
+printf '\n'
+export DEEPSEEK_API_KEY
 
-Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `--ask` and `--search` in separate commands.
+python main.py --config config.toml --chat-provider deepseek --ask "$query"
+```
+
+## Use Your Own CSVs
+
+Put comma-delimited UTF-8 `.csv` files directly in a directory and set
+`data.lake_dir` to that directory. Use a separate `data.vdb_dir` for its
+indexes. Each CSV needs a header with unique, nonempty column names. The
+reader accepts a UTF-8 byte order mark and treats missing fields as missing
+values.
+
+```bash
+python main.py --config config.toml --validate
+python main.py --config config.toml --build-index
+python main.py --config config.toml --output ./results/answer.txt \
+    --ask "Find tables with population data"
+```
+
+Validation reads every CSV and exits with an error if any file fails.
+Results identify columns as `table.column`, where `table` is the filename
+without `.csv`. For example, `region_demographics.population` points to the
+`population` column in `region_demographics.csv`. Choose a new output file
+for each saved query.
+
+To list schemas, run the CLI with only the lake path. For direct column
+retrieval, use `--search`, which queries an index without invoking a chat model.
+
+```bash
+python main.py --lake /path/to/csvs
+python main.py --config config.toml --search "population" --top-k 3
+```
+
+## Configuration Reference
+
+CLI options override TOML values, which override built-in defaults. Relative
+TOML paths resolve from the config file's directory. Relative CLI paths resolve
+from the working directory. Both accept `~`.
+
+| TOML key | CLI option | Requirement or default |
+| --- | --- | --- |
+| `data.lake_dir` | `--lake` | Required CSV directory |
+| `data.vdb_dir` | `--vdb-dir` | Required for `--build-index`. Queries build indexes in memory when unset |
+| `output.path` | `--output` | Query results go to the terminal by default. Set a new path to save UTF-8 text |
+| `model.embedding.encoder` | `--encoder` | `bge`, the bundled encoder |
+| `model.embedding.model_dir` | `--embedding-model` | Local model directory required for indexing and search |
+| `model.chat.provider` | `--chat-provider` | `qwen` by default. Also accepts `deepseek` |
+| `model.chat.name` | `--chat-model` | `qwen-plus` for Qwen or `deepseek-flash` for DeepSeek |
+| `search.max_rounds` | `--max-rounds` | `6` rounds per agent query |
+| `search.stagnation_limit` | `--stagnation-limit` | `3` rounds without progress |
+| `search.candidate_limit` | `--candidate-limit` | `10` candidate tables per round |
+
+- **CLI modes.** Use one of `--validate`, `--build-index`, `--ask`, or
+  `--search` per invocation. For `--search`, `--channel` selects `metadata`
+  (default) or `content`, and `--top-k` defaults to `5`. Direct search
+  returns the matched column, its inferred type, and its similarity score.
+- **Chat credentials.** `--ask` reads `DASHSCOPE_API_KEY` for Qwen and
+  `DEEPSEEK_API_KEY` for DeepSeek. A CLI provider switch selects that
+  provider's default model unless you also pass `--chat-model`. If an older
+  config sets `name = "deepseek-flash"`, set `provider = "deepseek"` to keep
+  using it or remove the model name to use the Qwen default.
+- **Index reuse.** Build a VDB before querying with `data.vdb_dir` set.
+  It stores both HNSW indexes, the table and column catalog, SQLite sketches,
+  and the relationship graph. The source CSVs stay in the lake. Rebuild after
+  changing the CSVs or embedding model. Each build publishes a new generation.
+  Direct search loads one HNSW index into memory and the agent loads both.
+  With a persisted VDB, candidate CSVs and sketches are read on demand.
+
+## Architecture and Project Structure
+
+```mermaid
+flowchart LR
+    subgraph Prep["Offline preparation"]
+        CSV["CSV lake"] -->|Validate and index| VDB[("Reusable VDB")]
+    end
+
+    subgraph Search["Online discovery"]
+        Question["Question"] --> Tree["Discovery tree<br/>with query constraints"]
+        Tree -->|Search complete| Results["Ranked table columns"]
+        Tree -->|Select a node| Cycle["Observe → Plan → Execute"]
+        Cycle -.->|Update the tree| Tree
+    end
+
+    VDB --> Cycle
+```
+
+The agent uses AgentScope's `AgentBase`, `Msg`, chat models and formatters,
+`Toolkit`, and `StateModule` for orchestration and state. Indexing and tool
+execution run locally. The selected chat provider receives the query and
+discovery context, which can include table names and schemas, relationship
+evidence, and prior tool actions.
+
+```text
+table_discovery_agent/
+├── README.md
+├── agent.py                 # Discovery orchestration and planner toolkit
+├── main.py                  # CLI and configuration
+├── config.example.toml
+├── requirements.txt
+├── data_lake.py             # CSV discovery, schema reading, and loading
+├── indexing/               # Column formatting, embeddings, sketches, and VDB
+├── discovery/              # Constraints, prompts, relationships, and tree state
+├── tools/                  # Seekers, rankers, combiners, and termination
+└── data/demo_lake/         # Four synthetic CSVs
+```
+
+## Developer Reference
+
+<details>
+<summary>Toolkit entry points and encoder interface</summary>
 
 ### Toolkit entry points
 
@@ -173,58 +181,14 @@ Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `
 
 The `--search` CLI queries the column index directly.
 
-## Build and reuse a VDB
+### Text encoder interface
 
-Set `data.vdb_dir` in your configuration, or pass `--vdb-dir` on the CLI.
-Build once with `--build-index` before querying that directory.
+The CLI selects an implementation with `create_encoder(name, model_path)` in `indexing/embedding.py`. The same encoder handles metadata, content, and queries during a search run. Additional implementations must provide `encode(texts)` that accepts a sequence of strings and returns a contiguous two-dimensional NumPy array of L2-normalized `float32` vectors. Return one row per input string, in input order, with a consistent embedding dimension across calls.
 
-Each build saves two FAISS indexes, the table and column catalog, SQLite
-sketches, and the relationship graph. The source CSVs stay in the lake.
-Queries reuse the published build and read candidate CSVs as needed.
-Rebuild after changing the CSVs or the embedding model.
-A rebuild publishes a new generation after all its files are ready.
-Previous generations remain available to queries that already opened them.
+</details>
 
-FAISS loads each selected HNSW index into memory. Direct search loads one
-channel, while the discovery agent uses both. Leave `data.vdb_dir` unset to
-build indexes in memory for a small lake.
-
-## Configure the CLI
-
-Copy `config.example.toml` to `config.toml` and set
-`model.embedding.model_dir` to your local BGE model directory.
-Set `data.lake_dir` to the directory with your CSVs.
-
-CLI options override TOML values, which override built-in defaults.
-Relative paths in TOML are resolved from the configuration file's directory.
-Relative CLI paths are resolved from the working directory.
-Both accept `~` for the home directory.
-
-| TOML key | CLI option | Requirement or default |
-| --- | --- | --- |
-| `data.lake_dir` | `--lake` | Required to browse, build, or query tables |
-| `data.vdb_dir` | `--vdb-dir` | Required for `--build-index`. Set to reuse saved indexes |
-| `output.path` | `--output` | Optional. Query results default to the terminal |
-| `model.embedding.encoder` | `--encoder` | `bge` |
-| `model.embedding.model_dir` | `--embedding-model` | Required for building and querying indexes |
-| `model.chat.name` | `--chat-model` | `deepseek-flash` |
-| `search.max_rounds` | `--max-rounds` | `6` rounds per `--ask` query |
-| `search.stagnation_limit` | `--stagnation-limit` | `3` rounds without progress |
-| `search.candidate_limit` | `--candidate-limit` | `10` candidate tables per round |
-
-```bash
-python main.py --config ./config.toml
-python main.py --config ./config.toml --ask "Find population data"
-python main.py --config ./config.toml --max-rounds 8 \
-    --output ./results/answer.txt --ask "Find population data"
-```
-
-Supply `DEEPSEEK_API_KEY` in the environment for `--ask`.
-Use `--channel` and `--top-k` to tune `--search`.
-An output file uses the same UTF-8 text as the terminal.
-Choose a new file path for each saved result.
-
-## Format columns
+<details>
+<summary>Format columns</summary>
 
 The formatting example uses pandas and the dependencies installed above.
 
@@ -257,7 +221,10 @@ for table_id, column_name in (
 PYTHON
 ```
 
-## Estimate column frequencies and ranges
+</details>
+
+<details>
+<summary>Estimate column frequencies and ranges</summary>
 
 `build_column_statistics` builds frequency and range summaries keyed by
 `(table_id, column_name)`. It uses a Count-Min sketch over non-null categorical
@@ -283,7 +250,10 @@ print(population.range_fraction(30000, 40000))  # Approximately 0.5
 PYTHON
 ```
 
-## Estimate key overlap and grouped correlation
+</details>
+
+<details>
+<summary>Estimate key overlap and grouped correlation</summary>
 
 Build key sketches separately from column statistics.
 `KeySketch(table, key_column, k=256)` builds a bottom-`k` sketch of a pandas
@@ -325,6 +295,4 @@ correlation = left_sketch.correlation(right_sketch, "x", "y")
 print(f"{correlation:.1f}")  # 1.0
 ```
 
-## Example data
-
-All four CSVs contain synthetic data. The sales rows for store `S01` share a `store_id` with the store directory entry for Maple Market. That entry links to demographics for region `R01` through `region_id`. The product catalog is a separate example table.
+</details>

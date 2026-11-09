@@ -12,8 +12,16 @@ import tomllib
 from collections.abc import Callable, Mapping
 from contextlib import nullcontext
 from pathlib import Path
-from typing import TypeVar
+from typing import Literal, TypeVar
 from data_lake import load_data_lake, validate_data_lake
+
+_ChatProvider = Literal["qwen", "deepseek"]
+_DEFAULT_CHAT_PROVIDER: _ChatProvider = "qwen"
+_CHAT_MODELS = {"qwen": "qwen-plus", "deepseek": "deepseek-flash"}
+_CHAT_KEY_ENV = {
+    "qwen": "DASHSCOPE_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+}
 
 
 def main() -> None:
@@ -32,6 +40,7 @@ def main() -> None:
                 "output": args.output,
                 "encoder": args.encoder,
                 "embedding_model": args.embedding_model,
+                "chat_provider": args.chat_provider,
                 "chat_model": args.chat_model,
                 "max_rounds": args.max_rounds,
                 "stagnation_limit": args.stagnation_limit,
@@ -43,15 +52,12 @@ def main() -> None:
 
     query = _query_text(parser, args, settings)
 
+    key_env = _CHAT_KEY_ENV[settings.chat_provider]
     api_key = (
-        os.environ.get("DEEPSEEK_API_KEY", "").strip()
-        if args.ask is not None
-        else ""
+        os.environ.get(key_env, "").strip() if args.ask is not None else ""
     )
     if args.ask is not None and not api_key:
-        parser.error(
-            "--ask requires the DEEPSEEK_API_KEY environment variable"
-        )
+        parser.error(f"--ask requires the {key_env} environment variable")
 
     if settings.lake is None:
         if args.config is not None or args.validate:
@@ -162,6 +168,7 @@ def _query_output(
             query,
             settings.chat_model,
             api_key,
+            provider=settings.chat_provider,
             frames=frames if lazy_frames is None else lazy_frames,
             encoder=encoder,
             search=SearchConfig(**settings.search),
@@ -234,8 +241,13 @@ def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "--ask", metavar="QUESTION", help="ask the discovery agent"
     )
     parser.add_argument(
+        "--chat-provider",
+        choices=_CHAT_MODELS,
+        help="chat provider for --ask (default: qwen)",
+    )
+    parser.add_argument(
         "--chat-model",
-        help="DeepSeek model for --ask (default: deepseek-flash)",
+        help="model for --ask (defaults: qwen-plus or deepseek-flash)",
     )
     parser.add_argument(
         "--channel",
@@ -316,7 +328,8 @@ class Config:
     output: Path | None = None
     encoder: str = "bge"
     embedding_model: Path | None = None
-    chat_model: str = "deepseek-flash"
+    chat_provider: _ChatProvider = _DEFAULT_CHAT_PROVIDER
+    chat_model: str = _CHAT_MODELS[_DEFAULT_CHAT_PROVIDER]
     search: dict[str, int] = dataclasses.field(default_factory=dict)
 
 
@@ -326,6 +339,7 @@ _TOML_FIELDS = {
     "output": ("output", "path"),
     "encoder": ("model", "embedding", "encoder"),
     "embedding_model": ("model", "embedding", "model_dir"),
+    "chat_provider": ("model", "chat", "provider"),
     "chat_model": ("model", "chat", "name"),
     "max_rounds": ("search", "max_rounds"),
     "stagnation_limit": ("search", "stagnation_limit"),
@@ -369,6 +383,15 @@ def _encoder(value: object, field: str, base: Path) -> str:
     return name
 
 
+def _chat_provider(value: object, field: str, base: Path) -> _ChatProvider:
+    name = _text(value, field, base)
+    if name == "qwen":
+        return "qwen"
+    if name == "deepseek":
+        return "deepseek"
+    raise ValueError(f"{field} must be 'qwen' or 'deepseek'")
+
+
 def _path(value: object, field: str, base: Path) -> Path:
     if isinstance(value, Path):
         path = value
@@ -404,6 +427,8 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
         key: str,
         default: _T,
         parse: Callable[[object, str, Path], _T],
+        *,
+        use_config: bool = True,
     ) -> _T:
         field = _TOML_FIELDS[key]
         value = default
@@ -416,7 +441,7 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
         override = overrides.get(key)
         if override is not None:
             return parse(override, "--" + key.replace("_", "-"), cwd)
-        return value
+        return value if use_config else default
 
     search = {}
     for key in ("max_rounds", "stagnation_limit", "candidate_limit"):
@@ -425,6 +450,12 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
             search[key] = value
 
     defaults = Config()
+    chat_provider = get(
+        "chat_provider", defaults.chat_provider, _chat_provider
+    )
+    configured_provider = fields.get(
+        _TOML_FIELDS["chat_provider"], defaults.chat_provider
+    )
     return Config(
         lake=get("lake", defaults.lake, _path),
         vdb_dir=get("vdb_dir", defaults.vdb_dir, _path),
@@ -433,7 +464,13 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
         embedding_model=get(
             "embedding_model", defaults.embedding_model, _path
         ),
-        chat_model=get("chat_model", defaults.chat_model, _text),
+        chat_provider=chat_provider,
+        chat_model=get(
+            "chat_model",
+            _CHAT_MODELS[chat_provider],
+            _text,
+            use_config=chat_provider == configured_provider,
+        ),
         search=search,
     )
 
