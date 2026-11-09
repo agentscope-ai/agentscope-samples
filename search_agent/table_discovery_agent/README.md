@@ -36,22 +36,19 @@ python main.py --config config.toml --build-index
 ```
 
 Enter your DashScope API key when prompted, then ask the agent to find
-population data by joining sales records through the store directory.
+tables with a population column.
 
 ```bash
 read -rsp "DashScope API key: " DASHSCOPE_API_KEY
 printf '\n'
 export DASHSCOPE_API_KEY
 
-query="Join sales to the store directory on store_id, then to demographics on region_id. \
-Require both joins before filtering final population to 30,000–40,000."
+query="Find tables with a population column."
 
 python main.py --config config.toml --ask "$query"
 ```
 
-Both providers follow `store_id` to the store directory and `region_id`
-to regional demographics, then apply the population range. The expected
-match is
+The expected match is
 
 ```text
 region_demographics.population

@@ -67,6 +67,8 @@ This is a repository that **brings together a variety of ready-to-run Python age
 │   └── ace_bench/                          # Benchmarks and evaluation tools
 │
 ├── data_juicer_agent/                      # Data processing multi-agent system
+├── search_agent/
+│   └── table_discovery_agent/             # Multi-hop table discovery over local CSVs
 ├── tuner/                                  # Tune AgentScope applications using AgentScope Tuner
 │   ├── math_agent/                         # A quick start example for tuning
 │   ├── frozen_lake/                        # Teach an agent to play a game requiring multiple steps
@@ -83,6 +85,7 @@ This is a repository that **brings together a variety of ready-to-run Python age
 | Category                | Example Folder                                        | Uses AgentScope | Use AgentScope Runtime | Description                                      |
 | ----------------------- |-------------------------------------------------------| --------------- | ------------ |--------------------------------------------------|
 | **Data Processing**     | data_juicer_agent/                                   | ✅               | ❌            | Multi-agent data processing with Data-Juicer     |
+| **Search Agents** | [search_agent/table_discovery_agent](search_agent/table_discovery_agent/README.md) | ✅ | ❌ | Multi-hop table discovery over local CSVs |
 | **Browser Use**         | browser_use/agent_browser                             | ✅               | ❌            | Command-line browser automation using AgentScope |
 |                         | browser_use/browser_use_agent_pro                     | ✅               | ❌            | Advanced command-line Python browser agent using AgentScope              |
 |                         | browser_use/browser_use_fullstack_runtime             | ✅               | ✅            | Full-stack browser automation with UI & sandbox  |
