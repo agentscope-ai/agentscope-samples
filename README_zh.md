@@ -67,8 +67,6 @@
 │   └── ace_bench/                          # 基准测试与评估工具
 │
 ├── data_juicer_agent/                      # 数据处理多智能体系统
-├── search_agent/
-│   └── table_discovery_agent/             # 面向本地 CSV 的多跳表发现
 ├── tuner/                                  # 用 AgentScope Tuner 调优 AgentScope 应用
 │   ├── math_agent/                         # 快速入门调优示例
 │   ├── frozen_lake/                        # 教一个智能体玩需要多步操作的游戏
@@ -77,6 +75,8 @@
 │   ├── werewolves/                         # 强化多智能体应用能力
 │   └── data_augment/                       # 增强用于调优的数据
 ├── sample_template/                        # 新样例贡献模板
+├── search_agent/
+│   └── table_discovery_agent/              # 面向本地 CSV 的多跳表发现
 └── README.md
 ```
 
@@ -87,7 +87,6 @@
 | 分类        | 示例文件夹                                                 | 使用 AgentScope | 使用 AgentScope Runtime | 描述                      |
 |-----------|-------------------------------------------------------|---------------|-----------------------|-------------------------|
 | **数据处理**            | data_juicer_agent/                                 | ✅               | ❌                       | 基于 Data-Juicer 的多智能体数据处理 |
-| **检索智能体** | [search_agent/table_discovery_agent](search_agent/table_discovery_agent/README.md) | ✅ | ❌ | 面向本地 CSV 的多跳表发现 |
 | **浏览器相关** | browser_use/agent_browser                             | ✅             | ❌                     | 基于 AgentScope 的命令行浏览器自动化 |
 |           | browser_use/browser_use_agent_pro                     | ✅             | ❌                     | 基于 AgentScope 的高级命令行浏览器智能体 |
 |           | browser_use/browser_use_fullstack_runtime             | ✅             | ✅                     | 带 UI 和沙盒环境的全栈浏览器自动化     |
@@ -101,6 +100,7 @@
 | **评估**    | evaluation/ace_bench                                  | ✅             | ❌                     | ACE Bench 基准测试          |
 | **通用智能体** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
 | **金融交易**  | evotraders/                                           | ✅             | ❌                     | 自我进化的多智能体交易系统          |
+| **检索智能体** | search_agent/table_discovery_agent/                   | ✅             | ❌                     | 面向本地 CSV 的多跳表发现           |
 
 ---
 
