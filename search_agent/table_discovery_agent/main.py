@@ -97,14 +97,22 @@ def main() -> None:
         from indexing.embedding import create_encoder
 
         frames = {table.id: read_table(table) for table in tables}
-        index = ColumnIndex(
-            format_columns(frames),
-            create_encoder(args.encoder, args.embedding_model),
-        )
+        columns = format_columns(frames)
+        encoder = create_encoder(args.encoder, args.embedding_model)
+        index = ColumnIndex(columns, encoder)
         if args.ask is not None:
             from agent import run_query
 
-            print(run_query(index, args.ask, args.chat_model, api_key))
+            print(
+                run_query(
+                    index,
+                    args.ask,
+                    args.chat_model,
+                    api_key,
+                    frames=frames,
+                    encoder=encoder,
+                )
+            )
             return
 
         results = index.search(args.search, args.channel, args.top_k)

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Score candidate columns using value and relationship sketches."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import asdict, dataclass
 from functools import cache
 from math import isfinite
+from operator import itemgetter
 from typing import TypeVar
 
 import pandas as pd
@@ -13,12 +14,16 @@ from agentscope.tool import ToolResponse
 from pandas.api.types import is_float_dtype, is_integer_dtype
 from typing_extensions import TypedDict
 
-from indexing import ColumnMatch, KeySketch
+from indexing import ColumnIndex, ColumnMatch, ColumnRepresentation, KeySketch
 from indexing.sketches import CountMinSketch, QuantileHistogram
+
+from .combiner import Match
 
 ColumnStatistics = Mapping[tuple[str, str], CountMinSketch | QuantileHistogram]
 TableFrames = Mapping[str, pd.DataFrame]
 _Sketch = TypeVar("_Sketch", CountMinSketch, QuantileHistogram)
+_Bound = float | str | None
+_CORRELATION_THRESHOLD = 0.5
 
 
 class CandidateColumn(TypedDict):
@@ -272,12 +277,13 @@ def create_relationship_rankers(
             reference_sketch, reference_column = measure(reference)
             for candidate in candidates:
                 sketch, column_name = measure(candidate)
-                correlation = reference_sketch.correlation(
+                correlation = _finite_correlation(
+                    reference_sketch,
                     sketch,
                     reference_column,
                     column_name,
                 )
-                if correlation is None or not isfinite(correlation):
+                if correlation is None:
                     skipped += 1
                     continue
 
@@ -297,3 +303,134 @@ def create_relationship_rankers(
         return _ranked_response(matches, skipped, "with undefined correlation")
 
     return rank_overlap, rank_correlation
+
+
+def _normalize_scores(matches: list[Match]) -> list[Match]:
+    total = sum(match["score"] for match in matches)
+    for match in matches:
+        match["score"] /= total
+    return matches
+
+
+def _top_matches(matches: list[Match], limit: int) -> list[Match]:
+    return sorted(matches, key=itemgetter("score"), reverse=True)[:limit]
+
+
+def _match(column: ColumnMatch | ColumnRepresentation, score: float) -> Match:
+    return Match(
+        table_id=column.table_id,
+        column_name=column.column_name,
+        column_type=column.column_type,
+        score=score,
+    )
+
+
+def _range_bound(value: _Bound) -> float | None:
+    if value is None or (
+        isinstance(value, str)
+        and value.strip().lower() in ("", "null", "none")
+    ):
+        return None
+    try:
+        if not isinstance(value, bool):
+            bound = float(value)
+            if isfinite(bound):
+                return bound
+    except (TypeError, ValueError, OverflowError):
+        pass
+    raise ValueError("range bounds must be finite numbers or null")
+
+
+def _range_bounds(
+    min_val: _Bound, max_val: _Bound, allow_equal_bounds: bool
+) -> tuple[float | None, float | None]:
+    lower, upper = _range_bound(min_val), _range_bound(max_val)
+    if lower == upper and (lower is None or not allow_equal_bounds):
+        raise ValueError("provide distinct bounds or one open bound")
+    return lower, upper
+
+
+def _finite_correlation(
+    source: KeySketch,
+    target: KeySketch,
+    source_measure: str,
+    target_measure: str,
+) -> float | None:
+    value = source.correlation(target, source_measure, target_measure)
+    if value is None or not isfinite(value):
+        return None
+    return value
+
+
+class _TableRanker:
+    """Score table candidates and cache sketches across discovery calls."""
+
+    def __init__(
+        self,
+        index: ColumnIndex,
+        frames: TableFrames,
+        statistics: ColumnStatistics,
+    ) -> None:
+        self._index = index
+        self._frames = frames
+        self._statistics = statistics
+        self._key_sketches: dict[tuple[str, str], KeySketch] = {}
+
+    def rank_by_statistic(
+        self,
+        columns: Iterable[ColumnRepresentation],
+        statistic_type: type[_Sketch],
+        score: Callable[[_Sketch], float],
+        result_cap: int,
+    ) -> list[Match]:
+        matches = []
+        for column in columns:
+            statistic = self._statistics.get(
+                (column.table_id, column.column_name)
+            )
+            if isinstance(statistic, statistic_type):
+                value = score(statistic)
+                if value > 0:
+                    matches.append(_match(column, value))
+        return _top_matches(_normalize_scores(matches), result_cap)
+
+    def key_sketch(self, column: ColumnRepresentation) -> KeySketch:
+        key = (column.table_id, column.column_name)
+        if key not in self._key_sketches:
+            self._key_sketches[key] = KeySketch(
+                self._frames[column.table_id], column.column_name
+            )
+        return self._key_sketches[key]
+
+    def overlap(
+        self, key: ColumnRepresentation, sources: list[KeySketch]
+    ) -> float:
+        sketch = self.key_sketch(key)
+        return sum(source.overlap(sketch) for source in sources)
+
+    def best_correlation(
+        self,
+        key: ColumnRepresentation,
+        sources: list[tuple[KeySketch, str]],
+    ) -> Match | None:
+        target = self.key_sketch(key)
+        best = None
+        best_score = _CORRELATION_THRESHOLD
+        for name in self._frames[key.table_id].columns:
+            if name == key.column_name:
+                continue
+            column = self._index.get_column(key.table_id, name)
+            if column.column_type != "Numerical":
+                continue
+            correlation = 0.0
+            for source, measure in sources:
+                value = _finite_correlation(source, target, measure, name)
+                if value is not None:
+                    correlation += value
+            score = abs(correlation)
+            if score > best_score:
+                best = _match(column, score)
+                best["key_column"] = key.column_name
+                best["correlation"] = correlation
+                best_score = score
+        return best

@@ -25,7 +25,11 @@ def create_toolkit(
     statistics: ColumnStatistics | None = None,
     frames: TableFrames | None = None,
 ) -> Toolkit:
-    """Register discovery tools for the supplied lake resources."""
+    """Register standalone tools for direct calls with tables and columns.
+
+    Callers supply candidate columns or reference tables explicitly.
+    Available tools depend on which lake resources are supplied.
+    """
     toolkit = Toolkit()
     toolkit.register_tool_function(create_seeker(index))
 

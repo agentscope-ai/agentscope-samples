@@ -1,19 +1,38 @@
 # -*- coding: utf-8 -*-
 """Search for related tables from columns in an existing table."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import cast
 
 from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 from pandas.api.types import is_float_dtype, is_integer_dtype
 
-from indexing import ColumnIndex, ColumnMatch
+from indexing import ColumnIndex, ColumnRepresentation
+from indexing.column_matcher import ColumnNameMatcher
+from indexing.sketches import CountMinSketch, QuantileHistogram
 
 from .combiner import Match
-from .ranker import CandidateColumn, CorrelationColumn, TableFrames
+from .ranker import (
+    CandidateColumn,
+    ColumnStatistics,
+    CorrelationColumn,
+    TableFrames,
+    _Bound,
+    _TableRanker,
+    _match,
+    _normalize_scores,
+    _range_bounds,
+    _top_matches,
+)
+from .seeker import (
+    _TableSeeker,
+    _metadata_queries,
+    _retrieve_content,
+    _union_matches,
+)
 
-_CANDIDATE_LIMIT = 512
+_JOIN_CANDIDATE_LIMIT = 512
 
 
 def _matches(response: ToolResponse) -> list[Match]:
@@ -44,59 +63,6 @@ def _validate_reference(
         raise ValueError(missing_message)
     if any(not isinstance(reference[field], str) for field in fields):
         raise ValueError(type_message)
-
-
-def _retrieve(
-    index: ColumnIndex, table_id: str, column_name: str
-) -> list[ColumnMatch]:
-    column = index.get_column(table_id, column_name)
-    return [
-        match
-        for match in index.search(
-            column.content, channel="content", top_k=_CANDIDATE_LIMIT
-        )
-        if match.table_id != table_id
-    ]
-
-
-def _union_matches(
-    index: ColumnIndex, table_id: str, column_names: list[str]
-) -> list[Match]:
-    if (
-        not isinstance(column_names, list)
-        or not column_names
-        or any(not isinstance(name, str) for name in column_names)
-    ):
-        raise ValueError("column_names must be a nonempty list of names")
-    if not isinstance(table_id, str):
-        raise ValueError("table ID and column name must be strings")
-
-    names = list(dict.fromkeys(column_names))
-    by_table: dict[str, list[ColumnMatch]] = {}
-    # Keep one positive match per source column in each candidate table.
-    for name in names:
-        best: dict[str, ColumnMatch] = {}
-        for match in _retrieve(index, table_id, name):
-            if match.score > 0:
-                best.setdefault(match.table_id, match)
-        for match in best.values():
-            by_table.setdefault(match.table_id, []).append(match)
-
-    matches = []
-    for matched in by_table.values():
-        representative = max(matched, key=lambda match: match.score)
-        coverage = len(matched) / len(names)
-        mean_score = sum(match.score for match in matched) / len(matched)
-        # Square coverage to give broader matches more weight.
-        matches.append(
-            Match(
-                table_id=representative.table_id,
-                column_name=representative.column_name,
-                column_type=representative.column_type,
-                score=coverage**2 * mean_score,
-            ),
-        )
-    return matches
 
 
 def _correlation_candidates(
@@ -166,7 +132,7 @@ def create_composite_seekers(
             CandidateColumn(
                 table_id=match.table_id, column_name=match.column_name
             )
-            for match in _retrieve(
+            for match in _retrieve_content(
                 index, reference["table_id"], reference["column_name"]
             )
         ]
@@ -251,3 +217,174 @@ def create_composite_seekers(
             return _error(str(error))
 
     return join_search, union_search, correlation_search
+
+
+def _positive_result_cap(result_cap: int) -> int:
+    if (
+        isinstance(result_cap, bool)
+        or not isinstance(result_cap, int)
+        or result_cap < 1
+    ):
+        raise ValueError("result_cap must be a positive integer")
+    return result_cap
+
+
+class TableOperators:
+    """Retrieve or rank tables for one discovery tool call at a time."""
+
+    def __init__(
+        self,
+        index: ColumnIndex,
+        frames: TableFrames,
+        statistics: ColumnStatistics,
+        matcher: ColumnNameMatcher,
+        *,
+        result_cap: int = 256,
+    ) -> None:
+        self._result_cap = _positive_result_cap(result_cap)
+        self._seeker = _TableSeeker(index, frames, matcher)
+        self._ranker = _TableRanker(index, frames, statistics)
+
+    @property
+    def result_cap(self) -> int:
+        """Return the maximum number of tables emitted by each operator."""
+        return self._result_cap
+
+    def _resolve_result_cap(self, override: int | None) -> int:
+        return (
+            self._result_cap
+            if override is None
+            else _positive_result_cap(override)
+        )
+
+    def metadata_seeker(
+        self,
+        column_names: Sequence[str],
+        column_types: Sequence[str],
+        *,
+        result_cap: int | None = None,
+    ) -> list[Match]:
+        """Find tables covering the requested names and column types."""
+        queries = _metadata_queries(column_names, column_types)
+        return self._seeker.seek(
+            queries, "metadata", self._resolve_result_cap(result_cap)
+        )
+
+    def eq_ranker(
+        self,
+        sources: list[Match],
+        column_name: str,
+        column_value: object,
+        *,
+        result_cap: int | None = None,
+    ) -> list[Match]:
+        """Rank source tables by the frequency of a categorical value."""
+        cap = self._resolve_result_cap(result_cap)
+        return self._ranker.rank_by_statistic(
+            self._seeker.source_columns(sources, column_name),
+            CountMinSketch,
+            lambda sketch: sketch.frequency(column_value),
+            cap,
+        )
+
+    def range_ranker(
+        self,
+        sources: list[Match],
+        column_name: str,
+        min_val: _Bound = None,
+        max_val: _Bound = None,
+        *,
+        result_cap: int | None = None,
+        allow_equal_bounds: bool = False,
+    ) -> list[Match]:
+        """Rank source tables by the fraction inside an inclusive range."""
+        lower, upper = _range_bounds(min_val, max_val, allow_equal_bounds)
+        cap = self._resolve_result_cap(result_cap)
+        return self._ranker.rank_by_statistic(
+            self._seeker.source_columns(sources, column_name),
+            QuantileHistogram,
+            lambda sketch: sketch.range_fraction(lower, upper),
+            cap,
+        )
+
+    def join_search(
+        self, sources: list[Match], join_column_name: str
+    ) -> list[Match]:
+        """Find tables with positive categorical key overlap."""
+        _, overlaps = self._overlapping_keys(sources, join_column_name)
+        matches = [_match(column, score) for column, score in overlaps]
+        return _top_matches(_normalize_scores(matches), self._result_cap)
+
+    def union_search(
+        self, sources: list[Match], union_column_names: list[str]
+    ) -> list[Match]:
+        """Find tables covering the requested source column contents."""
+        if not union_column_names:
+            raise ValueError("provide at least one source column name")
+        queries = [
+            (
+                name,
+                [
+                    column.content
+                    for column in self._seeker.source_columns(sources, name)
+                ],
+            )
+            for name in union_column_names
+        ]
+        return self._seeker.seek(queries, "content", self._result_cap)
+
+    def correlation_search(
+        self,
+        sources: list[Match],
+        join_column_name: str,
+        src_corr_column_name: str,
+    ) -> list[Match]:
+        """Find measures correlated with source measures on shared keys."""
+        keys, overlaps = self._overlapping_keys(sources, join_column_name)
+        source_measures = []
+        for key in keys:
+            measure = self._seeker.find_column(
+                key.table_id, src_corr_column_name
+            )
+            if measure is not None and measure.column_type == "Numerical":
+                source_measures.append(
+                    (self._ranker.key_sketch(key), measure.column_name)
+                )
+        if not source_measures:
+            return []
+
+        matches = []
+        for key, _ in overlaps:
+            match = self._ranker.best_correlation(key, source_measures)
+            if match is not None:
+                matches.append(match)
+        return _top_matches(_normalize_scores(matches), self._result_cap)
+
+    def _overlapping_keys(
+        self, sources: list[Match], name: str
+    ) -> tuple[
+        list[ColumnRepresentation], list[tuple[ColumnRepresentation, float]]
+    ]:
+        source_columns = self._seeker.source_columns(sources, name)
+        keys = [
+            column
+            for column in source_columns
+            if column.column_type == "Categorical"
+        ]
+        if not keys:
+            return [], []
+        candidates = self._seeker.seek(
+            [(name, [column.content for column in source_columns])],
+            "content",
+            _JOIN_CANDIDATE_LIMIT,
+        )
+        source_sketches = [self._ranker.key_sketch(key) for key in keys]
+        overlaps = []
+        for candidate in candidates:
+            key = self._seeker.find_column(candidate["table_id"], name)
+            if key is None or key.column_type != "Categorical":
+                continue
+            score = self._ranker.overlap(key, source_sketches)
+            if score > 0:
+                overlaps.append((key, score))
+        return keys, overlaps

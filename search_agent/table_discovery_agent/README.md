@@ -6,28 +6,34 @@ List tables in a local directory of CSV files, search their columns by schema in
 
 ```text
 table_discovery_agent/
-├── README.md                # Setup and demo instructions
-├── agent.py                 # AgentScope agent with the column seeker
-├── data_lake.py             # CSV discovery, schema reading, and pandas table loading
-├── main.py                  # Command-line schema browser, search, and agent demo
-├── requirements.txt         # Pinned formatting and search dependencies
+├── README.md                   # Setup and demo instructions
+├── agent.py                    # Discovery orchestration and planner toolkit
+├── data_lake.py                # CSV discovery, schema reading, and pandas table loading
+├── main.py                     # Schema browser, direct search, and discovery CLI
+├── requirements.txt            # Pinned dependencies
 ├── indexing/
-│   ├── __init__.py          # Public formatter, index, and statistics APIs
-│   ├── column_formatter.py  # Column metadata and content formatting
-│   ├── column_index.py      # Metadata and content HNSW indexes
-│   ├── sketches.py          # Column statistics and key sketches
-│   └── embedding.py         # Text encoder interface and local BGE implementation
+│   ├── __init__.py             # Public formatter, index, and statistics APIs
+│   ├── column_formatter.py     # Column metadata and content formatting
+│   ├── column_index.py         # Metadata and content HNSW indexes
+│   ├── column_matcher.py       # Column-name matching
+│   ├── embedding.py            # Text encoder interface and local BGE implementation
+│   └── sketches.py             # Column statistics and key sketches
+├── discovery/
+│   ├── __init__.py             # Public discovery state and relationship graph APIs
+│   ├── constraints.py          # Query constraint extraction, checks, and result ranking
+│   ├── prompts.py              # Prompt templates and retry instructions
+│   ├── relationship_graph.py   # Join and union graph construction and path search
+│   └── state.py                # Discovery tree and branch state
 ├── tools/
-│   ├── __init__.py           # Toolkit factory for the discovery tools
-│   ├── seeker.py             # Column retrieval by text
-│   ├── ranker.py             # Value and relationship scoring
-│   ├── composite_seeker.py   # Join, union, and correlation search
-│   ├── combiner.py           # Candidate set operations by table ID
-│   └── termination.py        # Branch completion signal
-├── tests/
-│   └── test_agent_demo.py    # Offline agent integration test
+│   ├── __init__.py             # Toolkit factory for standalone operators
+│   ├── combiner.py             # Candidate set operations by table ID
+│   ├── composite_seeker.py     # TableOperators and relationship search
+│   ├── ranker.py               # Value and relationship scoring
+│   ├── seeker.py               # Text search and metadata filtering
+│   └── termination.py          # Branch completion signal
+├── tests/                      # Offline discovery and operator tests
 └── data/
-    └── demo_lake/           # Four synthetic example tables
+    └── demo_lake/              # Four synthetic example tables
 ```
 
 ## Run the demo
@@ -96,23 +102,43 @@ Install the pinned dependencies and set `BGE_MODEL_DIR` as shown above. Export y
 read -rs DEEPSEEK_API_KEY
 export DEEPSEEK_API_KEY
 
+query="Find tables with population between 30,000 and 40,000 for regions where stores report sales. Start from sales records with store_id, month, and revenue. Use store_id to find the store directory, then use region_id from the directory to find population data. Apply the population range to the tables found in the last step."
+
 python main.py --lake data/demo_lake --embedding-model "$BGE_MODEL_DIR" \
-    --ask "Which table has a population column?"
+    --ask "$query"
 ```
 
-`--ask` uses DeepSeek Flash (`deepseek-flash`) by default. Pass `--chat-model MODEL` to select another DeepSeek model with tool calling. The agent uses `seek_columns` to search the local indexes and names relevant columns in its answer, such as `region_demographics.population`. Indexing and retrieval run locally. The question and the seeker's results are sent to DeepSeek to generate the answer.
+In a DeepSeek Flash run, the first join found `store_directory` through
+`store_id`. The next join used `region_id` to find `region_demographics`.
+The agent then ranked the candidates by the population range and ended the
+search. The CLI returned
+
+```text
+region_demographics.population
+```
+
+`--ask` uses DeepSeek Flash (`deepseek-flash`) by default. Pass `--chat-model MODEL` to select another DeepSeek model with tool calling. The agent extracts column constraints from the question, then observes candidate tables and their relationships, plans tool calls, and executes them against the local lake. A search can retrieve columns by metadata, explore join or union paths, rank candidates by values, and preserve results with `end_search`. The CLI prints each match on its own line as `table.column`, such as `region_demographics.population`.
+
+Indexing and tool execution run locally. DeepSeek receives the query and discovery context, which can include candidate table names and schemas, relationship evidence, and prior tool actions.
 
 Use `--search` for direct column retrieval with `--channel` and `--top-k`. Run `--ask` and `--search` in separate commands.
 
-## Run the offline test
+### Toolkit entry points
 
-From the `table_discovery_agent` directory, run the integration test after installing the pinned dependencies.
+- `agent.create_planner_toolkit()` powers `--ask`. The planner passes discovery node IDs, and the toolkit resolves them to candidate tables.
+- `tools.create_toolkit()` registers standalone operators for direct Python calls. Callers pass column queries, candidate columns, or reference tables explicitly.
+
+The `--search` CLI queries the column index directly.
+
+## Run the offline tests
+
+From the `table_discovery_agent` directory, run the tests after installing the pinned dependencies.
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-The test uses the demo CSVs and checks that the seeker result reaches the agent's next model turn. It runs without a DeepSeek API key or local BGE weights.
+The CLI tests use the demo CSVs and scripted models. They cover metadata retrieval, two joins through the store directory, population range scoring, and `end_search`. The tests run without a DeepSeek API key or local BGE weights.
 
 ## Format columns
 
