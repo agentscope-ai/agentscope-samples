@@ -13,7 +13,7 @@ from agentscope.message import Msg
 from agentscope.model import ChatModelBase, ChatResponse
 
 from indexing.column_matcher import ColumnNameMatcher
-from tools.combiner import Match
+from table_tools.combiner import Match
 
 from .prompts import COL_CONSTRAINT_PROMPT, CONSTRAINT_RETRY_HINT
 
@@ -77,8 +77,10 @@ def _parse_constraints(text: str) -> list[QueryConstraint]:
 
         constraints.append(
             QueryConstraint(
-                col_name=name.strip(), col_type=column_type, values=values
-            )
+                col_name=name.strip(),
+                col_type=column_type,
+                values=values,
+            ),
         )
     return constraints
 
@@ -95,7 +97,8 @@ async def extract_constraints(
         RuntimeError: If the model fails to return valid constraints.
     """
     prompt = COL_CONSTRAINT_PROMPT.format(
-        query=query, table_schema=json.dumps(table_schema, ensure_ascii=False)
+        query=query,
+        table_schema=json.dumps(table_schema, ensure_ascii=False),
     )
     last_error: Exception | None = None
     for attempt in range(3):
@@ -104,7 +107,7 @@ async def extract_constraints(
             content += CONSTRAINT_RETRY_HINT
         try:
             messages = await formatter.format(
-                [Msg(name="user", role="user", content=content)]
+                [Msg(name="user", role="user", content=content)],
             )
             response = await model(messages)
             final: ChatResponse | None
@@ -125,12 +128,14 @@ async def extract_constraints(
         except Exception as error:
             last_error = error
     raise RuntimeError(
-        "Could not extract column constraints after three attempts."
+        "Could not extract column constraints after three attempts.",
     ) from last_error
 
 
 def _in_range(
-    value: Any, lower: int | float | None, upper: int | float | None
+    value: Any,
+    lower: int | float | None,
+    upper: int | float | None,
 ) -> bool:
     try:
         return (lower is None or value >= lower) and (
@@ -192,7 +197,7 @@ def resolve_constraints(
     """Return constraints still outstanding after verifying three tables."""
     sorted_matches = sorted(matches, key=itemgetter("score"), reverse=True)
     table_ids = list(
-        dict.fromkeys(match["table_id"] for match in sorted_matches)
+        dict.fromkeys(match["table_id"] for match in sorted_matches),
     )
     top_tables = [
         frames[table_id] for table_id in table_ids[:3] if table_id in frames

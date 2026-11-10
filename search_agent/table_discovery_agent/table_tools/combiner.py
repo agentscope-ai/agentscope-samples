@@ -31,7 +31,8 @@ def _best_by_table(matches: list[Match]) -> dict[str, Match]:
             for field in ("table_id", "column_name", "column_type")
         ):
             raise ValueError(
-                "each match must provide table_id, column_name and column_type"
+                "each match must provide table_id, column_name "
+                "and column_type",
             )
         score = match.get("score")
         try:
@@ -73,7 +74,7 @@ def combine_results(
     try:
         if operation not in ("intersection", "union", "difference"):
             raise ValueError(
-                "operation must be intersection, union or difference"
+                "operation must be intersection, union or difference",
             )
         left_by_table = _best_by_table(left)
         right_by_table = _best_by_table(right)

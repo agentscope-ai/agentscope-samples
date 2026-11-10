@@ -27,7 +27,7 @@ _CHAT_KEY_ENV = {
 def main() -> None:
     """Inspect CSV tables, search columns, or ask the discovery agent."""
     parser = argparse.ArgumentParser(
-        description="List CSV tables and discover their columns."
+        description="List CSV tables and discover their columns.",
     )
     args = _parse_args(parser)
 
@@ -93,7 +93,7 @@ def main() -> None:
     ) as error:
         message = str(error)
         parser.error(
-            message.replace(api_key, "[redacted]") if api_key else message
+            message.replace(api_key, "[redacted]") if api_key else message,
         )
 
 
@@ -116,7 +116,10 @@ def _build_index(settings: Config) -> None:
 
 
 def _query_output(
-    settings: Config, args: argparse.Namespace, query: str, api_key: str
+    settings: Config,
+    args: argparse.Namespace,
+    query: str,
+    api_key: str,
 ) -> str:
     from data_lake import LazyTableFrames, read_table
     from indexing import ColumnIndex, format_columns
@@ -185,7 +188,7 @@ def _inspect_lake(directory: Path, *, validate: bool) -> None:
         passed, errors = validate_data_lake(directory)
         print(
             f"Checked {passed + len(errors)} CSV files: "
-            f"{passed} passed, {len(errors)} failed."
+            f"{passed} passed, {len(errors)} failed.",
         )
         for error in errors:
             print(error, file=sys.stderr)
@@ -231,14 +234,20 @@ def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
-        "--build-index", action="store_true", help="build a VDB for the lake"
+        "--build-index",
+        action="store_true",
+        help="build a VDB for the lake",
     )
     mode.add_argument(
-        "--validate", action="store_true", help="check every CSV in the lake"
+        "--validate",
+        action="store_true",
+        help="check every CSV in the lake",
     )
     mode.add_argument("--search", metavar="QUERY", help="column search text")
     mode.add_argument(
-        "--ask", metavar="QUESTION", help="ask the discovery agent"
+        "--ask",
+        metavar="QUESTION",
+        help="ask the discovery agent",
     )
     parser.add_argument(
         "--chat-provider",
@@ -297,7 +306,9 @@ def _parse_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
 
 
 def _query_text(
-    parser: argparse.ArgumentParser, args: argparse.Namespace, settings: Config
+    parser: argparse.ArgumentParser,
+    args: argparse.Namespace,
+    settings: Config,
 ) -> str | None:
     query = args.ask if args.ask is not None else args.search
     if query is not None:
@@ -312,7 +323,7 @@ def _query_text(
         or settings.vdb_dir is None
     ):
         parser.error(
-            "--build-index requires --lake, --embedding-model and --vdb-dir"
+            "--build-index requires --lake, --embedding-model and --vdb-dir",
         )
     if args.search is not None and args.top_k < 1:
         parser.error("--top-k must be at least 1")
@@ -353,7 +364,8 @@ _T = TypeVar("_T")
 
 
 def _toml_fields(
-    table: Mapping[str, object], prefix: tuple[str, ...] = ()
+    table: Mapping[str, object],
+    prefix: tuple[str, ...] = (),
 ) -> dict[tuple[str, ...], object]:
     fields = {}
     for key, value in table.items():
@@ -451,10 +463,13 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
 
     defaults = Config()
     chat_provider = get(
-        "chat_provider", defaults.chat_provider, _chat_provider
+        "chat_provider",
+        defaults.chat_provider,
+        _chat_provider,
     )
     configured_provider = fields.get(
-        _TOML_FIELDS["chat_provider"], defaults.chat_provider
+        _TOML_FIELDS["chat_provider"],
+        defaults.chat_provider,
     )
     return Config(
         lake=get("lake", defaults.lake, _path),
@@ -462,7 +477,9 @@ def load_config(path: Path | None, overrides: Mapping[str, object]) -> Config:
         output=get("output", defaults.output, _path),
         encoder=get("encoder", defaults.encoder, _encoder),
         embedding_model=get(
-            "embedding_model", defaults.embedding_model, _path
+            "embedding_model",
+            defaults.embedding_model,
+            _path,
         ),
         chat_provider=chat_provider,
         chat_model=get(

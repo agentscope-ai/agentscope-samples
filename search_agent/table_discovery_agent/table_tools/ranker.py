@@ -342,7 +342,9 @@ def _range_bound(value: _Bound) -> float | None:
 
 
 def _range_bounds(
-    min_val: _Bound, max_val: _Bound, allow_equal_bounds: bool
+    min_val: _Bound,
+    max_val: _Bound,
+    allow_equal_bounds: bool,
 ) -> tuple[float | None, float | None]:
     lower, upper = _range_bound(min_val), _range_bound(max_val)
     if lower == upper and (lower is None or not allow_equal_bounds):
@@ -397,7 +399,7 @@ class _TableRanker:
         matches = []
         for column in columns:
             statistic = self._statistics.get(
-                (column.table_id, column.column_name)
+                (column.table_id, column.column_name),
             )
             if isinstance(statistic, statistic_type):
                 value = score(statistic)
@@ -409,7 +411,9 @@ class _TableRanker:
         return self._key_sketch(column.table_id, column.column_name)
 
     def overlap(
-        self, key: ColumnRepresentation, sources: list[KeySketch]
+        self,
+        key: ColumnRepresentation,
+        sources: list[KeySketch],
     ) -> float:
         sketch = self.key_sketch(key)
         return sum(source.overlap(sketch) for source in sources)

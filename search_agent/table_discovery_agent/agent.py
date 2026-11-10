@@ -63,10 +63,10 @@ from discovery.relationship_graph import (
     find_paths,
 )
 from discovery.state import DiscoveryState, _Node
-from tools.combiner import Match, combine_results
-from tools.composite_seeker import TableOperators
-from tools.ranker import ColumnStatistics, TableFrames
-from tools.termination import end_search
+from table_tools.combiner import Match, combine_results
+from table_tools.composite_seeker import TableOperators
+from table_tools.ranker import ColumnStatistics, TableFrames
+from table_tools.termination import end_search
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -183,16 +183,21 @@ class DiscoveryAgent(AgentBase):
             columns = self._schemas.get(table_id, [])
             if seed["column_name"] not in columns:
                 raise ValueError(
-                    f"Seed match refers to an unknown column in {table_id!r}."
+                    f"Seed match refers to an unknown column in {table_id!r}.",
                 )
             seed_schema.update(dict.fromkeys(columns))
 
         constraints = await extract_constraints(
-            query, list(seed_schema), self.model, self.formatter
+            query,
+            list(seed_schema),
+            self.model,
+            self.formatter,
         )
         state = DiscoveryState(seeds, initial_constraints=constraints)
         resolve = partial(
-            resolve_constraints, frames=self._frames, matcher=self._matcher
+            resolve_constraints,
+            frames=self._frames,
+            matcher=self._matcher,
         )
 
         best_pending = None
@@ -206,7 +211,11 @@ class DiscoveryAgent(AgentBase):
             toolkit = create_planner_toolkit(state, node_id, self._operators)
             calls = await self._plan(query, state, node_id, evidence, toolkit)
             await execute_round(
-                state, toolkit, node_id, calls, resolve=resolve
+                state,
+                toolkit,
+                node_id,
+                calls,
+                resolve=resolve,
             )
 
             # The first round establishes the unresolved-constraint baseline.
@@ -227,7 +236,10 @@ class DiscoveryAgent(AgentBase):
         )
 
     async def _observe(
-        self, query: str, state: DiscoveryState, node_id: str
+        self,
+        query: str,
+        state: DiscoveryState,
+        node_id: str,
     ) -> dict | None:
         context = build_observation_context(
             state,
@@ -240,7 +252,10 @@ class DiscoveryAgent(AgentBase):
             schemas=self._schemas,
         )
         return await summarize_observation(
-            query, context, self.model, self.formatter
+            query,
+            context,
+            self.model,
+            self.formatter,
         )
 
     async def _plan(
@@ -265,7 +280,9 @@ class DiscoveryAgent(AgentBase):
 
 
 def _create_chat_backend(
-    provider: Literal["qwen", "deepseek"], model_name: str, api_key: str
+    provider: Literal["qwen", "deepseek"],
+    model_name: str,
+    api_key: str,
 ) -> tuple[ChatModelBase, FormatterBase]:
     if provider == "qwen":
         return (
@@ -317,13 +334,18 @@ def run_query(
                 for table_id, frame in frames.items()
             }
         matcher = ColumnNameMatcher(
-            encoder, (name for columns in schemas.values() for name in columns)
+            encoder,
+            (name for columns in schemas.values() for name in columns),
         )
         if statistics is None:
             statistics = build_column_statistics(frames)
         if graph is None:
             graph = build_relationship_graph(
-                index, frames, encoder, schemas=schemas, key_sketch=key_sketch
+                index,
+                frames,
+                encoder,
+                schemas=schemas,
+                key_sketch=key_sketch,
             )
         operators = TableOperators(
             index,
@@ -345,7 +367,7 @@ def run_query(
         )
         agent.set_console_output_enabled(False)
         response = asyncio.run(
-            agent(Msg(name="user", content=question, role="user"))
+            agent(Msg(name="user", content=question, role="user")),
         )
     except (DashScopeException, OpenAIError, RuntimeError) as error:
         message = str(error)
@@ -446,7 +468,9 @@ def observe(
     candidates = dict.fromkeys(candidate_table_ids)
     paths = find_paths(graph, seeds, targets, max_depth, path_pool_size)
     selected = select_paths(
-        paths, _tree_footprint(state, node_id), path_budget
+        paths,
+        _tree_footprint(state, node_id),
+        path_budget,
     )
     reachable = tuple(
         dict.fromkeys(
@@ -454,7 +478,7 @@ def observe(
             for path in selected
             for table in path.tables
             if table not in candidates
-        )
+        ),
     )
     schema_for = schemas if callable(schemas) else schemas.get
     evidence_schemas = {}
@@ -466,7 +490,9 @@ def observe(
 
 
 def current_candidates(
-    matches: list[Match], *, candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT
+    matches: list[Match],
+    *,
+    candidate_limit: int = _DEFAULT_CANDIDATE_LIMIT,
 ) -> list[Match]:
     """Return distinct tables by their best match score, up to the limit."""
     by_table: dict[str, Match] = {}
@@ -490,7 +516,10 @@ def _rank_values(
     if constraint["col_type"] == "Categorical":
         for value in values:
             yield from operators.eq_ranker(
-                candidates, name, value, result_cap=_VALUE_RANK_LIMIT
+                candidates,
+                name,
+                value,
+                result_cap=_VALUE_RANK_LIMIT,
             )
     else:
         lower, upper = cast(list[float | None], values)
@@ -505,7 +534,8 @@ def _rank_values(
 
 
 def _find_targets(
-    operators: TableOperators, constraints: list[QueryConstraint]
+    operators: TableOperators,
+    constraints: list[QueryConstraint],
 ) -> dict[str, Match]:
     targets: dict[str, Match] = {}
     for constraint in constraints:
@@ -550,7 +580,8 @@ def build_observation_context(
     """Collect candidate schemas and diverse paths for observation."""
     node = state.get_node(node_id)
     candidates = current_candidates(
-        node["matches"], candidate_limit=candidate_limit
+        node["matches"],
+        candidate_limit=candidate_limit,
     )
     constraints = node["constraints"]
     targets = _find_targets(operators, constraints)
@@ -600,7 +631,7 @@ def build_observation_context(
                 ],
                 "reliability": path.reliability,
                 "normalized_score": path.normalized_score,
-            }
+            },
         )
 
     return {
@@ -631,7 +662,7 @@ async def _response(
         [
             Msg(name="system", role="system", content=system),
             Msg(name="user", role="user", content=content),
-        ]
+        ],
     )
     response = await model(messages, tools=tools, tool_choice=tool_choice)
     if isinstance(response, AsyncIterable):
@@ -648,7 +679,7 @@ def _constraint_ids(values: list, known_ids: set[str]) -> list[str]:
             value
             for value in values
             if isinstance(value, str) and value in known_ids
-        )
+        ),
     )
 
 
@@ -692,7 +723,7 @@ def _parse_observation(text: str, known_ids: set[str]) -> dict | None:
                     if isinstance(direction.get(key), str)
                 },
                 "relates_to": _constraint_ids(related, known_ids),
-            }
+            },
         )
     return {
         "directions": normalized,
@@ -710,7 +741,7 @@ def build_observation_content(query: str, context: dict[str, Any]) -> str:
     return OBSERVATION_TEMPLATE.format(
         query=query,
         candidates=_json(
-            [match["table_id"] for match in context["candidates"]]
+            [match["table_id"] for match in context["candidates"]],
         ),
         schemas=_json(context["schemas"]),
         constraints=_json(constraints),
@@ -765,7 +796,7 @@ def _planner_result(matches: list[Match]) -> ToolResponse:
     ]
     return ToolResponse(
         content=[
-            TextBlock(type="text", text="\n".join(lines) or "No matches.")
+            TextBlock(type="text", text="\n".join(lines) or "No matches."),
         ],
         metadata={"matches": matches},
     )
@@ -794,7 +825,9 @@ def create_planner_toolkit(
         return referenced["matches"]
 
     def from_source(
-        operator: Callable[..., list[Match]], src_node_id: str, *args: object
+        operator: Callable[..., list[Match]],
+        src_node_id: str,
+        *args: object,
     ) -> ToolResponse:
         src_node_id = str(src_node_id)
         try:
@@ -802,7 +835,7 @@ def create_planner_toolkit(
             if src_node_id not in ancestors:
                 raise ValueError(
                     f"Source node {src_node_id!r} must be the selected node "
-                    "or one of its ancestors."
+                    "or one of its ancestors.",
                 )
             return _planner_result(operator(matches, *args))
         except ValueError as error:
@@ -822,17 +855,19 @@ def create_planner_toolkit(
         """
         if state.get_matches(node_id):
             return _planner_error(
-                "Metadata search requires a node with no candidates."
+                "Metadata search requires a node with no candidates.",
             )
         try:
             return _planner_result(
-                operators.metadata_seeker(column_names, column_types)
+                operators.metadata_seeker(column_names, column_types),
             )
         except ValueError as error:
             return _planner_error(str(error))
 
     def eq_ranker(
-        src_node_id: str, column_name: str, column_value: str
+        src_node_id: str,
+        column_name: str,
+        column_value: str,
     ) -> ToolResponse:
         """Rank candidate tables by how often a column contains a given value.
 
@@ -842,7 +877,10 @@ def create_planner_toolkit(
             column_value: Exact cell value, expressed as text.
         """
         return from_source(
-            operators.eq_ranker, src_node_id, column_name, column_value
+            operators.eq_ranker,
+            src_node_id,
+            column_name,
+            column_value,
         )
 
     def range_ranker(
@@ -862,7 +900,11 @@ def create_planner_toolkit(
             max_val: Inclusive upper bound, or null if unbounded.
         """
         return from_source(
-            operators.range_ranker, src_node_id, column_name, min_val, max_val
+            operators.range_ranker,
+            src_node_id,
+            column_name,
+            min_val,
+            max_val,
         )
 
     def join_search(src_node_id: str, join_column_name: str) -> ToolResponse:
@@ -873,11 +915,14 @@ def create_planner_toolkit(
             join_column_name: Column whose values identify matching rows.
         """
         return from_source(
-            operators.join_search, src_node_id, join_column_name
+            operators.join_search,
+            src_node_id,
+            join_column_name,
         )
 
     def union_search(
-        src_node_id: str, union_column_names: list[str]
+        src_node_id: str,
+        union_column_names: list[str],
     ) -> ToolResponse:
         """Find related tables with columns similar to the source columns.
 
@@ -886,11 +931,15 @@ def create_planner_toolkit(
             union_column_names: Source columns to match in other tables.
         """
         return from_source(
-            operators.union_search, src_node_id, union_column_names
+            operators.union_search,
+            src_node_id,
+            union_column_names,
         )
 
     def correlation_search(
-        src_node_id: str, join_column_name: str, src_corr_column_name: str
+        src_node_id: str,
+        join_column_name: str,
+        src_corr_column_name: str,
     ) -> ToolResponse:
         """Find tables with numerical measures correlated across shared keys.
 
@@ -1011,7 +1060,7 @@ def build_planning_content(
         {
             "table_id": match["table_id"],
             "schema": list(
-                schemas.get(match["table_id"], (match["column_name"],))
+                schemas.get(match["table_id"], (match["column_name"],)),
             ),
             "score": match["score"],
         }
@@ -1029,10 +1078,10 @@ def build_planning_content(
                 ancestor_id
                 for ancestor_id in ancestor_ids
                 if nodes[ancestor_id]["error"] is None
-            ]
+            ],
         ),
         combine_ids=_json(
-            [node["id"] for node in nodes.values() if node["error"] is None]
+            [node["id"] for node in nodes.values() if node["error"] is None],
         ),
         candidates=_json(candidate_rows),
         constraints=_json(constraints),
@@ -1061,10 +1110,16 @@ async def plan_actions(
 ) -> list[ToolUseBlock]:
     """Ask the planner for tool calls without executing them."""
     candidates = current_candidates(
-        state.get_matches(node_id), candidate_limit=candidate_limit
+        state.get_matches(node_id),
+        candidate_limit=candidate_limit,
     )
     user_content = build_planning_content(
-        query, state, node_id, evidence, schemas or {}, candidates
+        query,
+        state,
+        node_id,
+        evidence,
+        schemas or {},
+        candidates,
     )
     tools = toolkit.get_json_schemas()
     for attempt in range(3):
@@ -1139,11 +1194,16 @@ async def execute_round(
         remaining = None
         try:
             matches, terminated, error = await _execute_call(
-                toolkit, call, parent_matches
+                toolkit,
+                call,
+                parent_matches,
             )
             if error is None and resolve is not None:
                 remaining = resolve(
-                    deepcopy(parent["constraints"]), name, inputs, matches
+                    deepcopy(parent["constraints"]),
+                    name,
+                    inputs,
+                    matches,
                 )
         except Exception as exception:
             matches = []
@@ -1159,7 +1219,7 @@ async def execute_round(
                 constraints=remaining,
                 terminated=terminated,
                 error=error,
-            )
+            ),
         )
     return children
 

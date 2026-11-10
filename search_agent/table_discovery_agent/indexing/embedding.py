@@ -32,7 +32,7 @@ class BGEEncoder:
         path = Path(model_path).expanduser()
         if not path.is_dir():
             raise FileNotFoundError(
-                f"BGE model directory does not exist: {path}"
+                f"BGE model directory does not exist: {path}",
             )
 
         import torch
@@ -40,16 +40,17 @@ class BGEEncoder:
 
         self.batch_size = batch_size
         self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
+            "cuda" if torch.cuda.is_available() else "cpu",
         )
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                path, local_files_only=True
+                path,
+                local_files_only=True,
             )
             self.model = AutoModel.from_pretrained(path, local_files_only=True)
         except (OSError, ValueError, RuntimeError) as exc:
             raise RuntimeError(
-                f"Could not load the local BGE model from {path}: {exc}"
+                f"Could not load the local BGE model from {path}: {exc}",
             ) from exc
 
         self.model.to(self.device)
@@ -64,7 +65,8 @@ class BGEEncoder:
         from torch.nn.functional import normalize
 
         embeddings = np.empty(
-            (len(texts), self.model.config.hidden_size), dtype=np.float32
+            (len(texts), self.model.config.hidden_size),
+            dtype=np.float32,
         )
         with inference_mode():
             for start in range(0, len(texts), self.batch_size):

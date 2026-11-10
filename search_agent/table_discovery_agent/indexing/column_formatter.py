@@ -136,7 +136,7 @@ def format_columns(
 ) -> tuple[ColumnRepresentation, ...]:
     """Format columns in source order using lake-wide categorical IDF."""
     document_frequency, document_count = _categorical_document_frequency(
-        tables
+        tables,
     )
 
     representations = []

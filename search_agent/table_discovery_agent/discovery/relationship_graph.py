@@ -72,7 +72,8 @@ def build_relationship_graph(
         for table_id, columns in schemas.items()
     }
     matcher = ColumnNameMatcher(
-        encoder, (name for columns in names.values() for name in columns)
+        encoder,
+        (name for columns in names.values() for name in columns),
     )
 
     @cache
@@ -108,7 +109,7 @@ def build_relationship_graph(
                 ):
                     continue
                 overlap = sketch_for(table_id, name).overlap(
-                    sketch_for(target, key)
+                    sketch_for(target, key),
                 )
                 if overlap > 0:
                     overlaps[target] = overlap
@@ -132,7 +133,7 @@ def build_relationship_graph(
                 reverse=True,
             )
             edges.append(
-                RelationshipEdge(target, "join", score, tuple(bridges))
+                RelationshipEdge(target, "join", score, tuple(bridges)),
             )
         graph[table_id] = tuple(edges)
     return graph

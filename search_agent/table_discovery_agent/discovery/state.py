@@ -8,7 +8,7 @@ from typing import Any, TypedDict
 
 from agentscope.module import StateModule
 
-from tools.combiner import Match
+from table_tools.combiner import Match
 
 from .constraints import QueryConstraint
 

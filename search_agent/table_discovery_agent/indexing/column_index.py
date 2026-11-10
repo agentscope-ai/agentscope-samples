@@ -85,19 +85,21 @@ class ColumnIndex:
         }
 
     def _build_channel(
-        self, channel: _Channel, batch_size: int
+        self,
+        channel: _Channel,
+        batch_size: int,
     ) -> IndexHNSWFlat:
         index = None
         for start in range(0, len(self._columns), batch_size):
             batch = self._columns[start : start + batch_size]
             vectors = self._encode(
-                [getattr(column, channel) for column in batch]
+                [getattr(column, channel) for column in batch],
             )
             if index is None:
                 index = _new_index(vectors.shape[1])
             elif vectors.shape[1] != index.d:
                 raise ValueError(
-                    "encoder must return vectors of fixed dimension"
+                    "encoder must return vectors of fixed dimension",
                 )
             index.add(vectors)
             del vectors
@@ -113,10 +115,12 @@ class ColumnIndex:
             raise ValueError("saving requires both index channels")
         for channel in _CHANNELS:
             write_index(
-                self._indexes[channel], str(directory / f"{channel}.index")
+                self._indexes[channel],
+                str(directory / f"{channel}.index"),
             )
         with (directory / "columns.json").open(
-            "w", encoding="utf-8"
+            "w",
+            encoding="utf-8",
         ) as stream:
             stream.write("[\n")
             for position, column in enumerate(self._columns):
@@ -141,11 +145,11 @@ class ColumnIndex:
             channel not in _CHANNELS for channel in selected
         ):
             raise ValueError(
-                "channels must select 'metadata' and/or 'content'"
+                "channels must select 'metadata' and/or 'content'",
             )
         if len(set(selected)) != len(selected):
             raise ValueError(
-                "each index channel must be selected at most once"
+                "each index channel must be selected at most once",
             )
 
         with (directory / "columns.json").open(encoding="utf-8") as stream:
@@ -162,7 +166,7 @@ class ColumnIndex:
                 or not all(isinstance(value, str) for value in record.values())
             ):
                 raise ValueError(
-                    "columns.json contains an invalid column record"
+                    "columns.json contains an invalid column record",
                 )
             columns.append(ColumnRepresentation(**record))
 
@@ -182,7 +186,7 @@ class ColumnIndex:
                 raise ValueError(f"incompatible {channel} index")
             if index.ntotal != len(columns):
                 raise ValueError(
-                    f"{channel} index and column counts must match"
+                    f"{channel} index and column counts must match",
                 )
             dimensions.add(index.d)
             result._indexes[channel] = index
@@ -203,7 +207,9 @@ class ColumnIndex:
         return np.ascontiguousarray(vectors)
 
     def get_column(
-        self, table_id: str, column_name: str
+        self,
+        table_id: str,
+        column_name: str,
     ) -> ColumnRepresentation:
         """Return the indexed representation of a known column."""
         column = self._by_column.get((table_id, column_name))
@@ -249,6 +255,6 @@ class ColumnIndex:
                     column_name=column.column_name,
                     column_type=column.column_type,
                     score=float(score),
-                )
+                ),
             )
         return tuple(matches)

@@ -163,7 +163,7 @@ table_discovery_agent/
 ├── data_lake.py             # CSV discovery, schema reading, and loading
 ├── indexing/               # Column formatting, embeddings, sketches, and VDB
 ├── discovery/              # Constraints, prompts, relationships, and tree state
-├── tools/                  # Seekers, rankers, combiners, and termination
+├── table_tools/            # Seekers, rankers, combiners, and termination
 └── data/demo_lake/         # Four synthetic CSVs
 ```
 
@@ -175,7 +175,7 @@ table_discovery_agent/
 ### Toolkit entry points
 
 - `agent.create_planner_toolkit()` powers `--ask`. The planner passes discovery node IDs, and the toolkit resolves them to candidate tables.
-- `tools.create_toolkit()` registers standalone operators for direct Python calls. Callers pass column queries, candidate columns, or reference tables explicitly.
+- `table_tools.create_toolkit()` registers standalone operators for direct Python calls. Callers pass column queries, candidate columns, or reference tables explicitly.
 
 The `--search` CLI queries the column index directly.
 

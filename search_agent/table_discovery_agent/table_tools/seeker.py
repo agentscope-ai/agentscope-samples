@@ -69,7 +69,8 @@ def create_seeker(index: ColumnIndex) -> Callable[..., ToolResponse]:
 
 
 def _metadata_queries(
-    column_names: Sequence[str], column_types: Sequence[str]
+    column_names: Sequence[str],
+    column_types: Sequence[str],
 ) -> list[tuple[str, list[str]]]:
     if not column_names or len(column_names) != len(column_types):
         raise ValueError("provide a type for each requested column")
@@ -88,20 +89,25 @@ def _metadata_queries(
 
 
 def _retrieve_content(
-    index: ColumnIndex, table_id: str, column_name: str
+    index: ColumnIndex,
+    table_id: str,
+    column_name: str,
 ) -> list[ColumnMatch]:
     column = index.get_column(table_id, column_name)
     return [
         match
         for match in index.search(
-            column.content, channel="content", top_k=_ANN_LIMIT
+            column.content,
+            channel="content",
+            top_k=_ANN_LIMIT,
         )
         if match.table_id != table_id
     ]
 
 
 def _coverage_matches(
-    by_table: Iterable[list[ColumnMatch]], descriptor_count: int
+    by_table: Iterable[list[ColumnMatch]],
+    descriptor_count: int,
 ) -> list[Match]:
     matches = []
     for hits in by_table:
@@ -114,7 +120,9 @@ def _coverage_matches(
 
 
 def _union_matches(
-    index: ColumnIndex, table_id: str, column_names: list[str]
+    index: ColumnIndex,
+    table_id: str,
+    column_names: list[str],
 ) -> list[Match]:
     if (
         not isinstance(column_names, list)
@@ -156,7 +164,9 @@ class _TableSeeker:
         self._schemas = schemas
 
     def find_column(
-        self, table_id: str, name: str
+        self,
+        table_id: str,
+        name: str,
     ) -> ColumnRepresentation | None:
         if self._schemas is None:
             frame = self._frames.get(table_id)
@@ -171,7 +181,9 @@ class _TableSeeker:
         return self._index.get_column(table_id, column_name)
 
     def source_columns(
-        self, sources: list[Match], name: str
+        self,
+        sources: list[Match],
+        name: str,
     ) -> list[ColumnRepresentation]:
         columns = []
         for table_id in dict.fromkeys(
@@ -201,7 +213,9 @@ class _TableSeeker:
         return _normalize_scores(_top_matches(matches, cap))
 
     def _descriptor_hits(
-        self, queries: Iterable[str], channel: _Channel
+        self,
+        queries: Iterable[str],
+        channel: _Channel,
     ) -> dict[str, ColumnMatch]:
         best: dict[str, ColumnMatch] = {}
         for query in dict.fromkeys(queries):

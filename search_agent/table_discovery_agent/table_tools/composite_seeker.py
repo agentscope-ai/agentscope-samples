@@ -48,7 +48,9 @@ def _validate_top_k(top_k: int) -> None:
 
 
 def _validate_reference(
-    reference: Mapping[str, object], *, with_key: bool = False
+    reference: Mapping[str, object],
+    *,
+    with_key: bool = False,
 ) -> None:
     fields: tuple[str, ...] = ("table_id", "column_name")
     missing_message = "reference must identify a table and column"
@@ -66,7 +68,8 @@ def _validate_reference(
 
 
 def _correlation_candidates(
-    frames: TableFrames, keys: list[Match]
+    frames: TableFrames,
+    keys: list[Match],
 ) -> list[CorrelationColumn]:
     candidates = []
     for key in keys:
@@ -130,10 +133,13 @@ def create_composite_seekers(
     def shared_keys(reference: CandidateColumn) -> list[Match]:
         candidates = [
             CandidateColumn(
-                table_id=match.table_id, column_name=match.column_name
+                table_id=match.table_id,
+                column_name=match.column_name,
             )
             for match in _retrieve_content(
-                index, reference["table_id"], reference["column_name"]
+                index,
+                reference["table_id"],
+                reference["column_name"],
             )
         ]
         return [
@@ -143,7 +149,8 @@ def create_composite_seekers(
         ]
 
     def join_search(
-        reference: CandidateColumn, top_k: int = 5
+        reference: CandidateColumn,
+        top_k: int = 5,
     ) -> ToolResponse:
         """Find new tables with values overlapping a known reference key.
 
@@ -160,7 +167,9 @@ def create_composite_seekers(
             return _error(str(error))
 
     def union_search(
-        table_id: str, column_names: list[str], top_k: int = 5
+        table_id: str,
+        column_names: list[str],
+        top_k: int = 5,
     ) -> ToolResponse:
         """Find new tables with columns similar to a reference table's columns.
 
@@ -175,13 +184,15 @@ def create_composite_seekers(
             _validate_top_k(top_k)
 
             return _results(
-                _union_matches(index, table_id, column_names), top_k
+                _union_matches(index, table_id, column_names),
+                top_k,
             )
         except ValueError as error:
             return _error(str(error))
 
     def correlation_search(
-        reference: CorrelationColumn, top_k: int = 5
+        reference: CorrelationColumn,
+        top_k: int = 5,
     ) -> ToolResponse:
         """Find new tables with numeric measures correlated on shared keys.
 
@@ -204,14 +215,17 @@ def create_composite_seekers(
                 raise ValueError("reference measure and key must differ")
 
             reference_key = CandidateColumn(
-                table_id=table_id, column_name=key_column
+                table_id=table_id,
+                column_name=key_column,
             )
             candidates = _correlation_candidates(
-                frames, shared_keys(reference_key)
+                frames,
+                shared_keys(reference_key),
             )
 
             return _results(
-                _matches(rank_correlation(reference, candidates)), top_k
+                _matches(rank_correlation(reference, candidates)),
+                top_k,
             )
         except ValueError as error:
             return _error(str(error))
@@ -246,7 +260,11 @@ class TableOperators:
         self._result_cap = _positive_result_cap(result_cap)
         self._seeker = _TableSeeker(index, frames, matcher, schemas=schemas)
         self._ranker = _TableRanker(
-            index, frames, statistics, schemas=schemas, key_sketch=key_sketch
+            index,
+            frames,
+            statistics,
+            schemas=schemas,
+            key_sketch=key_sketch,
         )
 
     @property
@@ -271,7 +289,9 @@ class TableOperators:
         """Find tables covering the requested names and column types."""
         queries = _metadata_queries(column_names, column_types)
         return self._seeker.seek(
-            queries, "metadata", self._resolve_result_cap(result_cap)
+            queries,
+            "metadata",
+            self._resolve_result_cap(result_cap),
         )
 
     def eq_ranker(
@@ -312,7 +332,9 @@ class TableOperators:
         )
 
     def join_search(
-        self, sources: list[Match], join_column_name: str
+        self,
+        sources: list[Match],
+        join_column_name: str,
     ) -> list[Match]:
         """Find tables with positive categorical key overlap."""
         _, overlaps = self._overlapping_keys(sources, join_column_name)
@@ -320,7 +342,9 @@ class TableOperators:
         return _top_matches(_normalize_scores(matches), self._result_cap)
 
     def union_search(
-        self, sources: list[Match], union_column_names: list[str]
+        self,
+        sources: list[Match],
+        union_column_names: list[str],
     ) -> list[Match]:
         """Find tables covering the requested source column contents."""
         if not union_column_names:
@@ -348,11 +372,12 @@ class TableOperators:
         source_measures = []
         for key in keys:
             measure = self._seeker.find_column(
-                key.table_id, src_corr_column_name
+                key.table_id,
+                src_corr_column_name,
             )
             if measure is not None and measure.column_type == "Numerical":
                 source_measures.append(
-                    (self._ranker.key_sketch(key), measure.column_name)
+                    (self._ranker.key_sketch(key), measure.column_name),
                 )
         if not source_measures:
             return []
@@ -365,9 +390,12 @@ class TableOperators:
         return _top_matches(_normalize_scores(matches), self._result_cap)
 
     def _overlapping_keys(
-        self, sources: list[Match], name: str
+        self,
+        sources: list[Match],
+        name: str,
     ) -> tuple[
-        list[ColumnRepresentation], list[tuple[ColumnRepresentation, float]]
+        list[ColumnRepresentation],
+        list[tuple[ColumnRepresentation, float]],
     ]:
         source_columns = self._seeker.source_columns(sources, name)
         keys = [

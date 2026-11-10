@@ -27,16 +27,16 @@ def _read_columns(path: Path) -> tuple[str, ...]:
             header = next(csv.reader(stream, strict=True), None)
     except (csv.Error, UnicodeError, OSError) as error:
         raise ValueError(
-            f"Cannot read CSV header in {path}: {error}"
+            f"Cannot read CSV header in {path}: {error}",
         ) from error
 
     if not header or any(not name.strip() for name in header):
         raise ValueError(
-            f"Invalid CSV header in {path}: column names cannot be empty"
+            f"Invalid CSV header in {path}: column names cannot be empty",
         )
     if len(set(header)) != len(header):
         raise ValueError(
-            f"Invalid CSV header in {path}: duplicate column names"
+            f"Invalid CSV header in {path}: duplicate column names",
         )
     return tuple(header)
 
@@ -75,19 +75,19 @@ def read_table(table: Table) -> "pd.DataFrame":
         frame = pd.read_csv(table.path, encoding="utf-8-sig")
     except (OSError, ValueError) as error:
         raise ValueError(
-            f"Cannot read CSV data in {table.path}: {error}"
+            f"Cannot read CSV data in {table.path}: {error}",
         ) from error
 
     columns = tuple(frame.columns)
     if columns != table.columns:
         raise ValueError(
             f"CSV header mismatch in {table.path}: "
-            f"expected {table.columns!r}, got {columns!r}"
+            f"expected {table.columns!r}, got {columns!r}",
         )
     if not frame.empty and not isinstance(frame.index, pd.RangeIndex):
         raise ValueError(
             f"Cannot read CSV data in {table.path}: "
-            "a row has more fields than the header"
+            "a row has more fields than the header",
         )
     return frame
 
@@ -96,7 +96,10 @@ class LazyTableFrames(Mapping[str, "pd.DataFrame"]):
     """Read CSV data on first access and keep a bounded cache of frames."""
 
     def __init__(
-        self, tables: Sequence[Table], *, cache_size: int = 4
+        self,
+        tables: Sequence[Table],
+        *,
+        cache_size: int = 4,
     ) -> None:
         if (
             isinstance(cache_size, bool)

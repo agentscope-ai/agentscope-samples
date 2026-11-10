@@ -11,7 +11,7 @@ import numpy as np
 from indexing.embedding import ColumnEncoder
 
 _NAME_BOUNDARY = re.compile(
-    r"(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])|(?<=[0-9])(?=[A-Za-z])"
+    r"(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])|(?<=[0-9])(?=[A-Za-z])",
 )
 
 
@@ -40,7 +40,7 @@ class ColumnNameMatcher:
         if not self._known_labels:
             return {}
         return dict(
-            zip(self._known_labels, self._encoder.encode(self._known_labels))
+            zip(self._known_labels, self._encoder.encode(self._known_labels)),
         )
 
     def find_match(self, name: str, candidates: Iterable[str]) -> str | None:

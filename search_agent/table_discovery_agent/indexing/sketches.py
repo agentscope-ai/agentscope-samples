@@ -27,7 +27,10 @@ class CountMinSketch:
     """
 
     def __init__(
-        self, column: pd.Series, width: int = 272, depth: int = 5
+        self,
+        column: pd.Series,
+        width: int = 272,
+        depth: int = 5,
     ) -> None:
         if width <= 0 or depth <= 0:
             raise ValueError("width and depth must be positive")
@@ -71,13 +74,18 @@ class QuantileHistogram:
         values = np.sort(values[np.isfinite(values)])
         self._total = len(values)
         ranks = np.linspace(
-            0, self._total - 1, min(bins + 1, self._total), dtype=np.intp
+            0,
+            self._total - 1,
+            min(bins + 1, self._total),
+            dtype=np.intp,
         )
         edges = np.unique(values[ranks])
         self._edges = edges.tolist()
         self._below = np.searchsorted(values, edges, side="left").tolist()
         self._at_or_below = np.searchsorted(
-            values, edges, side="right"
+            values,
+            edges,
+            side="right",
         ).tolist()
 
     def _cumulative_count(self, value: float, inclusive: bool) -> float:
@@ -102,7 +110,9 @@ class QuantileHistogram:
         return left_count + fraction * (self._below[position] - left_count)
 
     def range_fraction(
-        self, lower: float | None = None, upper: float | None = None
+        self,
+        lower: float | None = None,
+        upper: float | None = None,
     ) -> float:
         """Estimate the fraction in an inclusive range with optional bounds."""
         if isinstance(lower, np.generic):
@@ -114,7 +124,8 @@ class QuantileHistogram:
         if not self._total or lower > upper or isnan(lower) or isnan(upper):
             return 0.0
         count = self._cumulative_count(
-            upper, inclusive=True
+            upper,
+            inclusive=True,
         ) - self._cumulative_count(lower, inclusive=False)
         return float(count / self._total)
 
@@ -129,7 +140,10 @@ class KeySketch:
     """
 
     def __init__(
-        self, table: pd.DataFrame, key_column: str, k: int = 256
+        self,
+        table: pd.DataFrame,
+        key_column: str,
+        k: int = 256,
     ) -> None:
         """Build a sketch of the specified key column and its numeric data."""
         if k <= 0:
@@ -177,7 +191,10 @@ class KeySketch:
         return sum(rank in shared for rank in sample) / len(sample)
 
     def correlation(
-        self, other: "KeySketch", left_column: str, right_column: str
+        self,
+        other: "KeySketch",
+        left_column: str,
+        right_column: str,
     ) -> float | None:
         """Return signed Pearson correlation of aligned per-key means.
 
@@ -195,7 +212,7 @@ class KeySketch:
             (
                 self._means[left_column].reindex(keys),
                 other._means[right_column].reindex(keys),
-            )
+            ),
         )
         paired = values[np.isfinite(values).all(axis=1)]
         if len(paired) < 2 or np.all(paired == paired[0], axis=0).any():
@@ -234,7 +251,8 @@ def _decode(payload: bytes) -> list:
 
 
 def _sketch_rows(
-    table_id: str, frame: pd.DataFrame
+    table_id: str,
+    frame: pd.DataFrame,
 ) -> Iterator[tuple[str, str, str, bytes, bytes]]:
     # pylint: disable=protected-access
     for name, column in frame.items():
@@ -276,7 +294,7 @@ def build_sketch_store(path: Path, frames: Mapping[str, pd.DataFrame]) -> None:
                     key_sketch BLOB NOT NULL,
                     PRIMARY KEY (table_id, column_name)
                 )
-                """
+                """,
             )
             for table_id in frames:
                 connection.executemany(
@@ -286,14 +304,15 @@ def build_sketch_store(path: Path, frames: Mapping[str, pd.DataFrame]) -> None:
 
 
 class _StoredStatistics(
-    Mapping[tuple[str, str], CountMinSketch | QuantileHistogram]
+    Mapping[tuple[str, str], CountMinSketch | QuantileHistogram],
 ):
     def __init__(self, connection: sqlite3.Connection) -> None:
         self._connection = connection
         self._lookup = lru_cache(maxsize=128)(self._read)
 
     def _read(
-        self, key: tuple[str, str]
+        self,
+        key: tuple[str, str],
     ) -> CountMinSketch | QuantileHistogram:
         # pylint: disable=protected-access
         row = self._connection.execute(
@@ -325,7 +344,8 @@ class _StoredStatistics(
         raise ValueError(f"Unknown column statistic kind: {kind!r}")
 
     def __getitem__(
-        self, key: tuple[str, str]
+        self,
+        key: tuple[str, str],
     ) -> CountMinSketch | QuantileHistogram:
         if not isinstance(key, tuple) or len(key) != 2:
             raise KeyError(key)
@@ -333,12 +353,12 @@ class _StoredStatistics(
 
     def __iter__(self) -> Iterator[tuple[str, str]]:
         yield from self._connection.execute(
-            "SELECT table_id, column_name FROM sketches ORDER BY rowid"
+            "SELECT table_id, column_name FROM sketches ORDER BY rowid",
         )
 
     def __len__(self) -> int:
         return self._connection.execute(
-            "SELECT COUNT(*) FROM sketches"
+            "SELECT COUNT(*) FROM sketches",
         ).fetchone()[0]
 
     def clear_cache(self) -> None:
@@ -350,7 +370,8 @@ class SketchStore:
 
     def __init__(self, path: Path) -> None:
         self._connection = sqlite3.connect(
-            f"{path.resolve().as_uri()}?mode=ro", uri=True
+            f"{path.resolve().as_uri()}?mode=ro",
+            uri=True,
         )
         self._statistics = _StoredStatistics(self._connection)
         self._key_lookup = lru_cache(maxsize=128)(self._read_key_sketch)
@@ -380,7 +401,10 @@ class SketchStore:
             for key in ranks
         }
         sketch._means = pd.DataFrame(
-            values, index=keys, columns=columns, dtype=float
+            values,
+            index=keys,
+            columns=columns,
+            dtype=float,
         )
         return sketch
 

@@ -133,7 +133,8 @@ def build_vdb(
 
 
 def _load_tables(
-    rows: list[dict[str, Any]], paths: list[Path]
+    rows: list[dict[str, Any]],
+    paths: list[Path],
 ) -> tuple[Table, ...]:
     by_name = {path.name: path for path in paths}
     tables = []
@@ -173,7 +174,8 @@ def load_vdb(
             raise ValueError("Unsupported VDB format version.")
         generation = manifest["generation"]
         if not isinstance(generation, str) or not re.fullmatch(
-            r"build-[0-9a-f]{32}", generation
+            r"build-[0-9a-f]{32}",
+            generation,
         ):
             raise ValueError("The VDB generation name is invalid.")
         paths = list_csv_paths(lake)
@@ -195,7 +197,7 @@ def load_vdb(
             raise ValueError("The index dimension differs from the manifest.")
     except (OSError, RuntimeError, ValueError, KeyError, TypeError) as error:
         raise ValueError(
-            f"Cannot load VDB at {directory}: {error} {_BUILD_COMMAND}"
+            f"Cannot load VDB at {directory}: {error} {_BUILD_COMMAND}",
         ) from error
     return StoredVdb(generation_path, index, tables)
 
@@ -218,5 +220,5 @@ def load_graph(generation: Path) -> RelationshipGraph:
         }
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         raise ValueError(
-            f"Cannot load the relationship graph. {_BUILD_COMMAND}"
+            f"Cannot load the relationship graph. {_BUILD_COMMAND}",
         ) from error
