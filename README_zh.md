@@ -75,6 +75,8 @@
 │   ├── werewolves/                         # 强化多智能体应用能力
 │   └── data_augment/                       # 增强用于调优的数据
 ├── sample_template/                        # 新样例贡献模板
+├── search_agent/
+│   └── table_discovery_agent/              # 多跳表发现
 └── README.md
 ```
 
@@ -98,6 +100,7 @@
 | **评估**    | evaluation/ace_bench                                  | ✅             | ❌                     | ACE Bench 基准测试          |
 | **通用智能体** | alias/                                                | ✅             | ✅                     | 在沙盒中运行的可以解决真实问题的智能体程序   |
 | **金融交易**  | evotraders/                                           | ✅             | ❌                     | 自我进化的多智能体交易系统          |
+| **检索智能体** | search_agent/table_discovery_agent/                   | ✅             | ❌                     | 多跳表发现                          |
 
 ---
 

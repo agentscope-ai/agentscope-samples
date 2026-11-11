@@ -1,0 +1,5 @@
+/tests/
+/.venv/
+/config.toml
+/vdb/
+/results/

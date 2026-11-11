@@ -1,0 +1,26 @@
+[data]
+# Required to browse tables or run a query.
+lake_dir = "./data/demo_lake"
+# Optional. Set this before running --build-index.
+# vdb_dir = "./vdb"
+
+[output]
+# Optional. Omit to print query results to the terminal.
+# path = "./results/query.txt"
+
+[model.embedding]
+encoder = "bge"
+# Required for --search and --ask. Use a local BGE model directory.
+model_dir = "/path/to/local/bge-model"
+
+[model.chat]
+# Supported providers are "qwen" (DashScope) and "deepseek".
+provider = "qwen"
+# Optional. Defaults to "qwen-plus" for Qwen or "deepseek-flash" for DeepSeek.
+# name = "qwen-plus"
+
+[search]
+# Limits for --ask.
+max_rounds = 6
+stagnation_limit = 3
+candidate_limit = 10

@@ -1,0 +1,6 @@
+agentscope==1.0.21
+pandas==2.3.3
+numpy==2.2.6
+torch==2.8.0
+transformers==4.57.1
+faiss-cpu==1.12.0

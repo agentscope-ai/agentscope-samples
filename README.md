@@ -75,6 +75,8 @@ This is a repository that **brings together a variety of ready-to-run Python age
 │   ├── werewolves/                         # Enhance a multi-agent application
 │   └── data_augment/                       # Data augmentation for tuning
 ├── sample_template/                        # Template for new sample contributions
+├── search_agent/
+│   └── table_discovery_agent/              # Multi-hop table discovery
 └── README.md
 ```
 
@@ -96,6 +98,7 @@ This is a repository that **brings together a variety of ready-to-run Python age
 | **Evaluation**          | evaluation/ace_bench                                  | ✅               | ❌            | Benchmarks with ACE Bench                        |
 | **General AI Agent**               | alias/                                                | ✅               | ✅                      | Agent application running in sandbox to solve diverse real-world problems |
 | **Financial Trading**   | evotraders/                                           | ✅               | ❌            | Self-Evolving Multi-Agent Trading System         |
+| **Search Agents**       | search_agent/table_discovery_agent/                   | ✅               | ❌            | Multi-hop table discovery                        |
 
 ## 🌈 Featured Examples
 
