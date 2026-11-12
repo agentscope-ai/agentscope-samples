@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """The utilities for deep research agent"""
 import os
-import json
 import re
-from typing import Union, Sequence, Any, Type
-from pydantic import BaseModel
-
-from agentscope.tool import Toolkit, ToolResponse
+import json
+from typing import Union
 
 
 TOOL_RESULTS_MAX_WORDS = 5000
@@ -65,96 +62,12 @@ def truncate_search_result(
         )
 
     for i, val in enumerate(res):
-        res[i]["text"] = truncate_by_words(val["text"])
+        if hasattr(val, "text"):
+            val.text = truncate_by_words(val.text)
+        elif isinstance(val, dict) and "text" in val:
+            val["text"] = truncate_by_words(val["text"])
 
     return res
-
-
-def generate_structure_output(**kwargs: Any) -> ToolResponse:
-    """Generate a structured output tool response.
-
-    This function is designed to be used as a tool function for generating
-    structured outputs. It takes arbitrary keyword arguments and wraps them
-    in a ToolResponse with metadata.
-
-    Args:
-        **kwargs: Arbitrary keyword arguments that should match the format
-            of the expected structured output specification.
-
-    Returns:
-        ToolResponse: A tool response object with empty content and the
-            provided kwargs as metadata.
-
-    Note:
-        The input parameters should be in the same format as the specification
-        and include as much detail as requested by the calling context.
-    """
-    return ToolResponse(content=[], metadata=kwargs)
-
-
-def get_dynamic_tool_call_json(data_model_type: Type[BaseModel]) -> list[dict]:
-    """Generate JSON schema for dynamic tool calling with a given data model.
-
-    Creates a temporary toolkit, registers the structure output function,
-    and configures it with the specified data model to generate appropriate
-    JSON schemas for tool calling.
-
-    Args:
-        data_model_type: A Pydantic BaseModel class that defines the expected
-            structure of the tool output.
-
-    Returns:
-        A list of dictionary that contains the JSON schemas for
-        the configured tool, suitable for use in API calls that
-        support structured outputs.
-
-    Example:
-        class MyModel(BaseModel):
-            name: str
-            value: int
-
-        schema = get_dynamic_tool_call_json(MyModel)
-    """
-    tmp_toolkit = Toolkit()
-    tmp_toolkit.register_tool_function(generate_structure_output)
-    tmp_toolkit.set_extended_model(
-        "generate_structure_output",
-        data_model_type,
-    )
-    return tmp_toolkit.get_json_schemas()
-
-
-def get_structure_output(blocks: list | Sequence) -> dict:
-    """Extract structured output from a sequence of blocks.
-
-    Processes a list or sequence of blocks to extract tool use outputs
-    and combine them into a single dictionary. This is typically used
-    to parse responses from language models that include tool calls.
-
-    Args:
-        blocks: A list or sequence of blocks that may contain tool use
-            information. Each block should be a dictionary with 'type'
-            and 'input' keys for tool use blocks.
-
-    Returns:
-        A dictionary containing the combined input data from all tool
-        use blocks found in the input sequence.
-
-    Example:
-        blocks = [
-            {"type": "tool_use", "input": {"name": "test"}},
-            {"type": "text", "content": "Some text"},
-            {"type": "tool_use", "input": {"value": 42}}
-        ]
-        result = PromptBase.get_structure_output(blocks)
-        # result: {"name": "test", "value": 42}
-    """
-
-    dict_output = {}
-    for block in blocks:
-        if isinstance(block, dict) and block.get("type") == "tool_use":
-            dict_output.update(block.get("input", {}))
-    return dict_output
 
 
 def load_prompt_dict() -> dict:
@@ -319,7 +232,7 @@ def load_prompt_dict() -> dict:
     )
 
     prompt_dict["subtask_complete_hint"] = (
-        "Subtask ‘{cur_obj}’ is completed. Now the current subtask "
+        "Subtask '{cur_obj}' is completed. Now the current subtask "
         "fallbacks to '{next_obj}'"
     )
 

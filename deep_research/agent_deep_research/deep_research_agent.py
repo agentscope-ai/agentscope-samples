@@ -3,11 +3,9 @@
 # pylint: disable=too-many-lines, no-name-in-module
 import os
 import json
-import asyncio
 
 from typing import Type, Optional, Any, Tuple
 from datetime import datetime
-from copy import deepcopy
 import shortuuid
 from pydantic import BaseModel
 
@@ -20,27 +18,30 @@ from built_in_prompt.promptmodule import (
 from utils import (
     truncate_search_result,
     load_prompt_dict,
-    get_dynamic_tool_call_json,
-    get_structure_output,
 )
 
 from agentscope import logger, setup_logger
-from agentscope.mcp import StatefulClientBase
-from agentscope.agent import ReActAgent
-from agentscope.model import ChatModelBase
-from agentscope.formatter import FormatterBase
-from agentscope.memory import MemoryBase
+from agentscope.mcp import MCPClient
+from agentscope.model import ChatModelBase, ChatResponse
 from agentscope.tool import (
     ToolResponse,
-    view_text_file,
-    write_text_file,
+    ToolChunk,
+    Toolkit,
+    FunctionTool,
+    Read,
+    Write,
 )
 from agentscope.message import (
     Msg,
-    ToolUseBlock,
+    UserMsg,
+    AssistantMsg,
+    SystemMsg,
+    ToolCallBlock,
     TextBlock,
     ToolResultBlock,
 )
+from agentscope.state import AgentState
+from agentscope.permission import PermissionMode
 
 
 _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT = "You're a helpful assistant."
@@ -62,7 +63,7 @@ class SubTaskItem(BaseModel):
     knowledge_gaps: Optional[str] = None
 
 
-class DeepResearchAgent(ReActAgent):
+class DeepResearchAgent:
     """
     Deep Research Agent for sophisticated research tasks.
 
@@ -73,28 +74,22 @@ class DeepResearchAgent(ReActAgent):
             name="Friday",
             sys_prompt="You are a helpful assistant named Friday.",
             model=my_chat_model,
-            formatter=my_chat_formatter,
-            memory=InMemoryMemory(),
             search_mcp_client=my_tavily_search_client,
             tmp_file_storage_dir=agent_working_dir,
         )
         response = await agent(
-            Msg(
-                name=“user”,
-                content="Please give me a survey of the LLM-empowered agent.",
-                role=“user”
+            UserMsg(
+                "user",
+                "Please give me a survey of the LLM-empowered agent.",
             )
         )
-        ```
     """
 
     def __init__(
         self,
         name: str,
         model: ChatModelBase,
-        formatter: FormatterBase,
-        memory: MemoryBase,
-        search_mcp_client: StatefulClientBase,
+        search_mcp_client: MCPClient,
         sys_prompt: str = _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT,
         max_iters: int = 30,
         max_depth: int = 3,
@@ -107,18 +102,12 @@ class DeepResearchAgent(ReActAgent):
                 The unique identifier name for the agent instance.
             model (ChatModelBase):
                 The chat model used for generating responses and reasoning.
-            formatter (FormatterBase):
-                The formatter used to convert messages into the required
-                format for the model API.
-            memory (MemoryBase):
-                The memory component used to store and retrieve dialogue
-                history.
-            search_mcp_client (StatefulClientBase):
-                The mcp client used to provide the tools for deep search.
+            search_mcp_client (MCPClient):
+                The stateful MCP client (already connected) used to provide
+                the tools for deep search.
             sys_prompt (str, optional):
                 The system prompt that defines the agent's behavior
                 and personality.
-                Defaults to _DEEP_RESEARCH_AGENT_DEFAULT_SYS_PROMPT.
             max_iters (int, optional):
                 The maximum number of reasoning-acting loop iterations.
                 Defaults to 30.
@@ -134,6 +123,7 @@ class DeepResearchAgent(ReActAgent):
 
         # initialization of prompts
         self.prompt_dict = load_prompt_dict()
+        self.finish_function_name = "generate_response"
 
         # Enhance the system prompt for deep research agent
         add_note = self.prompt_dict["add_note"].format_map(
@@ -142,54 +132,71 @@ class DeepResearchAgent(ReActAgent):
         tool_use_rule = self.prompt_dict["tool_use_rule"].format_map(
             {"tmp_file_storage_dir": tmp_file_storage_dir},
         )
-        sys_prompt = f"{sys_prompt}\n{add_note}\n{tool_use_rule}"
+        self.sys_prompt = f"{sys_prompt}\n{add_note}\n{tool_use_rule}"
 
-        super().__init__(
-            name=name,
-            sys_prompt=sys_prompt,
-            model=model,
-            formatter=formatter,
-            memory=memory,
-            max_iters=max_iters,
-        )
+        self.name = name
+        self.model = model
+        self.max_iters = max_iters
         self.max_depth = max_depth
-        self.memory = memory
         self.tmp_file_storage_dir = tmp_file_storage_dir
-        self.current_subtask = []
+        self.current_subtask: list[SubTaskItem] = []
 
-        # register all necessary tools for deep research agent
-        self.toolkit.register_tool_function(view_text_file)
-        self.toolkit.register_tool_function(write_text_file)
-        asyncio.get_running_loop().create_task(
-            self.toolkit.register_mcp_client(search_mcp_client),
+        # Agent state for tool calls (Read/Write need state injection)
+        self.state = AgentState()
+        self.state.permission_context.mode = PermissionMode.BYPASS
+
+        # Register all necessary tools for deep research agent
+        self.toolkit = Toolkit(
+            tools=[
+                Read(),
+                Write(),
+                FunctionTool(
+                    self.reflect_failure,
+                    name="reflect_failure",
+                ),
+                FunctionTool(
+                    self.summarize_intermediate_results,
+                    name="summarize_intermediate_results",
+                ),
+                FunctionTool(
+                    self.generate_response,
+                    name=self.finish_function_name,
+                ),
+            ],
+            mcps=[search_mcp_client],
         )
 
         self.search_function = "tavily-search"
         self.extract_function = "tavily-extract"
-        self.read_file_function = "view_text_file"
-        self.write_file_function = "write_text_file"
+        self.read_file_function = "Read"
+        self.write_file_function = "Write"
         self.summarize_function = "summarize_intermediate_results"
 
-        self.intermediate_memory = []
+        self.intermediate_memory: list[Msg] = []
+        self.memory: list[Msg] = []
         self.report_path_based = self.name + datetime.now().strftime(
             "%y%m%d%H%M%S",
         )
         self.report_index = 1
-        self._required_structured_model = None
-        self.user_query = None
+        self.user_query: Optional[str] = None
 
-        # add functions into toolkit
-        self.toolkit.register_tool_function(self.reflect_failure)
-        self.toolkit.register_tool_function(
-            self.summarize_intermediate_results,
-        )
+    async def __call__(
+        self,
+        msg: Msg | list[Msg] | None = None,
+    ) -> Msg:
+        """Call the agent to get a reply."""
+        return await self.reply(msg)
 
     async def reply(
         self,
         msg: Msg | list[Msg] | None = None,
-        structured_model: Type[BaseModel] | None = None,
     ) -> Msg:
         """The reply method of the agent."""
+        if msg is None:
+            raise ValueError("The input message cannot be None.")
+        if isinstance(msg, list):
+            msg = msg[0]
+
         # Maintain the subtask list
         self.user_query = msg.get_text_content()
         self.current_subtask.append(
@@ -198,20 +205,15 @@ class DeepResearchAgent(ReActAgent):
 
         # Identify the expected output and generate a plan
         await self.decompose_and_expand_subtask()
-        msg.content += (
-            f"\nExpected Output:\n{self.current_subtask[0].knowledge_gaps}"
+        msg.content.append(
+            TextBlock(
+                text=f"\nExpected Output:\n"
+                f"{self.current_subtask[0].knowledge_gaps}",
+            ),
         )
 
         # Add user query message to memory
-        await self.memory.add(msg)  # type: ignore
-
-        # Record structured output model if provided
-        if structured_model:
-            self._required_structured_model = structured_model
-            self.toolkit.set_extended_model(
-                self.finish_function_name,
-                structured_model,
-            )
+        self.memory.append(msg)
 
         for _ in range(self.max_iters):
             # Generate the working plan first
@@ -233,50 +235,66 @@ class DeepResearchAgent(ReActAgent):
                     "depth": len(self.current_subtask),
                 },
             )
-            reasoning_prompt_msg = Msg(
+            reasoning_prompt_msg = UserMsg(
                 "user",
-                content=[
-                    TextBlock(
-                        type="text",
-                        text=reasoning_prompt,
-                    ),
-                ],
-                role="user",
+                [TextBlock(text=reasoning_prompt)],
             )
             self.intermediate_memory.append(reasoning_prompt_msg)
 
             # Reasoning to generate tool calls
-            backup_memory = deepcopy(self.memory)  # type: ignore
-            await self.memory.add(self.intermediate_memory)  # type: ignore
             msg_reasoning = await self._reasoning()
-            self.memory = backup_memory
 
             # Calling the tools
-            for tool_call in msg_reasoning.get_content_blocks("tool_use"):
+            for tool_call in msg_reasoning.get_content_blocks("tool_call"):
                 self.intermediate_memory.append(
-                    Msg(
-                        self.name,
-                        content=[tool_call],
-                        role="assistant",
-                    ),
-                )  # add tool_use memory
+                    AssistantMsg(self.name, [tool_call]),
+                )  # add tool_call memory
                 msg_response = await self._acting(tool_call)
                 if msg_response:
-                    await self.memory.add(msg_response)
+                    self.memory.append(msg_response)
                     self.current_subtask = []
                     return msg_response
 
         # When the maximum iterations are reached, summarize all the findings
         return await self._summarizing()
 
-    async def _acting(self, tool_call: ToolUseBlock) -> Msg | None:
-        """
-        Execute a tool call and process its response with browser-specific
-        handling.
+    async def _collect_content(
+        self,
+        res: ChatResponse | Any,
+    ) -> list:
+        """Collect the content from a model response, accumulating streaming
+        chunks if necessary.
 
         Args:
-            tool_call (ToolUseBlock):
-                The tool use block containing the tool name, parameters,
+            res: The return value of ``model.__call__`` — either a
+                ``ChatResponse`` (non-streaming) or an async generator of
+                ``ChatResponse`` deltas (streaming).
+        """
+        if isinstance(res, ChatResponse):
+            return res.content
+
+        final_content: list = []
+        async for chunk in res:
+            if chunk.is_last:
+                final_content = list(chunk.content)
+        return final_content
+
+    async def _reasoning(self) -> Msg:
+        """Reasoning to generate tool calls by calling the model with the
+        available tool schemas."""
+        messages = self.memory + self.intermediate_memory
+        tools = await self.toolkit.get_tool_schemas()
+        res = await self.model(messages=messages, tools=tools)
+        content = await self._collect_content(res)
+        return AssistantMsg(self.name, content)
+
+    async def _acting(self, tool_call: ToolCallBlock) -> Msg | None:
+        """
+        Execute a tool call and process its response.
+
+        Args:
+            tool_call (ToolCallBlock):
+                The tool call block containing the tool name, parameters,
                 and unique identifier for execution.
         Returns:
             Msg | None:
@@ -285,126 +303,107 @@ class DeepResearchAgent(ReActAgent):
                 reasoning-acting loop.
         """
 
-        tool_res_msg = Msg(
-            "system",
-            [
+        tool_res_msg = AssistantMsg(
+            name=self.name,
+            content=[
                 ToolResultBlock(
-                    type="tool_result",
-                    id=tool_call["id"],
-                    name=tool_call["name"],
+                    id=tool_call.id,
+                    name=tool_call.name,
                     output=[],
                 ),
             ],
-            "system",
         )
         update_memory = False
         intermediate_report = ""
-        chunk = ""
+        last_chunk_content: list = []
         try:
             # Execute the tool call
-            tool_res = await self.toolkit.call_tool_function(tool_call)
+            async for item in self.toolkit.call_tool(
+                tool_call,
+                self.state,
+            ):
+                if isinstance(item, ToolResponse):
+                    # Final accumulated response — content already captured
+                    continue
 
-            # Async generator handling
-            async for chunk in tool_res:
-                # Turn into a tool result block
-                tool_res_msg.content[0][  # type: ignore[index]
-                    "output"
-                ] = chunk.content
-
-                # Skip the printing of the finish function call
-                if (
-                    tool_call["name"] != self.finish_function_name
-                    or tool_call["name"] == self.finish_function_name
-                    and not chunk.metadata.get("success")
-                ):
-                    await self.print(tool_res_msg, chunk.is_last)
+                # item is a ToolChunk
+                last_chunk_content = item.content
+                tool_res_msg.content[0].output = item.content
 
                 # Return message if generate_response is called successfully
-                if tool_call[
-                    "name"
-                ] == self.finish_function_name and chunk.metadata.get(
-                    "success",
-                    True,
+                if (
+                    tool_call.name == self.finish_function_name
+                    and item.metadata.get("success")
                 ):
                     if len(self.current_subtask) == 0:
-                        return chunk.metadata.get("response_msg")
+                        return item.metadata.get("response_msg")
 
                 # Summarize intermediate results into a draft report
-                elif tool_call["name"] == self.summarize_function:
+                elif tool_call.name == self.summarize_function:
                     self.intermediate_memory = []
-                    await self.memory.add(
-                        Msg(
-                            "assistant",
-                            [
-                                TextBlock(
-                                    type="text",
-                                    text=chunk.content[0]["text"],
-                                ),
-                            ],
-                            "assistant",
-                        ),
-                    )
+                    if item.content:
+                        self.memory.append(
+                            AssistantMsg(
+                                self.name,
+                                [TextBlock(text=item.content[0].text)],
+                            ),
+                        )
 
                 # Truncate the web extract results that exceeds max length
-                elif tool_call["name"] in [
+                elif tool_call.name in [
                     self.search_function,
                     self.extract_function,
                 ]:
-                    tool_res_msg.content[0]["output"] = truncate_search_result(
-                        tool_res_msg.content[0]["output"],
+                    tool_res_msg.content[0].output = truncate_search_result(
+                        tool_res_msg.content[0].output,
                     )
 
                 # Update memory when an intermediate report is generated
-                if isinstance(chunk.metadata, dict) and chunk.metadata.get(
+                if isinstance(item.metadata, dict) and item.metadata.get(
                     "update_memory",
                 ):
                     update_memory = True
-                    intermediate_report = chunk.metadata.get(
+                    intermediate_report = item.metadata.get(
                         "intermediate_report",
                     )
             return None
 
         finally:
             # Record the tool result message in the intermediate memory
-            if tool_call["name"] != self.summarize_function:
+            if tool_call.name != self.summarize_function:
                 self.intermediate_memory.append(tool_res_msg)
 
             # Read more information from the web page if necessary
-            if tool_call["name"] == self.search_function:
-                extract_res = await self._follow_up(chunk.content, tool_call)
-                if isinstance(
-                    extract_res.metadata,
-                    dict,
-                ) and extract_res.metadata.get("update_memory"):
+            if tool_call.name == self.search_function:
+                extract_res = await self._follow_up(
+                    last_chunk_content,
+                    tool_call,
+                )
+                if (
+                    isinstance(extract_res, ToolChunk)
+                    and extract_res.metadata.get("update_memory")
+                ):
                     self.intermediate_memory = []
-                    await self.memory.add(
-                        Msg(
-                            "assistant",
-                            content=[
+                    self.memory.append(
+                        AssistantMsg(
+                            self.name,
+                            [
                                 TextBlock(
-                                    type="text",
                                     text=extract_res.metadata.get(
                                         "intermediate_report",
-                                    ).content[0]["text"],
+                                    ),
                                 ),
                             ],
-                            role="assistant",
                         ),
                     )
 
             # Update memory with the intermediate report
             if update_memory:
                 self.intermediate_memory = []
-                await self.memory.add(
-                    Msg(
-                        "assistant",
-                        content=[
-                            TextBlock(
-                                type="text",
-                                text=intermediate_report.content[0]["text"],
-                            ),
-                        ],
-                        role="assistant",
+                self.memory.append(
+                    AssistantMsg(
+                        self.name,
+                        [TextBlock(text=intermediate_report)],
                     ),
                 )
 
@@ -412,43 +411,24 @@ class DeepResearchAgent(ReActAgent):
         self,
         msgs: list,
         format_template: Type[BaseModel] = None,
-        stream: bool = True,
     ) -> Any:
         """
         Call the model and get output with or without a structured format.
 
         Args:
             msgs (list): A list of messages.
-            format_template (BaseModel): structured format.
-            stream (bool): stream-style output.
+            format_template (Type[BaseModel]): structured format pydantic
+                model.
         """
-        blocks = None
         if format_template:
-            res = await self.model(
-                await self.formatter.format(msgs=msgs),
-                tools=get_dynamic_tool_call_json(
-                    format_template,
-                ),
+            res = await self.model.generate_structured_output(
+                messages=msgs,
+                structured_model=format_template,
             )
-
-            if stream:
-                async for content_chunk in res:
-                    blocks = content_chunk.content
-            else:
-                blocks = res.content
-
-            return get_structure_output(blocks)
+            return res.content
         else:
-            res = await self.model(
-                await self.formatter.format(msgs=msgs),
-            )
-
-            if stream:
-                async for content_chunk in res:
-                    blocks = content_chunk.content
-            else:
-                blocks = res.content
-            return blocks
+            res = await self.model(messages=msgs)
+            return await self._collect_content(res)
 
     async def call_specific_tool(
         self,
@@ -462,48 +442,40 @@ class DeepResearchAgent(ReActAgent):
             func_name (str): name of the tool.
             params (dict): input parameters of the tool.
         """
-        tool_call = ToolUseBlock(
+        tool_call = ToolCallBlock(
             id=shortuuid.uuid(),
-            type="tool_use",
             name=func_name,
-            input=params,
+            input=json.dumps(params or {}),
         )
-        tool_call_msg = Msg(
-            "assistant",
-            [tool_call],
-            role="assistant",
-        )
+        tool_call_msg = AssistantMsg(self.name, [tool_call])
 
-        # get tool acting res
-        tool_res_msg = Msg(
-            "system",
+        final_response: Optional[ToolResponse] = None
+        async for item in self.toolkit.call_tool(tool_call, self.state):
+            if isinstance(item, ToolResponse):
+                final_response = item
+
+        output = final_response.content if final_response else []
+        tool_res_msg = AssistantMsg(
+            self.name,
             [
                 ToolResultBlock(
-                    type="tool_result",
-                    id=tool_call["id"],
-                    name=tool_call["name"],
-                    output=[],
+                    id=tool_call.id,
+                    name=tool_call.name,
+                    output=output,
                 ),
             ],
-            "system",
         )
-        tool_res = await self.toolkit.call_tool_function(
-            tool_call,
-        )
-        async for chunk in tool_res:
-            tool_res_msg.content[0]["output"] = chunk.content
-
         return tool_call_msg, tool_res_msg
 
-    async def decompose_and_expand_subtask(self) -> ToolResponse:
+    async def decompose_and_expand_subtask(self) -> ToolChunk:
         """Identify the knowledge gaps of the current subtask and generate a
         working plan by subtask decomposition. The working plan includes
         necessary steps for task completion and expanded steps.
 
         Returns:
-            ToolResponse:
+            ToolChunk:
                 The knowledge gaps and working plan of the current subtask
-                in JSON format.
+                in text format.
         """
         if len(self.current_subtask) <= self.max_depth:
             decompose_sys_prompt = self.prompt_dict["decompose_sys_prompt"]
@@ -523,11 +495,10 @@ class DeepResearchAgent(ReActAgent):
             try:
                 gaps_and_plan = await self.get_model_output(
                     msgs=[
-                        Msg("system", decompose_sys_prompt, "system"),
-                        Msg("user", previous_plan_inst, "user"),
+                        SystemMsg("system", decompose_sys_prompt),
+                        UserMsg("user", previous_plan_inst),
                     ],
                     format_template=SubtasksDecomposition,
-                    stream=self.model.stream,
                 )
                 response = json.dumps(
                     gaps_and_plan,
@@ -547,28 +518,22 @@ class DeepResearchAgent(ReActAgent):
                 "working_plan",
                 None,
             )
-            return ToolResponse(
+            return ToolChunk(
                 content=[
-                    TextBlock(
-                        type="text",
-                        text=response,
-                    ),
+                    TextBlock(text=response),
                 ],
             )
-        return ToolResponse(
+        return ToolChunk(
             content=[
-                TextBlock(
-                    type="text",
-                    text=self.prompt_dict["max_depth_hint"],
-                ),
+                TextBlock(text=self.prompt_dict["max_depth_hint"]),
             ],
         )
 
     async def _follow_up(
         self,
         search_results: list | str,
-        tool_call: ToolUseBlock,
-    ) -> ToolResponse:
+        tool_call: ToolCallBlock,
+    ) -> ToolChunk:
         """Read the website more intensively to mine more information for
         the task. And generate a follow-up subtask if necessary to perform
         deep search.
@@ -577,36 +542,50 @@ class DeepResearchAgent(ReActAgent):
         if len(self.current_subtask) < self.max_depth:
             # Step#1: query expansion
             expansion_sys_prompt = self.prompt_dict["expansion_sys_prompt"]
+
+            # Extract query from tool_call.input (JSON string in 2.x)
+            try:
+                tool_input = json.loads(tool_call.input)
+            except (json.JSONDecodeError, TypeError):
+                tool_input = {}
+            query = tool_input.get("query", "")
+
+            # Extract text from search results for prompt formatting
+            search_results_text = ""
+            for block in search_results:
+                if hasattr(block, "text"):
+                    search_results_text += block.text + "\n"
+                else:
+                    search_results_text += str(block) + "\n"
+
             expansion_inst = self.prompt_dict["expansion_inst"].format_map(
                 {
-                    "objective": tool_call["input"].get("query", ""),
+                    "objective": query,
                     "checklist": self.current_subtask[0].knowledge_gaps,
                     "knowledge_gaps": self.current_subtask[-1].working_plan,
-                    "search_results": search_results,
+                    "search_results": search_results_text,
                 },
             )
 
             try:
                 follow_up_subtask = await self.get_model_output(
                     msgs=[
-                        Msg("system", expansion_sys_prompt, "system"),
-                        Msg("user", expansion_inst, "user"),
+                        SystemMsg("system", expansion_sys_prompt),
+                        UserMsg("user", expansion_inst),
                     ],
                     format_template=WebExtraction,
-                    stream=self.model.stream,
                 )
             except Exception:  # noqa: F841
                 follow_up_subtask = {}
 
             #  Step #2: extract the url
             if follow_up_subtask.get("need_more_information", False):
-                expansion_response_msg = Msg(
+                expansion_response_msg = AssistantMsg(
                     "assistant",
                     follow_up_subtask.get(
                         "reasoning",
                         "I need more information.",
                     ),
-                    role="assistant",
                 )
                 urls = follow_up_subtask.get("url", None)
                 logger.info("Reading %s", urls)
@@ -625,47 +604,45 @@ class DeepResearchAgent(ReActAgent):
                 )
                 self.intermediate_memory.append(extract_tool_use_msg)
 
-                extract_tool_res_msg.content[0][
-                    "output"
-                ] = truncate_search_result(
-                    extract_tool_res_msg.content[0]["output"],
+                extract_tool_res_msg.content[0].output = truncate_search_result(
+                    extract_tool_res_msg.content[0].output,
                 )
-                # await self.memory.add(tool_res_msg)
-                await self.print(extract_tool_res_msg, True)
                 self.intermediate_memory.append(extract_tool_res_msg)
 
                 # Step #4: follow up judge
                 try:
                     follow_up_response = await self.get_model_output(
                         msgs=[
-                            Msg("user", expansion_inst, "user"),
+                            UserMsg("user", expansion_inst),
                             expansion_response_msg,
                             extract_tool_use_msg,
                             extract_tool_res_msg,
-                            Msg(
+                            UserMsg(
                                 "user",
                                 self.prompt_dict["follow_up_judge_sys_prompt"],
-                                role="user",
                             ),
                         ],
                         format_template=FollowupJudge,
-                        stream=self.model.stream,
                     )
                 except Exception:  # noqa: F841
                     follow_up_response = {}
                 if not follow_up_response.get("is_sufficient", True):
                     subtasks = follow_up_subtask.get("subtask", None)
                     logger.info("Figuring out %s", subtasks)
-                    intermediate_report = (
+                    intermediate_report_chunk = (
                         await self.summarize_intermediate_results()
                     )
+                    intermediate_report_text = ""
+                    if intermediate_report_chunk.content:
+                        intermediate_report_text = (
+                            intermediate_report_chunk.content[0].text
+                        )
                     self.current_subtask.append(
                         SubTaskItem(objective=subtasks),
                     )
-                    return ToolResponse(
+                    return ToolChunk(
                         content=[
                             TextBlock(
-                                type="text",
                                 text=follow_up_response.get(
                                     "reasoning",
                                     self.prompt_dict["need_deeper_hint"],
@@ -674,14 +651,13 @@ class DeepResearchAgent(ReActAgent):
                         ],
                         metadata={
                             "update_memory": True,
-                            "intermediate_report": intermediate_report,
+                            "intermediate_report": intermediate_report_text,
                         },
                     )
                 else:
-                    return ToolResponse(
+                    return ToolChunk(
                         content=[
                             TextBlock(
-                                type="text",
                                 text=follow_up_response.get(
                                     "reasoning",
                                     self.prompt_dict["sufficient_hint"],
@@ -690,10 +666,9 @@ class DeepResearchAgent(ReActAgent):
                         ],
                     )
             else:
-                return ToolResponse(
+                return ToolChunk(
                     content=[
                         TextBlock(
-                            type="text",
                             text=follow_up_subtask.get(
                                 "reasoning",
                                 self.prompt_dict["sufficient_hint"],
@@ -702,30 +677,24 @@ class DeepResearchAgent(ReActAgent):
                     ],
                 )
         else:
-            return ToolResponse(
+            return ToolChunk(
                 content=[
-                    TextBlock(
-                        type="text",
-                        text=self.prompt_dict["max_depth_hint"],
-                    ),
+                    TextBlock(text=self.prompt_dict["max_depth_hint"]),
                 ],
             )
 
-    async def summarize_intermediate_results(self) -> ToolResponse:
+    async def summarize_intermediate_results(self) -> ToolChunk:
         """Summarize the intermediate results into a report when a step
         in working plan is completed.
 
         Returns:
-            ToolResponse:
+            ToolChunk:
                 The summarized draft report.
         """
         if len(self.intermediate_memory) == 0:
-            return ToolResponse(
+            return ToolChunk(
                 content=[
-                    TextBlock(
-                        type="text",
-                        text=self.prompt_dict["no_result_hint"],
-                    ),
+                    TextBlock(text=self.prompt_dict["no_result_hint"]),
                 ],
             )
         # agent actively call this tool
@@ -733,21 +702,17 @@ class DeepResearchAgent(ReActAgent):
             blocks = await self.get_model_output(
                 msgs=self.intermediate_memory
                 + [
-                    Msg(
+                    UserMsg(
                         "user",
                         self.prompt_dict["summarize_hint"].format_map(
                             {
                                 "plan": self.current_subtask[-1].working_plan,
                             },
                         ),
-                        role="user",
                     ),
                 ],
-                stream=self.model.stream,
             )
-            self.current_subtask[-1].working_plan = blocks[0][
-                "text"
-            ]  # type: ignore[index]
+            self.current_subtask[-1].working_plan = blocks[0].text
         report_prefix = "#" * len(self.current_subtask)
         summarize_sys_prompt = self.prompt_dict[
             "summarize_sys_prompt"
@@ -757,18 +722,9 @@ class DeepResearchAgent(ReActAgent):
         # get all tool result
         tool_result = ""
         for item in self.intermediate_memory:
-            if isinstance(item.content, str):
-                tool_result += item.content + "\n"
-            elif isinstance(item.content, list):
-                for each in item.content:
-                    if each["type"] == "tool_result":
-                        tool_result += str(each) + "\n"
-            else:
-                logger.warning(
-                    "Unknown content type: %s!",
-                    type(item.content),
-                )
-                continue
+            for block in item.content:
+                if isinstance(block, ToolResultBlock):
+                    tool_result += str(block) + "\n"
         summarize_instruction = self.prompt_dict["summarize_inst"].format_map(
             {
                 "objective": self.current_subtask[0].objective,
@@ -780,12 +736,11 @@ class DeepResearchAgent(ReActAgent):
 
         blocks = await self.get_model_output(
             msgs=[
-                Msg("system", summarize_sys_prompt, "system"),
-                Msg("user", summarize_instruction, "user"),
+                SystemMsg("system", summarize_sys_prompt),
+                UserMsg("user", summarize_instruction),
             ],
-            stream=self.model.stream,
         )
-        intermediate_report = blocks[0]["text"]  # type: ignore[index]
+        intermediate_report = blocks[0].text
 
         # Write the intermediate report
         intermediate_report_path = os.path.join(
@@ -807,17 +762,18 @@ class DeepResearchAgent(ReActAgent):
             intermediate_report,
         )
         if (
-            self.intermediate_memory[-1].has_content_blocks("tool_use")
-            and self.intermediate_memory[-1].get_content_blocks("tool_use")[0][
-                "name"
-            ]
+            self.intermediate_memory[-1].has_content_blocks("tool_call")
+            and self.intermediate_memory[-1].get_content_blocks(
+                "tool_call",
+            )[0].name
             == self.summarize_function
         ):
-            return ToolResponse(
+            return ToolChunk(
                 content=[
                     TextBlock(
-                        type="text",
-                        text=self.prompt_dict["update_report_hint"].format_map(
+                        text=self.prompt_dict[
+                            "update_report_hint"
+                        ].format_map(
                             {
                                 "intermediate_report": intermediate_report,
                                 "report_path": intermediate_report_path,
@@ -827,10 +783,9 @@ class DeepResearchAgent(ReActAgent):
                 ],
             )
         else:
-            return ToolResponse(
+            return ToolChunk(
                 content=[
                     TextBlock(
-                        type="text",
                         text=self.prompt_dict["save_report_hint"].format_map(
                             {
                                 "intermediate_report": intermediate_report,
@@ -843,15 +798,20 @@ class DeepResearchAgent(ReActAgent):
     async def _generate_deepresearch_report(
         self,
         checklist: str,
-    ) -> Tuple[Msg, str]:
+    ) -> Tuple[Msg, str, str]:
         """Collect and polish all draft reports into a final report.
 
         Args:
             checklist (`str`):
                 The expected output items of the original task.
+
+        Returns:
+            Tuple[Msg, str, str]:
+                The write tool result message, the detailed report file
+                path, and the final report content text.
         """
         reporting_sys_prompt = self.prompt_dict["reporting_sys_prompt"]
-        reporting_sys_prompt.format_map(
+        reporting_sys_prompt = reporting_sys_prompt.format_map(
             {
                 "original_task": self.user_query,
                 "checklist": checklist,
@@ -873,37 +833,23 @@ class DeepResearchAgent(ReActAgent):
                     func_name=self.read_file_function,
                     params=params,
                 )
-                inprocess_report += (
-                    read_draft_tool_res_msg.content[0]["output"][0]["text"]
-                    + "\n"
-                )
+                output = read_draft_tool_res_msg.content[0].output
+                if isinstance(output, list) and output:
+                    inprocess_report += output[0].text + "\n"
+                elif isinstance(output, str):
+                    inprocess_report += output + "\n"
 
             msgs = [
-                Msg(
-                    "system",
-                    content=reporting_sys_prompt,
-                    role="system",
-                ),
-                Msg(
-                    "user",
-                    content=f"Draft report:\n{inprocess_report}",
-                    role="user",
-                ),
+                SystemMsg("system", reporting_sys_prompt),
+                UserMsg("user", f"Draft report:\n{inprocess_report}"),
             ]
         else:  # Use only intermediate memory to generate report
             msgs = [
-                Msg(
-                    "system",
-                    content=reporting_sys_prompt,
-                    role="system",
-                ),
+                SystemMsg("system", reporting_sys_prompt),
             ] + self.intermediate_memory
 
-        blocks = await self.get_model_output(
-            msgs=msgs,
-            stream=self.model.stream,
-        )
-        final_report_content = blocks[0]["text"]  # type: ignore[index]
+        blocks = await self.get_model_output(msgs=msgs)
+        final_report_content = blocks[0].text
         logger.info(
             "The final Report is generated: %s",
             final_report_content,
@@ -919,39 +865,28 @@ class DeepResearchAgent(ReActAgent):
             "file_path": detailed_report_path,
             "content": final_report_content,
         }
-        _, write_report_tool_res_msg = await self.call_specific_tool(
+        write_report_tool_res_msg, _ = await self.call_specific_tool(
             func_name=self.write_file_function,
             params=params,
         )
 
-        return write_report_tool_res_msg, detailed_report_path
+        return write_report_tool_res_msg, detailed_report_path, final_report_content
 
     async def _summarizing(self) -> Msg:
-        """Generate a report based on the exsisting findings when the
+        """Generate a report based on the existing findings when the
         agent fails to solve the problem in the maximum iterations."""
 
-        (
-            summarized_content,
-            _,
-        ) = await self._generate_deepresearch_report(
+        _, _, final_report = await self._generate_deepresearch_report(
             checklist=self.current_subtask[0].knowledge_gaps,
         )
-        return Msg(
-            name=self.name,
-            role="assistant",
-            content=json.dumps(
-                summarized_content.content[0]["output"][0],
-                indent=2,
-                ensure_ascii=False,
-            ),
-        )
+        return AssistantMsg(self.name, final_report)
 
-    async def reflect_failure(self) -> ToolResponse:
+    async def reflect_failure(self) -> ToolChunk:
         """Reflect on the failure of the action and determine to rephrase
         the plan or deeper decompose the current step.
 
         Returns:
-            ToolResponse:
+            ToolChunk:
                 The reflection about plan rephrasing and subtask decomposition.
         """
         reflect_sys_prompt = self.prompt_dict["reflect_sys_prompt"]
@@ -959,7 +894,7 @@ class DeepResearchAgent(ReActAgent):
         for msg in self.intermediate_memory:
             conversation_history += (
                 json.dumps(
-                    {"role": "user", "content": msg.content},
+                    {"role": msg.role, "content": str(msg.content)},
                     ensure_ascii=False,
                     indent=2,
                 )
@@ -974,11 +909,10 @@ class DeepResearchAgent(ReActAgent):
         try:
             reflection = await self.get_model_output(
                 msgs=[
-                    Msg("system", reflect_sys_prompt, "system"),
-                    Msg("user", reflect_inst, "user"),
+                    SystemMsg("system", reflect_sys_prompt),
+                    UserMsg("user", reflect_inst),
                 ],
                 format_template=ReflectFailure,
-                stream=self.model.stream,
             )
             response = json.dumps(
                 reflection,
@@ -996,70 +930,64 @@ class DeepResearchAgent(ReActAgent):
         ].get(
             "need_rephrase",
             False,
-        ):  # type: ignore[index]
+        ):
             self.current_subtask[-1].working_plan = reflection[
                 "rephrase_subtask"
             ][
                 "rephrased_plan"
-            ]  # type: ignore[index]
+            ]
         elif reflection.get("decompose_subtask", False) and reflection[
             "decompose_subtask"
         ].get(
             "need_decompose",
             False,
-        ):  # type: ignore[index]
+        ):
             if len(self.current_subtask) <= self.max_depth:
-                intermediate_report = (
+                intermediate_report_chunk = (
                     await self.summarize_intermediate_results()
                 )
+                intermediate_report_text = ""
+                if intermediate_report_chunk.content:
+                    intermediate_report_text = (
+                        intermediate_report_chunk.content[0].text
+                    )
                 self.current_subtask.append(
                     SubTaskItem(
                         objective=reflection[
                             "decompose_subtask"
-                        ].get(  # type: ignore[index]
+                        ].get(
                             "failed_subtask",
                             None,
                         ),
                     ),
                 )
-                return ToolResponse(
+                return ToolChunk(
                     content=[
-                        TextBlock(
-                            type="text",
-                            text=response,
-                        ),
+                        TextBlock(text=response),
                     ],
                     metadata={
                         "update_memory": True,
-                        "intermediate_report": intermediate_report,
+                        "intermediate_report": intermediate_report_text,
                     },
                 )
             else:
-                return ToolResponse(
+                return ToolChunk(
                     content=[
-                        TextBlock(
-                            type="text",
-                            text=self.prompt_dict["max_depth_hint"],
-                        ),
+                        TextBlock(text=self.prompt_dict["max_depth_hint"]),
                     ],
                 )
         else:
             pass
-        return ToolResponse(
+        return ToolChunk(
             content=[
-                TextBlock(
-                    type="text",
-                    text=response,
-                ),
+                TextBlock(text=response),
             ],
         )
 
-    # pylint: disable=invalid-overridden-method, unused-argument
-    async def generate_response(  #
+    async def generate_response(
         self,
         response: str,
-        **_kwargs: Any,
-    ) -> ToolResponse:
+    ) -> ToolChunk:
         """Generate a detailed report as a response.
 
         Besides, when calling this function, the reasoning-acting memory will
@@ -1074,25 +1002,13 @@ class DeepResearchAgent(ReActAgent):
         completed_subtask = self.current_subtask.pop()
 
         if len(self.current_subtask) == 0:
-            (
-                summarized_content,
-                _,
-            ) = await self._generate_deepresearch_report(
+            _, _, final_report = await self._generate_deepresearch_report(
                 checklist=checklist,
             )
-            response_msg = Msg(
-                name=self.name,
-                role="assistant",
-                content=json.dumps(
-                    summarized_content.content[0]["output"][0],
-                    indent=2,
-                    ensure_ascii=False,
-                ),
-            )
-            return ToolResponse(
+            response_msg = AssistantMsg(self.name, final_report)
+            return ToolChunk(
                 content=[
                     TextBlock(
-                        type="text",
                         text="Successfully generated detailed report.",
                     ),
                 ],
@@ -1100,13 +1016,11 @@ class DeepResearchAgent(ReActAgent):
                     "success": True,
                     "response_msg": response_msg,
                 },
-                is_last=True,
             )
         else:
-            return ToolResponse(
+            return ToolChunk(
                 content=[
                     TextBlock(
-                        type="text",
                         text=self.prompt_dict[
                             "subtask_complete_hint"
                         ].format_map(
@@ -1120,5 +1034,4 @@ class DeepResearchAgent(ReActAgent):
                 metadata={
                     "success": True,
                 },
-                is_last=True,
             )
